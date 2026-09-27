@@ -4,8 +4,9 @@ import type { ProjectSettings } from '$lib/stores/settings';
 function renderedFloor(floor: Floor) {
   // These fields belong to the 2D canvas. In particular, never walk embedded
   // background images or item photo payloads just to decide whether to rebuild.
+  // Entourage (people, vehicles, planting) is rendered in 3D, so it stays in.
   const { backgroundImage, guides, measurements, annotations, textAnnotations,
-    groups, entourage, ...rendered } = floor;
+    groups, ...rendered } = floor;
   const withoutDetails = <T extends { details?: unknown }>(items: T[]) =>
     items.map(({ details, ...item }) => item);
   return { ...rendered,
@@ -20,6 +21,6 @@ function renderedFloor(floor: Floor) {
  * room labels, elevations and future render fields must still invalidate. */
 export function sceneSignature(project: Project, floor: Floor, stacked: boolean, units: ProjectSettings['units']): string {
   return JSON.stringify({ projectId: project.id, activeFloorId: floor.id, stacked, units,
-    customModels: project.customModels,
+    customModels: project.customModels, finishes: project.finishes,
     floors: (stacked ? project.floors : [floor]).map(renderedFloor) });
 }

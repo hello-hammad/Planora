@@ -1756,9 +1756,20 @@ export function drawEntourageItem(
     ctx.fill();
     ctx.stroke();
     if (item.locked) {
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🔒', 0, -hPx / 2 - 10);
+      // Padlock marker above a locked item (Lucide "lock" proportions).
+      const y = -hPx / 2 - 16;
+      ctx.save();
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = '#6B4636';
+      ctx.fillStyle = '#FFFDF9';
+      ctx.beginPath();
+      ctx.roundRect(-5, y + 4, 10, 8, 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, y + 4, 3.2, Math.PI, 0);
+      ctx.stroke();
+      ctx.restore();
     }
   }
   ctx.restore();

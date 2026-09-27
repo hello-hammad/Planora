@@ -28,11 +28,11 @@ export const roomColorLabels: Record<string, TranslationKey> = {
 };
 
 export const floorGroupLabels: Record<string, TranslationKey> = {
-  "🎨 Plain": "floorGroupLabel.0",
-  "🪵 Wood": "floorGroupLabel.1",
-  "🔲 Tile": "floorGroupLabel.2",
-  "🪨 Stone": "floorGroupLabel.3",
-  "🧶 Carpet": "floorGroupLabel.4"
+  "Plain": "floorGroupLabel.0",
+  "Wood": "floorGroupLabel.1",
+  "Tile": "floorGroupLabel.2",
+  "Stone": "floorGroupLabel.3",
+  "Carpet": "floorGroupLabel.4"
 };
 
 export const floorMaterialLabels: Record<string, TranslationKey> = {

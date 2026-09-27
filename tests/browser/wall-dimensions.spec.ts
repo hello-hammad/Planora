@@ -30,7 +30,7 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('application')).toContainText('1 room');
     // L is the existing layers shortcut, available on desktop and compact layouts.
     await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-    await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
+    await page.getByRole('button', { name: 'Wall 1', exact: true }).click();
     const length = page.getByLabel('Length (cm)', { exact: true });
     await expect(length).toHaveValue('600.5');
     await edit(page, 'Length (cm)', '650.25');
@@ -73,7 +73,7 @@ for (const width of [1440, 390]) {
     expect(walls[1].start).toEqual(walls[0].end);
     await testInfo.attach(`connected-resize-${width}`, { body: await page.screenshot(), contentType: 'image/png' });
 
-    await page.getByRole('button', { name: '🚪 opening door 1', exact: true }).click();
+    await page.getByRole('button', { name: 'opening door 1', exact: true }).click();
     const doorWidth = page.getByRole('spinbutton', { name: 'Width (cm)', exact: true });
     await expect(doorWidth).toHaveValue('90.5');
     for (const value of ['', '0', '-1']) {
@@ -87,14 +87,14 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('spinbutton', { name: 'Distance from B (cm)', exact: true })).toHaveValue('450.625');
     await edit(page, 'Distance from A (cm)', '');
     await expect(page.getByRole('spinbutton', { name: 'Distance from A (cm)', exact: true })).toHaveValue('250.125');
-    await page.getByRole('button', { name: '🪟 standard window 1', exact: true }).click();
+    await page.getByRole('button', { name: 'standard window 1', exact: true }).click();
     await edit(page, 'Height (cm)', '-10');
     await expect(page.getByRole('spinbutton', { name: 'Height (cm)', exact: true })).toHaveValue('120.5');
     await edit(page, 'Sill Height (cm)', '0');
     await expect(page.getByRole('spinbutton', { name: 'Sill Height (cm)', exact: true })).toHaveValue('0');
     await edit(page, 'Distance from A (cm)', '9999');
 
-    await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
+    await page.getByRole('button', { name: 'Wall 1', exact: true }).click();
     if (width < 768) await page.getByRole('button', { name: 'More actions', exact: true }).click();
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: 'Dimensions', exact: true }).click();

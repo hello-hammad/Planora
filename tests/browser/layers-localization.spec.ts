@@ -47,7 +47,7 @@ for (const width of [1440, 390]) test(`Portuguese layers preserve visibility, se
         await testInfo.attach('phone-status-controls', { path, contentType: 'image/png' });
       }
     }
-    const visibility = page.getByRole('button', { name: '🗂 Camadas', exact: true });
+    const visibility = page.getByRole('button', { name: 'Camadas', exact: true });
     await clickStatusControl(visibility);
     const walls = page.getByRole('checkbox', { name: 'Paredes', exact: true });
     await expect(walls).toBeChecked();
@@ -71,7 +71,7 @@ for (const width of [1440, 390]) test(`Portuguese layers preserve visibility, se
     await layers.click();
     await expect(layers).toHaveAttribute('aria-expanded', 'true');
   }
-  await expect(page.locator('div').filter({ hasText: /^🗂 Camadas$/ })).toBeVisible();
+  await expect(page.locator('div').filter({ hasText: /^Camadas$/ })).toBeVisible();
   const hide = page.getByTitle('Ocultar Paredes', { exact: true });
   await hide.focus();
   await page.keyboard.press('Space');

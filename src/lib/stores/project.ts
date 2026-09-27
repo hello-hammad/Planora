@@ -925,6 +925,26 @@ export function updateFloorSlabThickness(floorId: string, thickness?: number) {
   currentProject.set({ ...p });
 }
 
+/** Edit the active floor as one undoable step (used by the design assistant's bulk actions). */
+export function editActiveFloor(fn: (floor: Floor) => void, description?: string) {
+  mutate(fn, description);
+}
+
+/** Unique id in the store's format. */
+export function newElementId(): string {
+  return uid();
+}
+
+/** Edit project-level data (finishes, boards) as one undoable step. */
+export function mutateProject(fn: (project: Project) => void, description?: string) {
+  const p = get(currentProject);
+  if (!p) return;
+  snapshot(description);
+  fn(p);
+  p.updatedAt = new Date();
+  currentProject.set({ ...p });
+}
+
 export function updateProjectName(name: string) {
   const p = get(currentProject);
   if (!p) return;

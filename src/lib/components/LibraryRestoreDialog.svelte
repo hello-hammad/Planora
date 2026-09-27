@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale } from '$lib/i18n';
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
   import { onDestroy } from 'svelte';
@@ -68,7 +69,7 @@
         <h2 id="library-restore-title" class="text-lg font-semibold">{$t('restore.title')}</h2>
         <p id="library-restore-description" class="mt-1 text-sm text-gray-500">{$t('restore.help')}</p>
       </div>
-      <button aria-label={$t('restore.close')} onclick={onclose} disabled={restoring} class="rounded px-2 py-1 text-gray-500 hover:bg-gray-100 disabled:opacity-40">✕</button>
+      <button aria-label={$t('restore.close')} onclick={onclose} disabled={restoring} class="rounded px-2 py-1 text-gray-500 hover:bg-gray-100 disabled:opacity-40"><AppIcon name="x" size={16} /></button>
     </div>
 
     <div class="space-y-4 overflow-y-auto px-5 py-4">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale } from '$lib/i18n';
   import { furnitureName } from '$lib/i18n/furnitureNames';
   import { catalogCategoryLabels } from '$lib/i18n/catalogCategories';
@@ -34,28 +35,28 @@
   };
 
   const tools: ResultItem[] = $derived([
-    { id: 't-select', name: $t('commandPalette.selectTool'), icon: '🔧', category: 'tool', categoryLabel: `🔧 ${$t('commandPalette.tool')}`, action: () => selectedTool.set('select') },
-    { id: 't-wall', name: $t('commandPalette.wallTool'), icon: '🔧', category: 'tool', categoryLabel: `🔧 ${$t('commandPalette.tool')}`, action: () => selectedTool.set('wall') },
-    { id: 't-door', name: $t('commandPalette.doorTool'), icon: '🔧', category: 'tool', categoryLabel: `🔧 ${$t('commandPalette.tool')}`, action: () => selectedTool.set('door') },
-    { id: 't-window', name: $t('commandPalette.windowTool'), icon: '🔧', category: 'tool', categoryLabel: `🔧 ${$t('commandPalette.tool')}`, action: () => selectedTool.set('window') },
-    { id: 't-furniture', name: $t('commandPalette.furnitureTool'), icon: '🔧', category: 'tool', categoryLabel: `🔧 ${$t('commandPalette.tool')}`, action: () => selectedTool.set('furniture') },
-    { id: 't-text', name: $t('commandPalette.textTool'), icon: '🔧', category: 'tool', categoryLabel: `🔧 ${$t('commandPalette.tool')}`, action: () => selectedTool.set('text') },
+    { id: 't-select', name: $t('commandPalette.selectTool'), icon: 'mouse-pointer-2', category: 'tool', categoryLabel: `${$t('commandPalette.tool')}`, action: () => selectedTool.set('select') },
+    { id: 't-wall', name: $t('commandPalette.wallTool'), icon: 'brick-wall', category: 'tool', categoryLabel: `${$t('commandPalette.tool')}`, action: () => selectedTool.set('wall') },
+    { id: 't-door', name: $t('commandPalette.doorTool'), icon: 'door-open', category: 'tool', categoryLabel: `${$t('commandPalette.tool')}`, action: () => selectedTool.set('door') },
+    { id: 't-window', name: $t('commandPalette.windowTool'), icon: 'app-window', category: 'tool', categoryLabel: `${$t('commandPalette.tool')}`, action: () => selectedTool.set('window') },
+    { id: 't-furniture', name: $t('commandPalette.furnitureTool'), icon: 'armchair', category: 'tool', categoryLabel: `${$t('commandPalette.tool')}`, action: () => selectedTool.set('furniture') },
+    { id: 't-text', name: $t('commandPalette.textTool'), icon: 'type', category: 'tool', categoryLabel: `${$t('commandPalette.tool')}`, action: () => selectedTool.set('text') },
   ]);
 
   const actions: ResultItem[] = $derived([
-    { id: 'a-export-svg', name: $t('commandPalette.exportSvg'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) exportAsSVG(p, get(locale)); } },
-    { id: 'a-export-dxf', name: $t('commandPalette.exportDxf'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) exportDXF(p, get(locale)); } },
-    { id: 'a-export-pdf', name: $t('commandPalette.exportPdf'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) exportPDF(p); } },
-    { id: 'a-export-png', name: $t('commandPalette.exportPng'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) void exportPNGWithFeedback(p); } },
-    { id: 'a-export-json', name: $t('commandPalette.exportJson'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) exportAsJSON(p); } },
-    { id: 'a-toggle-grid', name: $t('commandPalette.toggleGrid'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', bubbles: true })); } },
-    { id: 'a-toggle-snap', name: $t('commandPalette.toggleSnap'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { snapEnabled.update(v => !v); } },
-    { id: 'a-zoom-fit', name: $t('commandPalette.zoomToFit'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true })); } },
-    { id: 'a-undo', name: $t('commandPalette.undo'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => undo() },
-    { id: 'a-redo', name: $t('commandPalette.redo'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => redo() },
-    { id: 'a-settings', name: $t('settings.title'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { window.dispatchEvent(new CustomEvent('open-settings')); } },
-    { id: 'a-new-project', name: $t('library.new'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => goto(base || '/') },
-    { id: 'a-toggle-3d', name: $t('commandPalette.toggle2d3d'), icon: '⚡', category: 'action', categoryLabel: `⚡ ${$t('commandPalette.action')}`, action: () => { viewMode.update(m => m === '2d' ? '3d' : '2d'); } },
+    { id: 'a-export-svg', name: $t('commandPalette.exportSvg'), icon: 'file-down', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) exportAsSVG(p, get(locale)); } },
+    { id: 'a-export-dxf', name: $t('commandPalette.exportDxf'), icon: 'file-down', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) exportDXF(p, get(locale)); } },
+    { id: 'a-export-pdf', name: $t('commandPalette.exportPdf'), icon: 'file-down', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) exportPDF(p); } },
+    { id: 'a-export-png', name: $t('commandPalette.exportPng'), icon: 'image', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) void exportPNGWithFeedback(p); } },
+    { id: 'a-export-json', name: $t('commandPalette.exportJson'), icon: 'file-down', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { const p = get(currentProject); if (p) exportAsJSON(p); } },
+    { id: 'a-toggle-grid', name: $t('commandPalette.toggleGrid'), icon: 'layout-grid', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', bubbles: true })); } },
+    { id: 'a-toggle-snap', name: $t('commandPalette.toggleSnap'), icon: 'magnet', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { snapEnabled.update(v => !v); } },
+    { id: 'a-zoom-fit', name: $t('commandPalette.zoomToFit'), icon: 'zoom-in', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true })); } },
+    { id: 'a-undo', name: $t('commandPalette.undo'), icon: 'undo-2', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => undo() },
+    { id: 'a-redo', name: $t('commandPalette.redo'), icon: 'redo-2', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => redo() },
+    { id: 'a-settings', name: $t('settings.title'), icon: 'settings', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { window.dispatchEvent(new CustomEvent('open-settings')); } },
+    { id: 'a-new-project', name: $t('library.new'), icon: 'plus', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => goto(base || '/') },
+    { id: 'a-toggle-3d', name: $t('commandPalette.toggle2d3d'), icon: 'box', category: 'action', categoryLabel: `${$t('commandPalette.action')}`, action: () => { viewMode.update(m => m === '2d' ? '3d' : '2d'); } },
   ]);
 
   const furnitureItems: ResultItem[] = $derived(furnitureCatalog.map(f => ({
@@ -63,7 +64,7 @@
     name: furnitureName(f.id, $locale),
     icon: f.icon,
     category: 'furniture' as const,
-    categoryLabel: `🪑 ${catalogCategoryLabels[f.category] ? $t(catalogCategoryLabels[f.category]) : f.category}`,
+    categoryLabel: `${catalogCategoryLabels[f.category] ? $t(catalogCategoryLabels[f.category]) : f.category}`,
     searchAliases: [f.name, f.category, f.id],
     action: () => {
       selectedTool.set('furniture');
@@ -133,7 +134,7 @@
     >
       <!-- Search input -->
       <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-200">
-        <span class="text-gray-400 text-lg">🔍</span>
+        <span class="text-gray-400 text-lg"><AppIcon name="zoom-in" size={16} /></span>
         <input
           bind:this={inputEl}
           bind:value={query}
@@ -170,7 +171,7 @@
               role="option"
               aria-selected={i === selectedIndex}
             >
-              <span class="text-base w-6 text-center flex-shrink-0">{item.icon}</span>
+              <span class="flex w-6 flex-shrink-0 justify-center text-muted"><AppIcon name={item.icon} size={16} /></span>
               <span class="flex-1 truncate">{item.name}</span>
               <span class="text-xs text-gray-400 flex-shrink-0">{item.categoryLabel}</span>
             </button>

@@ -31,7 +31,7 @@ test('Portuguese camera controls capture full-size images and release the previe
   const checked = await xray.isChecked();
   await xray.click(); await expect(xray).toBeChecked({ checked: !checked });
   const pending = page.waitForEvent('download');
-  await viewer.getByRole('button', { name: '📸 Capturar 1920×1080', exact: true }).click();
+  await viewer.getByRole('button', { name: 'Capturar 1920×1080', exact: true }).click();
   const bytes = await readFile((await (await pending).path())!);
   expect(bytes.subarray(1, 4).toString()).toBe('PNG');
   expect(bytes.readUInt32BE(16)).toBe(1920); expect(bytes.readUInt32BE(20)).toBe(1080);

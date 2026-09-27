@@ -17,7 +17,7 @@ test('Portuguese elevation navigation preserves walls and openings', async ({ pa
   }
   const original = await exported();
   await page.getByRole('button', { name: 'Salvar', exact: true }).press('l');
-  await page.getByRole('button', { name: '─ Parede 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Parede 1', exact: true }).click();
   await page.getByRole('button', { name: 'Elevação', exact: true }).first().click();
   await expect(page.getByLabel('Tela de edição da elevação da parede', { exact: true })).toBeVisible();
   await expect(page.getByText(`Parede 1 de ${original.walls.length}`, { exact: true })).toBeVisible();

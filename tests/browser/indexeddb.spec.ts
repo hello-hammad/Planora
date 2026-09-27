@@ -40,7 +40,7 @@ test('legacy migration preserves images and history, then saves beyond the old q
   await expect(page.getByTitle('Click to rename', { exact: true })).toHaveText(large.name);
   // The title updates before the large IndexedDB write commits. Test reload
   // persistence after the same completion signal a user sees, not during Saving.
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await page.reload();
   await expect(page.getByTitle('Click to rename', { exact: true })).toHaveText(large.name);
@@ -90,7 +90,7 @@ test('late writes from an older release produce a visible recovery copy', async 
   await page.getByRole('textbox', { name: 'Project name' }).fill('Current release edit');
   await page.getByRole('textbox', { name: 'Project name' }).press('Enter');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   const older = await context.newPage(); await older.goto('/');
   await older.evaluate(source => localStorage.setItem('floorplan_projects', JSON.stringify({ [source.id]: JSON.stringify({ ...source, name: 'Older release edit' }) })), source);
   await page.getByRole('link', { name: 'Projects', exact: true }).click();

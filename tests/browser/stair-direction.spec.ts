@@ -34,7 +34,7 @@ for (const kind of ['straight','l-shaped','u-shaped','spiral']) {
     await (await chooser).setFiles({ name: 'stair.json',mimeType: 'application/json',buffer: Buffer.from(JSON.stringify(plan)) });
     await expect(page.getByRole('button', { name: plan.name,exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Save',exact: true }).press('l');
-    await page.getByRole('button', { name: '🪜 Stair 1 (up)',exact: true }).click();
+    await page.getByRole('button', { name: 'Stair 1 (up)',exact: true }).click();
     const heads = () => page.evaluate(() => (window as any).__arrowheads);
     await expect.poll(async () => (await heads())?.length).toBe(kind === 'u-shaped' ? 2 : 1);
     const up = await heads();

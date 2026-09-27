@@ -251,7 +251,47 @@ export interface CustomModelDef {
   sourceUrl?: string;
 }
 
+/** House-wide trim finishes (colours) applied in 3D. */
+export interface ProjectFinishes {
+  doors?: string;
+  windowFrames?: string;
+  ceiling?: string;
+}
+
+export type BoardItemKind = 'wall' | 'floor' | 'furniture' | 'photo' | 'color' | 'note';
+
+/** One pinned idea on a mood board. */
+export interface BoardItem {
+  id: string;
+  kind: BoardItemKind;
+  label: string;
+  /** Colour for wall/color items (and a wall texture's tint). */
+  color?: string;
+  /** Wall texture id (see wallColors) for wall items. */
+  texture?: string;
+  /** Floor material id for floor items. */
+  materialId?: string;
+  /** Catalog id for furniture items. */
+  catalogId?: string;
+  /** Compressed JPEG/PNG data URL for photo items. */
+  dataUrl?: string;
+  /** Free text: the note body for note items, a caption for everything else. */
+  note?: string;
+}
+
+/** A mood board: finishes, furniture, photos and notes collected for a room or idea. */
+export interface Board {
+  id: string;
+  name: string;
+  /** Room this board belongs to, so its finishes can be applied in one step. */
+  roomId?: string;
+  items: BoardItem[];
+  createdAt: string;
+}
+
 export interface Project {
+  finishes?: ProjectFinishes;
+  boards?: Board[];
   customModels?: CustomModelDef[];
   attachmentNames?: Record<string, string>;
   projectPackage?: ProjectPackageState;

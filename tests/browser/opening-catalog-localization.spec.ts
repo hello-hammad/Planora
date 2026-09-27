@@ -34,7 +34,7 @@ test('Portuguese opening catalog places original door and window types', async (
   expect(saved.doors[0].wallId).toBe(saved.walls[0].id);
   expect(saved.windows[0].wallId).toBe(saved.walls[0].id);
   await page.getByRole('button', { name: 'Alternar painel de camadas', exact: true }).click();
-  await page.getByRole('button', { name: '🚪 Porta simples 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Porta simples 1', exact: true }).click();
   const width = page.getByRole('spinbutton', { name: 'Largura (cm)', exact: true });
   await width.fill('95.25'); await width.press('Tab');
   await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('french');
@@ -44,7 +44,7 @@ test('Portuguese opening catalog places original door and window types', async (
   await page.getByRole('button', { name: 'Para fora', exact: true }).click();
   for (const label of ['Direita', 'Para fora']) await expect(page.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-pressed', 'true');
   for (const label of ['Esquerda', 'Para dentro']) await expect(page.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-pressed', 'false');
-  await page.getByRole('button', { name: '🪟 Janela fixa 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Janela fixa 1', exact: true }).click();
   const sill = page.getByRole('spinbutton', { name: 'Altura do peitoril (cm)', exact: true });
   await sill.fill('85.5'); await sill.press('Tab');
   await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('casement');

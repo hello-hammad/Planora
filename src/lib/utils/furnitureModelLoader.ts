@@ -113,7 +113,7 @@ export function createPlacedFurnitureModel(item: FurnitureItem, onLoaded?: (mode
   const custom = project?.customModels?.find(model => model.id === item.customModelId);
   if (catalog?.symbol && !item.customModelId) return null;
   const definition: FurnitureDef = {
-    id: item.catalogId, name: custom?.name ?? 'Unknown furniture', category: 'Unknown', icon: '🪑',
+    id: item.catalogId, name: custom?.name ?? 'Unknown furniture', category: 'Unknown', icon: 'armchair',
     ...catalog,
     width: item.width ?? custom?.width ?? catalog?.width ?? 50,
     depth: item.depth ?? custom?.depth ?? catalog?.depth ?? 50,

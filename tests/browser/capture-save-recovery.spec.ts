@@ -35,7 +35,7 @@ test('downloaded capture survives initial save failure and retries without reimp
   await page.evaluate(() => { (window as any).failCaptureSave = false; localStorage.setItem('captureSaveRecovered', 'true'); });
   await alert.getByRole('button', { name: 'Tentar salvar novamente', exact: true }).click();
   await expect(alert).toHaveCount(0);
-  await expect(page.getByText('Salvo ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   const stored = await savedProjects(page);
   expect(Object.keys(stored)).toEqual([backup.id]);
   expect(stored[backup.id].floors).toEqual(backup.floors);

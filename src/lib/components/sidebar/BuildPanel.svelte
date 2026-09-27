@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { furnitureName } from '$lib/i18n/furnitureNames';
   import { t, locale } from '$lib/i18n';
   import { entourageLabels } from '$lib/i18n/entourageLabels';
@@ -18,10 +19,15 @@
   import type { FurnitureDef } from '$lib/utils/furnitureCatalog';
   import FurnitureThumbnail from './FurnitureThumbnail.svelte';
   import CustomModelPanel from './CustomModelPanel.svelte';
+  import FinishesPanel from './FinishesPanel.svelte';
+  import BoardsPanel from './BoardsPanel.svelte';
+  import AssistantChat from '$lib/components/ai/AssistantChat.svelte';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, roomPlanImportOptions, validateRoomPlan, ORTHO_VERSION } from '$lib/utils/roomplanImport';
   import { currentProject } from '$lib/stores/project';
 
-  let { initialTab = 'draw' }: { initialTab?: 'draw' | 'rooms' | 'objects' } = $props();
+  type PanelTab = 'draw' | 'rooms' | 'objects' | 'finishes' | 'boards' | 'assistant';
+  let { initialTab = 'draw', onClose }: { initialTab?: PanelTab; onClose?: () => void } = $props();
+  let panelRoot = $state<HTMLDivElement>();
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -29,7 +35,7 @@
   let importError = $state<string | null>(null);
 
   // AreaSummaryPanel moved to top bar dialog
-  let activeTab = $state<'draw' | 'rooms' | 'objects'>('draw');
+  let activeTab = $state<PanelTab>('draw');
   $effect(() => { activeTab = initialTab; });
   let constructionOpen = $state(true);
   let selectedCategory = $state<string>('All');
@@ -325,7 +331,7 @@
   }
 
   function updateHoverPos(e: MouseEvent) {
-    const sidebarRight = 256; // w-64 = 16rem = 256px
+    const sidebarRight = panelRoot?.getBoundingClientRect().right ?? 256;
     const viewportW = window.innerWidth;
     const tooltipW = 220;
     // Position to the right of sidebar, or left if no space
@@ -353,262 +359,214 @@
   };
 </script>
 
-<div class="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
-  <!-- Tabs -->
-  <div class="flex border-b border-gray-200">
-    <button
-      class="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wide {activeTab === 'draw' ? 'text-slate-800 border-b-2 border-blue-500 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}"
-      onclick={() => activeTab = 'draw'}
-    >{$t('buildTools.build')}</button>
-    <button
-      class="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wide {activeTab === 'rooms' ? 'text-slate-800 border-b-2 border-blue-500 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}"
-      onclick={() => activeTab = 'rooms'}
-    >{$t('buildTools.rooms')}</button>
-    <button
-      class="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wide {activeTab === 'objects' ? 'text-slate-800 border-b-2 border-blue-500 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}"
-      onclick={() => activeTab = 'objects'}
-    >{$t('buildTools.objects')}</button>
+{#snippet tile(label: string, path: string, active: boolean, onclick: () => void, key?: string, help?: string)}
+  <button
+    type="button"
+    class="relative flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-[10px] border px-1 text-center text-[11.5px] leading-tight transition-colors {active ? 'border-walnut bg-walnut-tint font-bold text-walnut-dark shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white font-medium text-charcoal hover:border-[#B89A86] hover:bg-hover'}"
+    aria-pressed={active}
+    title={help ? `${label} — ${help}` : label}
+    {onclick}
+  >
+    {#if key}<span class="absolute right-1.5 top-1.5 rounded bg-ivory px-1 text-[9.5px] font-semibold leading-4 text-muted" aria-hidden="true">{key}</span>{/if}
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={path} /></svg>
+    <span class="max-w-full truncate">{label}{#if key}<span class="sr-only"> {key}</span>{/if}</span>
+    {#if help}<span class="sr-only">{help}</span>{/if}
+  </button>
+{/snippet}
+
+{#snippet sectionTitle(text: string)}
+  <h3 class="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{text}</h3>
+{/snippet}
+
+<div bind:this={panelRoot} class="w-72 max-md:w-64 shrink-0 bg-cream flex flex-col h-full overflow-hidden text-charcoal">
+  <!-- Header: the side rail picks the section; this names it -->
+  <div class="flex items-center justify-between gap-2 px-4 pt-4 pb-3">
+    <h2 class="text-[17px] font-bold tracking-tight">
+      {activeTab === 'draw' ? $t('buildTools.build') : activeTab === 'rooms' ? $t('buildTools.rooms') : activeTab === 'objects' ? $t('buildTools.objects') : activeTab === 'finishes' ? 'Finishes' : activeTab === 'boards' ? 'Boards' : 'AI assistant'}
+    </h2>
+    {#if onClose}
+      <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-charcoal" aria-label="Collapse panel" title="Collapse panel" onclick={onClose}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" /></svg>
+      </button>
+    {/if}
   </div>
 
-  <div class="flex-1 overflow-y-auto p-3">
+  {#if activeTab === 'assistant'}
+    <div class="min-h-0 flex-1 px-4 pb-4"><AssistantChat /></div>
+  {:else}
+  <div class="flex-1 overflow-y-auto px-4 pb-4">
     {#if activeTab === 'draw'}
-      <div class="space-y-1">
-        <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('buildTools.tools')}</h3>
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'select' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
-          onclick={() => setTool('select')}
-        >
-          <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {currentTool === 'select' ? 'bg-blue-100' : ''}">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
+      <div class="space-y-5">
+        <section>
+          {@render sectionTitle($t('buildTools.tools'))}
+          <div class="grid grid-cols-3 gap-2">
+            {@render tile($t('buildTools.select'), 'M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3zM13 13l6 6', currentTool === 'select', () => setTool('select'), 'V', $t('buildTools.selectHelp'))}
+            {@render tile($t('buildTools.wall'), 'M3 8h18v8H3zM7 8v8M12 8v8M17 8v8', currentTool === 'wall', () => setTool('wall'), 'W', $t('buildTools.wallHelp'))}
           </div>
-          <div class="text-left">
-            <div class="font-medium">{$t('buildTools.select')} <span class="text-gray-400 text-xs ml-1">V</span></div>
-            <div class="text-xs text-gray-400">{$t('buildTools.selectHelp')}</div>
-          </div>
-        </button>
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'wall' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
-          onclick={() => setTool('wall')}
-        >
-          <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {currentTool === 'wall' ? 'bg-blue-100' : ''}">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="1"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/></svg>
-          </div>
-          <div class="text-left">
-            <div class="font-medium">{$t('buildTools.wall')} <span class="text-gray-400 text-xs ml-1">W</span></div>
-            <div class="text-xs text-gray-400">{$t('buildTools.wallHelp')}</div>
-          </div>
-        </button>
+        </section>
 
-        <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2 mt-3">{$t('buildTools.structure')}</h3>
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {isPlacingStair ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
-          onclick={onPlaceStair}
-        >
-          <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {isPlacingStair ? 'bg-blue-100' : ''}">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 5h-5V2h-3v6h-4V5H7v6H2v3h5v3h3v-3h4v3h3v-6h5z"/></svg>
+        <section>
+          {@render sectionTitle($t('buildTools.structure'))}
+          <div class="grid grid-cols-3 gap-2">
+            {@render tile($t('buildTools.stairs'), 'M4 20h4v-4h4v-4h4V8h4V4', isPlacingStair, onPlaceStair, undefined, $t('buildTools.stairsHelp'))}
+            {@render tile($t('buildTools.round'), 'M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM7.8 7.8l8.4 8.4M16.2 7.8l-8.4 8.4', isPlacingColumn, () => onPlaceColumn('round'))}
+            {@render tile($t('buildTools.square'), 'M6 6h12v12H6zM6 6l12 12M18 6L6 18', isPlacingColumn, () => onPlaceColumn('square'))}
           </div>
-          <div class="text-left">
-            <div class="font-medium">{$t('buildTools.stairs')}</div>
-            <div class="text-xs text-gray-400">{$t('buildTools.stairsHelp')}</div>
-          </div>
-        </button>
+        </section>
 
-        <div class="flex gap-2">
+        <section>
+          {@render sectionTitle($t('buildTools.annotate'))}
+          <div class="grid grid-cols-3 gap-2">
+            {@render tile($t('buildTools.text'), 'M4 7V4h16v3M12 4v16M8 20h8', currentTool === 'text', () => setTool('text'), undefined, $t('buildTools.textHelp'))}
+            {@render tile($t('buildTools.dimension'), 'M3 12h18M3 8v8M21 8v8M7 10l-2 2 2 2M17 10l2 2-2 2', currentTool === 'annotate', () => setTool('annotate'), undefined, $t('buildTools.dimensionHelp'))}
+            {@render tile($t('buildTools.measure'), 'M2 12h5l2-7 4 14 2-7h7', currentTool === 'measure', () => setTool('measure'), undefined, $t('buildTools.measureHelp'))}
+          </div>
+        </section>
+
+        <section>
+          {@render sectionTitle($t('buildTools.import'))}
+          <div class="space-y-2">
+            <button type="button" class="flex w-full items-center gap-3 rounded-[10px] border border-line bg-white px-3 py-2.5 text-left text-sm transition-colors hover:border-[#B89A86] hover:bg-hover" onclick={onImportImage}>
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-walnut-tint text-walnut">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+              </span>
+              <span class="min-w-0">
+                <span class="block font-semibold">{$t('buildTools.image')}</span>
+                <span class="block truncate text-xs text-muted">{$t('buildTools.imageHelp')}</span>
+              </span>
+            </button>
+            <button type="button" class="flex w-full items-center gap-3 rounded-[10px] border border-line bg-white px-3 py-2.5 text-left text-sm transition-colors hover:border-[#B89A86] hover:bg-hover" onclick={onImportRoomPlan}>
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sage-tint text-sage-ink">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </span>
+              <span class="min-w-0">
+                <span class="block font-semibold">{$t('buildTools.roomplan')}</span>
+                <span class="block truncate text-xs text-muted">{$t('buildTools.roomplanHelp')}</span>
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <section>
           <button
-            class="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors {isPlacingColumn ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
-            onclick={() => onPlaceColumn('round')}
+            type="button"
+            class="mb-2 flex w-full items-center justify-between"
+            aria-expanded={constructionOpen}
+            onclick={() => constructionOpen = !constructionOpen}
           >
-            <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {isPlacingColumn ? 'bg-blue-100' : ''}">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6"/><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-            </div>
-            <div class="text-left">
-              <div class="font-medium text-xs">{$t('buildTools.round')}</div>
-            </div>
+            <h3 class="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{$t('layers.doors')}</h3>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted transition-transform {constructionOpen ? '' : '-rotate-90'}" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
           </button>
-          <button
-            class="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors {isPlacingColumn ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
-            onclick={() => onPlaceColumn('square')}
-          >
-            <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {isPlacingColumn ? 'bg-blue-100' : ''}">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+
+          {#if constructionOpen}
+            <div class="mb-4 grid grid-cols-2 gap-2">
+              {#each doorCatalog as dc}
+                {@const on = currentTool === 'door' && selectedDoorType === dc.type}
+                <button
+                  class="flex flex-col items-center gap-1 rounded-[10px] border p-2.5 transition-colors cursor-grab active:cursor-grabbing {on ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
+                  onclick={() => setDoorType(dc.type)}
+                  draggable="true"
+                  ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'door'); e.dataTransfer?.setData('application/o3d-id', dc.type); }}
+                >
+                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-walnut-tint text-walnut">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{dc.icon}"/></svg>
+                  </div>
+                  <span class="text-xs font-semibold text-charcoal">{dc.name}</span>
+                  <span class="text-[10px] text-muted">{dc.desc}</span>
+                </button>
+              {/each}
             </div>
-            <div class="text-left">
-              <div class="font-medium text-xs">{$t('buildTools.square')}</div>
+
+            {@render sectionTitle($t('layers.windows'))}
+            <div class="grid grid-cols-2 gap-2">
+              {#each windowCatalog as wc}
+                {@const on = currentTool === 'window' && selectedWindowType === wc.type}
+                <button
+                  class="flex flex-col items-center gap-1 rounded-[10px] border p-2.5 transition-colors cursor-grab active:cursor-grabbing {on ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
+                  onclick={() => setWindowType(wc.type)}
+                  draggable="true"
+                  ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'window'); e.dataTransfer?.setData('application/o3d-id', wc.type); }}
+                >
+                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sage-tint text-sage-ink">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+                  </div>
+                  <span class="text-xs font-semibold text-charcoal">{wc.name}</span>
+                  <span class="text-[10px] text-muted">{wc.desc}</span>
+                </button>
+              {/each}
             </div>
-          </button>
-        </div>
-
-        <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2 mt-3">{$t('buildTools.annotate')}</h3>
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'text' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
-          onclick={() => setTool('text')}
-        >
-          <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {currentTool === 'text' ? 'bg-blue-100' : ''}">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg>
-          </div>
-          <div class="text-left">
-            <div class="font-medium">{$t('buildTools.text')}</div>
-            <div class="text-xs text-gray-400">{$t('buildTools.textHelp')}</div>
-          </div>
-        </button>
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'annotate' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
-          onclick={() => setTool('annotate')}
-        >
-          <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {currentTool === 'annotate' ? 'bg-blue-100' : ''}">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><line x1="16" y1="5" x2="22" y2="5"/><line x1="19" y1="2" x2="19" y2="8"/><line x1="3" y1="12" x2="12" y2="12"/></svg>
-          </div>
-          <div class="text-left">
-            <div class="font-medium">{$t('buildTools.dimension')}</div>
-            <div class="text-xs text-gray-400">{$t('buildTools.dimensionHelp')}</div>
-          </div>
-        </button>
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'measure' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
-          onclick={() => setTool('measure')}
-        >
-          <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {currentTool === 'measure' ? 'bg-blue-100' : ''}">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h5l2-7 4 14 2-7h7"/></svg>
-          </div>
-          <div class="text-left">
-            <div class="font-medium">{$t('buildTools.measure')}</div>
-            <div class="text-xs text-gray-400">{$t('buildTools.measureHelp')}</div>
-          </div>
-        </button>
-
-        <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2 mt-3">{$t('buildTools.import')}</h3>
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-gray-50 text-gray-700"
-          onclick={onImportImage}
-        >
-          <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-          </div>
-          <div class="text-left">
-            <div class="font-medium">{$t('buildTools.image')}</div>
-            <div class="text-xs text-gray-400">{$t('buildTools.imageHelp')}</div>
-          </div>
-        </button>
-        <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-gray-50 text-gray-700"
-          onclick={onImportRoomPlan}
-        >
-          <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          </div>
-          <div class="text-left">
-            <div class="font-medium">{$t('buildTools.roomplan')}</div>
-            <div class="text-xs text-gray-400">{$t('buildTools.roomplanHelp')}</div>
-          </div>
-        </button>
-
-        <button
-          class="w-full flex items-center justify-between px-1 py-2 mt-3"
-          onclick={() => constructionOpen = !constructionOpen}
-        >
-          <h3 class="text-xs font-semibold text-gray-400 uppercase">{$t('layers.doors')}</h3>
-          <span class="text-gray-400 text-xs">{constructionOpen ? '▼' : '▶'}</span>
-        </button>
-
-        {#if constructionOpen}
-          <div class="grid grid-cols-2 gap-2 mb-3">
-            {#each doorCatalog as dc}
-              <button
-                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing {currentTool === 'door' && selectedDoorType === dc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
-                onclick={() => setDoorType(dc.type)}
-                draggable="true"
-                ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'door'); e.dataTransfer?.setData('application/o3d-id', dc.type); }}
-              >
-                <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{dc.icon}"/></svg>
-                </div>
-                <span class="text-xs font-medium text-gray-600">{dc.name}</span>
-                <span class="text-[10px] text-gray-400">{dc.desc}</span>
-              </button>
-            {/each}
-          </div>
-
-          <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('layers.windows')}</h3>
-          <div class="grid grid-cols-2 gap-2">
-            {#each windowCatalog as wc}
-              <button
-                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing {currentTool === 'window' && selectedWindowType === wc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
-                onclick={() => setWindowType(wc.type)}
-                draggable="true"
-                ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'window'); e.dataTransfer?.setData('application/o3d-id', wc.type); }}
-              >
-                <div class="w-9 h-9 rounded-lg bg-cyan-50 flex items-center justify-center">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0e7490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
-                </div>
-                <span class="text-xs font-medium text-gray-600">{wc.name}</span>
-                <span class="text-[10px] text-gray-400">{wc.desc}</span>
-              </button>
-            {/each}
-          </div>
-        {/if}
+          {/if}
+        </section>
       </div>
 
     {:else if activeTab === 'rooms'}
       <div class="space-y-2">
-        <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('roomChoices.presets')}</h3>
-        <p class="text-xs text-gray-400 mb-3">{$t('roomChoices.presetsHelp')}</p>
+        {@render sectionTitle($t('roomChoices.presets'))}
+        <p class="mb-3 text-xs text-muted">{$t('roomChoices.presetsHelp')}</p>
         <div class="grid grid-cols-2 gap-2">
           {#each roomPresets as preset}
             <button
-              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-grab active:cursor-grabbing"
+              class="flex flex-col items-center gap-1.5 rounded-[10px] border border-line bg-white p-3 transition-colors hover:border-walnut hover:bg-walnut-tint cursor-grab active:cursor-grabbing"
               onclick={() => onPresetClick(preset.id)}
               draggable="true"
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room'); e.dataTransfer?.setData('application/o3d-id', preset.id); }}
             >
-              <div class="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center text-2xl font-mono">{preset.icon}</div>
-              <span class="text-xs font-medium text-gray-600">{roomPresetLabels[preset.id] ? $t(roomPresetLabels[preset.id]) : preset.name}</span>
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg border-[1.5px] border-charcoal/80 bg-[#F2E6D8] font-mono text-2xl text-charcoal">{preset.icon}</div>
+              <span class="text-xs font-semibold text-charcoal">{roomPresetLabels[preset.id] ? $t(roomPresetLabels[preset.id]) : preset.name}</span>
             </button>
           {/each}
         </div>
 
-        <hr class="my-3 border-gray-200" />
+        <hr class="my-4 border-line" />
 
-        <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('roomChoices.templates')}</h3>
-        <p class="text-xs text-gray-400 mb-3">{$t('roomChoices.templatesHelp')}</p>
+        {@render sectionTitle($t('roomChoices.templates'))}
+        <p class="mb-3 text-xs text-muted">{$t('roomChoices.templatesHelp')}</p>
         <div class="grid grid-cols-2 gap-2">
           {#each roomTemplates as tmpl}
             <button
-              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-green-300 hover:bg-green-50 transition-colors cursor-grab active:cursor-grabbing"
+              class="flex flex-col items-center gap-1.5 rounded-[10px] border border-line bg-white p-3 transition-colors hover:border-sage hover:bg-sage-tint cursor-grab active:cursor-grabbing"
               onclick={() => onPresetClick(tmpl.presetId, tmpl.name)}
               draggable="true"
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room-template'); e.dataTransfer?.setData('application/o3d-id', tmpl.name); }}
             >
-              <div class="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center text-lg">
-                {#if tmpl.name === 'Living Room'}🛋️
-                {:else if tmpl.name === 'Bedroom'}🛏️
-                {:else if tmpl.name === 'Kitchen'}🍳
-                {:else if tmpl.name === 'Bathroom'}🛁
-                {:else if tmpl.name === 'Office'}🖥️
-                {:else if tmpl.name === 'Dining Room'}🍽️
-                {:else}🏠
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-sage-tint text-lg">
+                {#if tmpl.name === 'Living Room'}<AppIcon name="sofa" size={16} />
+                {:else if tmpl.name === 'Bedroom'}<AppIcon name="bed-double" size={16} />
+                {:else if tmpl.name === 'Kitchen'}<AppIcon name="cooking-pot" size={16} />
+                {:else if tmpl.name === 'Bathroom'}<AppIcon name="bath" size={16} />
+                {:else if tmpl.name === 'Office'}<AppIcon name="monitor" size={16} />
+                {:else if tmpl.name === 'Dining Room'}<AppIcon name="utensils" size={16} />
+                {:else}<AppIcon name="house" size={16} />
                 {/if}
               </div>
-              <span class="text-xs font-medium text-gray-600">{roomTemplateLabels[tmpl.name] ? $t(roomTemplateLabels[tmpl.name]) : tmpl.name}</span>
-              <span class="text-[10px] text-gray-400">{$t(tmpl.furniture.length === 1 ? 'roomChoices.item' : 'roomChoices.items', { count: tmpl.furniture.length })}</span>
+              <span class="text-xs font-semibold text-charcoal">{roomTemplateLabels[tmpl.name] ? $t(roomTemplateLabels[tmpl.name]) : tmpl.name}</span>
+              <span class="text-[10px] text-muted">{$t(tmpl.furniture.length === 1 ? 'roomChoices.item' : 'roomChoices.items', { count: tmpl.furniture.length })}</span>
             </button>
           {/each}
         </div>
       </div>
 
+    {:else if activeTab === 'finishes'}
+      <FinishesPanel />
+
+    {:else if activeTab === 'boards'}
+      <BoardsPanel />
+
     {:else if activeTab === 'objects'}
-      <div class="space-y-2">
+      <div class="space-y-3">
         <CustomModelPanel />
         <!-- Search with clear button and result count -->
         <div class="relative">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4" /></svg>
           <input
             type="text"
             placeholder={$t('objectControls.search')} aria-label={$t('objectControls.search')}
-            class="w-full px-3 py-2 pr-8 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none"
+            class="h-10 w-full rounded-[10px] border border-line bg-white pl-9 pr-8 text-sm text-charcoal outline-none placeholder:text-muted focus:border-walnut focus:ring-2 focus:ring-walnut/15"
             bind:value={search}
           />
           {#if search}
             <button
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 w-5 h-5 flex items-center justify-center rounded-full hover:bg-gray-100"
+              class="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:bg-hover hover:text-charcoal"
               onclick={() => search = ''}
               title={$t('objectControls.clear')}
             >
@@ -617,22 +575,21 @@
           {/if}
         </div>
         {#if search}
-          <div class="text-[10px] text-gray-400 px-1">{$t(filtered.length === 1 ? 'objectControls.result' : 'objectControls.results', { count: filtered.length, query: search })}</div>
+          <div class="px-1 text-[11px] text-muted">{$t(filtered.length === 1 ? 'objectControls.result' : 'objectControls.results', { count: filtered.length, query: search })}</div>
         {/if}
         <!-- Category filter -->
-        <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+        <div class="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
           <button
-            class="px-2 py-0.5 rounded-full text-[10px] font-medium {selectedCategory === 'All' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            class="h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors {selectedCategory === 'All' ? 'border-walnut bg-walnut text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
             onclick={() => selectedCategory = 'All'}
           >{$t('objectControls.all')}</button>
           <button
-            class="px-2 py-0.5 rounded-full text-[10px] font-medium {selectedCategory === 'Favorites' ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            class="h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors {selectedCategory === 'Favorites' ? 'border-terracotta-ink bg-terracotta-ink text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
             onclick={() => selectedCategory = 'Favorites'}
-          >♥ {$t('objectControls.favorites')}{favoriteIds.length ? ` (${favoriteIds.length})` : ''}</button>
+          ><AppIcon name="heart" size={16} /> {$t('objectControls.favorites')}{favoriteIds.length ? ` (${favoriteIds.length})` : ''}</button>
           {#each furnitureCategories as cat}
             <button
-              class="px-2 py-0.5 rounded-full text-[10px] font-medium {selectedCategory === cat ? 'text-white' : 'text-gray-600 hover:bg-gray-200'}"
-              style={selectedCategory === cat ? `background-color: ${categoryColors[cat] ?? '#6b7280'}` : 'background-color: #f3f4f6'}
+              class="h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors {selectedCategory === cat ? 'border-walnut bg-walnut text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
               onclick={() => selectedCategory = cat}
             >{catalogCategoryLabels[cat] ? $t(catalogCategoryLabels[cat]) : cat}</button>
           {/each}
@@ -641,12 +598,12 @@
         <!-- Recent Items -->
         {#if !search && selectedCategory === 'All' && recentItems.length > 0}
           <div class="mt-1">
-            <h4 class="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">{$t('objectControls.recent')}</h4>
+            <h4 class="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{$t('objectControls.recent')}</h4>
             <div class="grid grid-cols-2 gap-2">
               {#each recentItems as item}
                 <div class="relative">
                   <button
-                    class="w-full h-full flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing {currentPlacing === item.id ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-300' : 'border-gray-100 hover:border-blue-300 hover:bg-blue-50'}"
+                    class="flex h-full w-full flex-col items-center gap-1 rounded-[10px] border p-2.5 transition-colors cursor-grab active:cursor-grabbing {currentPlacing === item.id ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
                     onclick={() => onFurnitureClick(item)}
                     draggable="true"
                     ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'furniture'); e.dataTransfer?.setData('application/o3d-id', item.id); }}
@@ -654,30 +611,30 @@
                     onmousemove={onItemMouseMove}
                     onmouseleave={onItemMouseLeave}
                   >
-                    <div class="w-10 h-10"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
-                    <span class="text-[10px] font-medium text-gray-600 leading-tight text-center">{furnitureName(item.id, $locale)}</span>
+                    <div class="h-10 w-10"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
+                    <span class="text-center text-[10.5px] font-semibold leading-tight text-charcoal">{furnitureName(item.id, $locale)}</span>
                   </button>
                   <button
-                    class="absolute top-1 right-1 text-[12px] leading-none cursor-pointer {favoriteIds.includes(item.id) ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}"
+                    class="absolute right-1.5 top-1 cursor-pointer text-[13px] leading-none {favoriteIds.includes(item.id) ? 'text-terracotta-ink' : 'text-line hover:text-terracotta'}"
                     onclick={() => toggleFavorite(item.id)}
                     aria-label={$t(favoriteIds.includes(item.id) ? 'objectControls.remove' : 'objectControls.add', { name: furnitureName(item.id, $locale) })}
                     aria-pressed={favoriteIds.includes(item.id)}
                     title={$t(favoriteIds.includes(item.id) ? 'objectControls.removeHint' : 'objectControls.addHint')}
-                  >{favoriteIds.includes(item.id) ? '♥' : '♡'}</button>
+                  ><AppIcon name="heart" size={13} fill={favoriteIds.includes(item.id) ? 'currentColor' : 'none'} /></button>
                 </div>
               {/each}
             </div>
           </div>
-          <hr class="border-gray-100" />
+          <hr class="border-line" />
         {/if}
 
         <!-- Catalog grid -->
-        <div class="grid grid-cols-2 gap-2 mt-2">
+        <div class="mt-2 grid grid-cols-2 gap-2">
           {#each filtered as item}
             {@const s = search.toLowerCase()}
             <div class="relative">
               <button
-                class="w-full h-full flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing {currentPlacing === item.id ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-300' : 'border-gray-100 hover:border-blue-300 hover:bg-blue-50'}"
+                class="flex h-full w-full flex-col items-center gap-1 rounded-[10px] border p-3 transition-colors cursor-grab active:cursor-grabbing {currentPlacing === item.id ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
                 onclick={() => onFurnitureClick(item)}
                 draggable="true"
                 ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'furniture'); e.dataTransfer?.setData('application/o3d-id', item.id); }}
@@ -685,77 +642,78 @@
                 onmousemove={onItemMouseMove}
                 onmouseleave={onItemMouseLeave}
               >
-                <div class="w-12 h-12"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
+                <div class="h-12 w-12"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
                 {#if s && furnitureName(item.id, $locale).toLowerCase().includes(s)}
                   {@const idx = furnitureName(item.id, $locale).toLowerCase().indexOf(s)}
-                  <span class="text-xs font-medium text-gray-600">{furnitureName(item.id, $locale).slice(0, idx)}<mark class="bg-yellow-200 text-gray-800 rounded-sm px-0.5">{furnitureName(item.id, $locale).slice(idx, idx + s.length)}</mark>{furnitureName(item.id, $locale).slice(idx + s.length)}</span>
+                  <span class="text-xs font-semibold text-charcoal">{furnitureName(item.id, $locale).slice(0, idx)}<mark class="rounded-sm bg-wood px-0.5 text-charcoal">{furnitureName(item.id, $locale).slice(idx, idx + s.length)}</mark>{furnitureName(item.id, $locale).slice(idx + s.length)}</span>
                 {:else}
-                  <span class="text-xs font-medium text-gray-600">{furnitureName(item.id, $locale)}</span>
+                  <span class="text-xs font-semibold text-charcoal">{furnitureName(item.id, $locale)}</span>
                 {/if}
-                <span class="text-[10px] text-gray-400">{item.width}×{item.depth}cm</span>
+                <span class="text-[10px] text-muted">{item.width}×{item.depth}cm</span>
               </button>
               <button
-                class="absolute top-1 right-1 text-[12px] leading-none cursor-pointer {favoriteIds.includes(item.id) ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}"
+                class="absolute right-1.5 top-1 cursor-pointer text-[13px] leading-none {favoriteIds.includes(item.id) ? 'text-terracotta-ink' : 'text-line hover:text-terracotta'}"
                 onclick={() => toggleFavorite(item.id)}
                 aria-label={$t(favoriteIds.includes(item.id) ? 'objectControls.remove' : 'objectControls.add', { name: furnitureName(item.id, $locale) })}
                 aria-pressed={favoriteIds.includes(item.id)}
                 title={$t(favoriteIds.includes(item.id) ? 'objectControls.removeHint' : 'objectControls.addHint')}
-              >{favoriteIds.includes(item.id) ? '♥' : '♡'}</button>
+              ><AppIcon name="heart" size={13} fill={favoriteIds.includes(item.id) ? 'currentColor' : 'none'} /></button>
             </div>
           {/each}
         </div>
 
         <!-- Entourage: 2D presentation symbols (people, cars, planting) -->
-        <div class="pt-3 mt-2 border-t border-gray-100">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('entourageLabels.title')}</h3>
+        <div class="mt-2 border-t border-line pt-4">
+          {@render sectionTitle($t('entourageLabels.title'))}
           {#each entourageCategories as cat}
             {@const defs = entourageCatalog.filter(d => d.category === cat.key)}
-            <div class="mb-2">
-              <span class="text-[10px] font-medium text-gray-500">{cat.icon} {$t(`entourageLabels.${cat.key}`)}</span>
-              <div class="grid grid-cols-3 gap-1.5 mt-1">
+            <div class="mb-3">
+              <span class="text-[11px] font-semibold text-muted"><AppIcon name={cat.icon} size={12} /> {$t(`entourageLabels.${cat.key}`)}</span>
+              <div class="mt-1 grid grid-cols-3 gap-1.5">
                 {#each defs as def}
                   {@const name = entourageLabels[def.id] ? $t(entourageLabels[def.id]) : def.name}
                   <button
-                    class="p-1.5 rounded-lg border text-center hover:border-blue-300 hover:bg-blue-50 transition-colors {placingEntId === def.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200' : 'border-gray-200'}"
+                    class="rounded-lg border p-1.5 text-center transition-colors {placingEntId === def.id ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
                     title={$t('entourageLabels.placeHint', { name, width: def.width })}
                     onclick={() => armEntourage(def.id)}
                   >
-                    <svg viewBox="0 0 100 {Math.round(100 * def.aspect)}" class="w-full h-8 text-gray-600" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+                    <svg viewBox="0 0 100 {Math.round(100 * def.aspect)}" class="h-8 w-full text-charcoal/70" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
                       {#each def.paths as d}<path d={d} />{/each}
                     </svg>
-                    <span class="text-[9px] text-gray-500 leading-tight block truncate">{name}</span>
+                    <span class="block truncate text-[9.5px] leading-tight text-muted">{name}</span>
                   </button>
                 {/each}
               </div>
             </div>
           {/each}
           {#if customEntDefs.length}
-            <div class="mb-2">
-              <span class="text-[10px] font-medium text-gray-500">🖼️ {$t('entourageLabels.custom')}</span>
-              <div class="grid grid-cols-3 gap-1.5 mt-1">
+            <div class="mb-3">
+              <span class="text-[11px] font-semibold text-muted"><AppIcon name="image" size={16} /> {$t('entourageLabels.custom')}</span>
+              <div class="mt-1 grid grid-cols-3 gap-1.5">
                 {#each customEntDefs as def}
                   <button
-                    class="p-1.5 rounded-lg border text-center hover:border-blue-300 hover:bg-blue-50 transition-colors {placingEntId === def.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200' : 'border-gray-200'}"
+                    class="rounded-lg border p-1.5 text-center transition-colors {placingEntId === def.id ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
                     title={def.name}
                     onclick={() => armEntourage(def.id)}
                   >
-                    <img src={def.dataUrl} alt={def.name} class="w-full h-8 object-contain" />
-                    <span class="text-[9px] text-gray-500 leading-tight block truncate">{def.name}</span>
+                    <img src={def.dataUrl} alt={def.name} class="h-8 w-full object-contain" />
+                    <span class="block truncate text-[9.5px] leading-tight text-muted">{def.name}</span>
                   </button>
                 {/each}
               </div>
             </div>
           {/if}
           <button
-            class="w-full py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-blue-300 hover:text-blue-600 transition-colors"
+            class="w-full rounded-[10px] border border-dashed border-line py-2 text-xs font-semibold text-muted transition-colors hover:border-walnut hover:text-walnut"
             onclick={() => entourageFileInput?.click()}
           >+ {$t('entourageLabels.upload')}</button>
-          {#if symbolUploadError}<p role="alert" class="text-xs text-red-700">{$t(`entourageLabels.${symbolUploadError}`)}</p>{/if}
+          {#if symbolUploadError}<p role="alert" class="mt-1 text-xs text-danger">{$t(`entourageLabels.${symbolUploadError}`)}</p>{/if}
           <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" bind:this={entourageFileInput} onchange={onEntourageUpload} />
         </div>
       </div>
     {/if}
   </div>
+  {/if}
 </div>
 
 <!-- Furniture Hover Preview Tooltip -->
@@ -765,19 +723,19 @@
     class="fixed z-50 pointer-events-none"
     style="left: {hoverPos.x}px; top: {hoverPos.y}px;"
   >
-    <div class="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden" style="width: 220px;">
-      <div class="w-full h-[120px] bg-gray-50 flex items-center justify-center p-3">
+    <div class="bg-cream rounded-[14px] shadow-[0_8px_30px_rgba(50,40,30,0.12)] border border-line overflow-hidden" style="width: 220px;">
+      <div class="w-full h-[120px] bg-paper flex items-center justify-center p-3">
         <div class="w-full h-full"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
       </div>
       <div class="p-3 space-y-1.5">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold text-gray-800">{furnitureName(item.id, $locale)}</span>
+          <span class="text-sm font-semibold text-charcoal">{furnitureName(item.id, $locale)}</span>
           <span
             class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold text-white"
             style="background-color: {categoryColors[item.category] ?? '#6b7280'}"
           >{catalogCategoryLabels[item.category] ? $t(catalogCategoryLabels[item.category]) : item.category}</span>
         </div>
-        <div class="text-xs text-gray-500">
+        <div class="text-xs text-muted">
           {item.width} × {item.depth} × {item.height} cm
         </div>
       </div>
@@ -788,13 +746,13 @@
 <!-- RoomPlan Import Options Dialog -->
 {#if showImportDialog}
   <dialog use:modalDialog class="modal-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center" aria-label={$t('roomPlanDialog.title')} onclick={(e) => { if (e.target === e.currentTarget) cancelImport(); }} oncancel={(e) => { e.preventDefault(); cancelImport(); }}>
-    <div class="bg-white rounded-xl shadow-2xl w-80 max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-auto p-5">
+    <div class="bg-cream rounded-[14px] shadow-2xl w-80 max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-auto p-5">
       <h3 class="text-sm font-bold text-gray-800 mb-1">{$t('roomPlanDialog.title')}</h3>
       <p class="text-xs text-gray-400 mb-4">{importFileName}</p>
 
       <div class="space-y-3">
         <label class="flex items-start gap-2.5 cursor-pointer">
-          <input type="checkbox" bind:checked={optStraighten} class="accent-blue-500 mt-0.5" />
+          <input type="checkbox" bind:checked={optStraighten} class="accent-[#6B4636] mt-0.5" />
           <div>
             <div class="text-sm font-medium text-gray-700">{$t('roomPlanDialog.straighten')}</div>
             <div class="text-xs text-gray-400">{$t('roomPlanDialog.straightenHelp')}</div>
@@ -802,7 +760,7 @@
         </label>
 
         <label class="flex items-start gap-2.5 cursor-pointer">
-          <input type="checkbox" bind:checked={optOrthogonal} class="accent-blue-500 mt-0.5" />
+          <input type="checkbox" bind:checked={optOrthogonal} class="accent-[#6B4636] mt-0.5" />
           <div>
             <div class="text-sm font-medium text-gray-700">{$t('roomPlanDialog.orthogonal')} <span class="text-xs text-blue-400 font-mono">{ORTHO_VERSION}</span></div>
             <div class="text-xs text-gray-400">{$t('roomPlanDialog.orthogonalHelp')}</div>
@@ -816,8 +774,8 @@
       </div>
 
       <div class="flex gap-2 mt-5">
-        <button onclick={cancelImport} class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">{$t('roomPlanDialog.cancel')}</button>
-        <button onclick={confirmImport} class="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">{$t('roomPlanDialog.import')}</button>
+        <button onclick={cancelImport} class="flex-1 px-3 py-2 border border-line rounded-[10px] text-sm font-semibold text-charcoal hover:bg-hover transition-colors">{$t('roomPlanDialog.cancel')}</button>
+        <button onclick={confirmImport} class="flex-1 px-3 py-2 bg-walnut text-white rounded-[10px] text-sm font-semibold hover:bg-walnut-dark transition-colors">{$t('roomPlanDialog.import')}</button>
       </div>
     </div>
   </dialog>

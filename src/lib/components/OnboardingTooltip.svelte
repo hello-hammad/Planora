@@ -35,14 +35,14 @@
     aria-label={$t('onboarding.title')}
     bind:offsetWidth={tipWidth}
     bind:offsetHeight={tipHeight}
-    class="fixed z-[9999] pointer-events-auto flex flex-col gap-2 bg-slate-800 text-white rounded-xl shadow-2xl px-4 py-3 text-sm leading-relaxed transition-opacity duration-300 ease-out"
+    class="fixed z-[9999] pointer-events-auto flex flex-col gap-2 bg-[#2B2724] text-[#FFFDF9] rounded-[14px] shadow-[0_12px_40px_rgba(50,40,30,0.25)] px-4 py-3 text-sm leading-relaxed transition-opacity duration-300 ease-out"
     class:opacity-0={!visible}
     class:opacity-100={visible}
     style="left:{left}px;top:{top}px;width:{Math.max(0, Math.min(280, viewportWidth - margin * 2))}px;max-height:{Math.max(0, viewportHeight - margin * 2)}px;"
   >
     <p class="min-h-0 overflow-y-auto">{$t(`onboarding.${tip.id}`)}</p>
     <button
-      class="shrink-0 self-start text-xs font-medium px-3 py-1 rounded-lg bg-blue-500 hover:bg-blue-400 transition-colors"
+      class="shrink-0 self-start text-xs font-medium px-3 py-1 rounded-lg bg-[#FFFDF9] text-[#4A3026] font-semibold hover:bg-[#E7D2BC] transition-colors"
       onclick={dismissTip}
     >{$t('onboarding.dismiss')}</button>
   </div>

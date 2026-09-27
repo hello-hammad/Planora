@@ -18,8 +18,8 @@ test('Portuguese column properties retain dimensions when switching shape', asyn
   expect(original.columns).toHaveLength(1);
   const diameter = panel.getByRole('spinbutton', { name: 'Diâmetro (cm)', exact: true });
   await diameter.fill('42.5'); await diameter.press('Tab');
-  await panel.getByRole('button', { name: '⬜ Quadrada', exact: true }).click();
-  await expect(panel.getByRole('button', { name: '⬜ Quadrada', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await panel.getByRole('button', { name: 'Quadrada', exact: true }).click();
+  await expect(panel.getByRole('button', { name: 'Quadrada', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(panel.getByRole('spinbutton', { name: 'Comprimento do lado (cm)', exact: true })).toHaveValue('42.5');
   for (const [label,value] of [['Altura (cm)','312.5'],['Rotação (graus)','27.5']]) {
     const input = panel.getByRole('spinbutton', { name: label, exact: true });
@@ -29,8 +29,8 @@ test('Portuguese column properties retain dimensions when switching shape', asyn
   const edited = await exported();
   expect(edited.columns[0]).toEqual({ ...original.columns[0], diameter: 42.5, height: 312.5, rotation: 27.5, shape: 'square', color: '#1e3a8a' });
   for (const key of ['walls','doors','windows','rooms','furniture']) expect(edited[key]).toEqual(original[key]);
-  await panel.getByRole('button', { name: '⭕ Redonda', exact: true }).click();
-  await expect(panel.getByRole('button', { name: '⭕ Redonda', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await panel.getByRole('button', { name: 'Redonda', exact: true }).click();
+  await expect(panel.getByRole('button', { name: 'Redonda', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(panel.getByRole('spinbutton', { name: 'Diâmetro (cm)', exact: true })).toHaveValue('42.5');
   await expect(panel.getByRole('spinbutton', { name: 'Rotação (graus)', exact: true })).toHaveCount(0);
   expect((await exported()).columns[0]).toEqual({ ...edited.columns[0], shape: 'round' });

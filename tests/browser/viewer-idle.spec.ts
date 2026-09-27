@@ -65,9 +65,9 @@ test('3D sleeps when idle and wakes for controls, scene changes and walkthrough'
   expect(await pixels()).not.toBe(before);
 
   // Moving/removing a placement preview must wake a sleeping viewer too.
-  await page.getByRole('button', { name: 'Edit Mode', exact: true }).click();
-  await page.getByRole('button', { name: 'Place Furniture', exact: true }).click();
-  await page.getByRole('button', { name: /Armchair/ }).click();
+  // Furniture is chosen from the Build panel, which arms 3D placement (and Edit mode).
+  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: /^Armchair/ }).first().click();
   await page.mouse.move(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.65);
   await page.waitForLoadState('networkidle');
   await idle();

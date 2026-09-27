@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale } from '$lib/i18n';
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
   let { onToggleLayers, layersOpen = false, onToggleHistory, historyOpen = false }: { onToggleLayers?: () => void; layersOpen?: boolean; onToggleHistory?: (trigger: HTMLButtonElement) => void; historyOpen?: boolean } = $props();
@@ -304,326 +305,356 @@
   }
 </script>
 
-<div class="h-12 bg-gradient-to-r from-slate-800 to-slate-700 flex items-center px-4 gap-2 max-xl:px-2 max-xl:gap-1 shrink-0 shadow-sm">
-  <!-- Back to Projects -->
-  <a
-    href={base || '/'}
-    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors"
-    title={$t('projectToolbar.back')}
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-    <span class="hidden sm:inline">{$t('projectToolbar.projects')}</span>
-  </a>
+<div class="relative z-40 h-14 shrink-0 border-b border-line bg-cream text-charcoal flex items-center gap-3 px-3 max-xl:gap-1.5 max-xl:px-2">
+  <!-- ── Left: brand, breadcrumb, project name, save status ── -->
+  <div class="flex min-w-0 flex-1 items-center gap-1.5">
+    <span class="mr-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-walnut sm:flex" aria-hidden="true" title="Planora">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V5h7a4.5 4.5 0 0 1 0 9H7" /><circle cx="17.5" cy="19" r="1.6" fill="#E7A37F" stroke="none" /></svg>
+    </span>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+    <!-- Back to Projects -->
+    <a
+      href={base || '/'}
+      class="flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 text-[13px] font-medium text-muted transition-colors hover:bg-hover hover:text-charcoal"
+      title={$t('projectToolbar.back')}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span class="hidden sm:inline">{$t('projectToolbar.projects')}</span>
+    </a>
 
-  {#if editingName}
-    <input
-      type="text"
-      aria-label={$t('projectToolbar.name')}
-      bind:value={projectName}
-      onblur={onNameBlur}
-      onkeydown={onNameKeydown}
-      class="bg-white/20 text-white font-semibold px-2 py-0.5 rounded border border-white/30 outline-none text-sm w-40"
-    />
-  {:else}
-    <button
-      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] truncate max-xl:max-w-[4rem]"
-      onclick={() => editingName = true}
-      title={$t('projectToolbar.rename')}
-    >{projectName}</button>
-  {/if}
+    <span class="text-sm text-line max-xl:hidden" aria-hidden="true">/</span>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
-
-  <!-- Floor selector as buttons (in overflow menu on mobile) -->
-  <div class="flex items-center gap-1 max-xl:hidden">
-    <select aria-label={$t('floorControls.current')} value={activeFloorId} onchange={(e) => setActiveFloor(e.currentTarget.value)}
-      class="w-32 rounded bg-slate-700 px-2 py-1 text-xs text-white" title={$t('floorControls.switch')}>
-      {#each floors as fl}<option value={fl.id}>{fl.name}</option>{/each}
-    </select>
-    <div class="relative" bind:this={floorMenuRef}>
+    {#if editingName}
+      <input
+        type="text"
+        aria-label={$t('projectToolbar.name')}
+        bind:value={projectName}
+        onblur={onNameBlur}
+        onkeydown={onNameKeydown}
+        class="h-8 w-44 rounded-lg border border-walnut bg-white px-2 text-sm font-semibold text-charcoal outline-none ring-2 ring-walnut/15"
+      />
+    {:else}
       <button
-        onclick={() => floorMenuOpen = !floorMenuOpen}
-        class="text-white/80 hover:text-white text-xs hover:bg-white/10 px-1.5 py-0.5 rounded transition-colors"
-        title={$t('floorControls.add')}
-        aria-label={$t('floorControls.add')}
-        aria-expanded={floorMenuOpen}
-      >+</button>
-      {#if floorMenuOpen}
-        <div class="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-64 z-50">
-          <div class="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">{$t('floorControls.top')}</div>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => onAddFloor('outer')}>
-            {$t('floorControls.exterior')} <span class="text-gray-400">{$t('floorControls.footprint')}</span>
-          </button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => onAddFloor('copy')}>
-            {$t('floorControls.all')} <span class="text-gray-400">{$t('floorControls.partitions')}</span>
-          </button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => onAddFloor('empty')}>
-            {$t('floorControls.empty')}
-          </button>
-          <hr class="my-1 border-gray-100" />
-          <button class="w-full px-3 py-2 text-sm text-red-700 hover:bg-gray-100 text-left disabled:opacity-40" disabled={floors.length <= 1}
-            onclick={() => { onRemoveFloor(activeFloorId); floorMenuOpen = false; }}>{$t('floorControls.remove')}</button>
+        class="min-w-0 max-w-[12rem] truncate rounded-lg px-2 py-1 text-sm font-semibold text-charcoal transition-colors hover:bg-hover max-xl:max-w-[5rem]"
+        onclick={() => editingName = true}
+        title={$t('projectToolbar.rename')}
+      >{projectName}</button>
+    {/if}
+
+    <!-- Reserve the widest translated status so autosave cannot move toolbar targets. -->
+    <span
+      class="ml-1 inline-grid shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-colors duration-300 max-xl:hidden {$saveState === 'saved' ? 'bg-sage-tint text-sage-ink' : $saveState === 'saving' ? 'bg-terracotta-tint text-terracotta-ink' : 'bg-ivory text-muted'}"
+      title={lastSavedText}
+    >
+      {#each (['saveControls.saving', 'saveControls.saved', 'saveControls.unsaved'] as const) as key}
+        <span aria-hidden="true" data-save-label={$t(key)} class="invisible col-start-1 row-start-1 whitespace-nowrap pl-3.5 before:content-[attr(data-save-label)]"></span>
+      {/each}
+      <span class="col-start-1 row-start-1 flex items-center gap-1.5 whitespace-nowrap {$saveState === 'saving' ? 'animate-pulse' : ''}">
+        <span class="h-[7px] w-[7px] shrink-0 rounded-full {$saveState === 'saved' ? 'bg-[#6F8267]' : $saveState === 'saving' ? 'bg-terracotta' : 'bg-muted/60'}" aria-hidden="true"></span>
+        {#if $saveState === 'saving'}
+          {$t('saveControls.saving')}
+        {:else if $saveState === 'saved'}
+          {$t('saveControls.saved')}
+        {:else}
+          {$t('saveControls.unsaved')}
+        {/if}
+      </span>
+    </span>
+  </div>
+
+  <!-- ── Centre: view switches and floors ── -->
+  <div class="flex shrink-0 items-center gap-2">
+    <!-- 2D/3D switch -->
+    <div class="flex gap-0.5 rounded-xl border border-line bg-ivory p-[3px]">
+      <button
+        onclick={() => setMode('2d')}
+        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-xl:px-2.5 {mode === '2d' ? 'bg-walnut text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
+      >2D</button>
+      <button
+        onclick={() => setMode('3d')}
+        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-xl:px-2.5 {mode === '3d' ? 'bg-walnut text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
+      >3D</button>
+    </div>
+
+    <!-- Plan / Elevation sub-switch (2D only); mobile uses the overflow menu instead -->
+    {#if mode === '2d'}
+      <div class="flex gap-0.5 rounded-xl border border-line bg-ivory p-[3px] max-xl:hidden">
+        <button
+          onclick={exitElevation}
+          class="flex h-8 items-center gap-1.5 rounded-[9px] px-2.5 text-[13px] font-semibold transition-colors {!$elevationWallId ? 'bg-white text-charcoal shadow-[0_1px_2px_rgba(50,40,30,0.15)]' : 'text-muted hover:text-charcoal'}"
+          title={$t('toolbarView.planHint')}
+          aria-label={$t('toolbarView.plan')}
+          aria-pressed={!$elevationWallId}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 12h8"/><path d="M11 12v9"/><path d="M15 3v6"/></svg>
+          <span class="hidden 2xl:inline">{$t('toolbarView.plan')}</span>
+        </button>
+        <button
+          onclick={enterElevation}
+          class="flex h-8 items-center gap-1.5 rounded-[9px] px-2.5 text-[13px] font-semibold transition-colors {$elevationWallId ? 'bg-white text-charcoal shadow-[0_1px_2px_rgba(50,40,30,0.15)]' : $elevationPickMode ? 'bg-terracotta-tint text-terracotta-ink ring-1 ring-terracotta/40' : 'text-muted hover:text-charcoal'}"
+          title={$elevationPickMode ? $t('toolbarView.pickHint') : $t('toolbarView.elevationHint')}
+          aria-label={$t('toolbarView.elevation')}
+          aria-pressed={!!$elevationWallId || $elevationPickMode}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9H3z"/><rect x="10" y="14" width="4" height="6"/><rect x="5.5" y="13" width="3" height="3"/></svg>
+          <span class="hidden 2xl:inline">{$t('toolbarView.elevation')}</span>
+        </button>
+      </div>
+    {/if}
+
+    <!-- Floor selector (in overflow menu on mobile) -->
+    <div class="flex h-[38px] items-center rounded-[10px] border border-line bg-white max-xl:hidden">
+      <span class="pl-2.5 text-walnut" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" /></svg>
+      </span>
+      <select aria-label={$t('floorControls.current')} value={activeFloorId} onchange={(e) => setActiveFloor(e.currentTarget.value)}
+        class="h-full w-28 cursor-pointer bg-transparent pl-1.5 pr-1 text-[13px] font-semibold text-charcoal outline-none" title={$t('floorControls.switch')}>
+        {#each floors as fl}<option value={fl.id}>{fl.name}</option>{/each}
+      </select>
+      <span class="pr-1 text-[11px] font-medium text-muted">{floors.length}F</span>
+      <div class="relative h-full border-l border-line" bind:this={floorMenuRef}>
+        <button
+          onclick={() => floorMenuOpen = !floorMenuOpen}
+          class="flex h-full w-8 items-center justify-center rounded-r-[10px] text-base text-charcoal transition-colors hover:bg-hover"
+          title={$t('floorControls.add')}
+          aria-label={$t('floorControls.add')}
+          aria-expanded={floorMenuOpen}
+        >+</button>
+        {#if floorMenuOpen}
+          <div class="menu-panel absolute left-0 top-full z-50 mt-1.5 w-64 py-1.5">
+            <div class="menu-label">{$t('floorControls.top')}</div>
+            <button class="menu-item" onclick={() => onAddFloor('outer')}>
+              {$t('floorControls.exterior')} <span class="text-muted">{$t('floorControls.footprint')}</span>
+            </button>
+            <button class="menu-item" onclick={() => onAddFloor('copy')}>
+              {$t('floorControls.all')} <span class="text-muted">{$t('floorControls.partitions')}</span>
+            </button>
+            <button class="menu-item" onclick={() => onAddFloor('empty')}>
+              {$t('floorControls.empty')}
+            </button>
+            <hr class="my-1 border-line" />
+            <button class="menu-item !text-danger disabled:opacity-40" disabled={floors.length <= 1}
+              onclick={() => { onRemoveFloor(activeFloorId); floorMenuOpen = false; }}>{$t('floorControls.remove')}</button>
+          </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: history, view toggles, panels, export, save ── -->
+  <div class="flex shrink-0 items-center justify-end gap-1.5 xl:flex-1 max-xl:gap-1">
+    <div class="flex h-[38px] items-stretch overflow-hidden rounded-[10px] border border-line bg-white">
+      <button onclick={undo} class="flex w-9 items-center justify-center text-charcoal transition-colors hover:bg-hover" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
+      </button>
+      <span class="w-px bg-line" aria-hidden="true"></span>
+      <button onclick={redo} class="flex w-9 items-center justify-center text-charcoal transition-colors hover:bg-hover" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3"/></svg>
+      </button>
+      {#if onToggleHistory}
+        <!-- Undo History (desktop); touch screens reach it from More actions -->
+        <span class="w-px bg-line max-md:hidden" aria-hidden="true"></span>
+        <button
+          onclick={(e) => onToggleHistory?.(e.currentTarget)}
+          class="flex w-9 items-center justify-center transition-colors max-md:hidden {historyOpen ? 'bg-walnut-tint text-walnut-dark' : 'text-charcoal hover:bg-hover'}"
+          title={$t('undoHistory.title')}
+          aria-label={$t('editorPanels.history')}
+          aria-expanded={historyOpen}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h8M4 18h11M17 11l3 3-3 3" /></svg>
+        </button>
+      {/if}
+    </div>
+
+    <span class="mx-1 h-6 w-px bg-line max-xl:hidden" aria-hidden="true"></span>
+
+    <!-- Snap to grid toggle -->
+    <button
+      onclick={() => { snapEnabled.update(v => !v); snapOn = !snapOn; }}
+      class="icon-btn max-xl:hidden {snapOn ? 'icon-btn-on' : ''}"
+      title={`${$t('toolbarView.snap')} (${snapOn ? $t('toolbarView.on') : $t('toolbarView.off')})`}
+      aria-label={$t('toolbarView.snap')}
+    >
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+      </svg>
+    </button>
+
+    <!-- Select / Pan toggle (mobile pans with two fingers; toggle lives in overflow menu) -->
+    {#if mode === '2d'}
+      <button
+        onclick={() => panMode.set(false)}
+        class="icon-btn max-xl:hidden {!$panMode ? 'icon-btn-on' : ''}"
+        title={$t('toolbarView.selectHint')}
+        aria-label={$t('toolbarView.selectLabel')}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
+      </button>
+    {/if}
+
+    <!-- Furniture visibility toggle -->
+    <button
+      onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))}
+      class="icon-btn max-xl:hidden {$showFurnitureStore ? 'icon-btn-on' : ''}"
+      title={`${$t('toolbarView.toggleFurniture')} (${$showFurnitureStore ? $t('toolbarView.visible') : $t('toolbarView.hidden')})`}
+      aria-label={$t('toolbarView.toggleFurniture')}
+    >
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M3 11h18v6H3zM5 17v2M19 17v2"/>
+      </svg>
+    </button>
+
+    <span class="mx-1 h-6 w-px bg-line max-xl:hidden" aria-hidden="true"></span>
+
+    <!-- Version History button -->
+    <button
+      onclick={() => versionHistoryOpen = true}
+      class="icon-btn max-xl:hidden"
+      title={$t('versions.title')}
+      aria-label={$t('versions.title')}
+    >
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+    </button>
+
+    <!-- Area summary button -->
+    <button
+      onclick={() => areaOpen = true}
+      class="icon-btn max-xl:hidden"
+      title={$t('areaSummary.title')}
+      aria-label={$t('areaSummary.title')}
+    >
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4zM8 8l8 8M12 8l4 4M8 12l4 4"/></svg>
+    </button>
+
+    <!-- Settings button -->
+    <button
+      onclick={() => settingsOpen = true}
+      class="icon-btn max-xl:hidden"
+      title={$t('settings.title')}
+      aria-label={$t('settings.title')}
+    >
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4"/></svg>
+    </button>
+
+    <!-- Overflow menu (below xl): secondary actions hidden from the condensed bar -->
+    <div class="relative xl:hidden" bind:this={moreRef}>
+      <button
+        bind:this={moreButton}
+        onclick={() => moreOpen = !moreOpen}
+        class="icon-btn {moreOpen ? 'icon-btn-on' : ''}"
+        title={$t('toolbarView.more')}
+        aria-label={$t('toolbarView.moreActions')}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      </button>
+      {#if moreOpen}
+        <div class="menu-panel absolute right-0 top-full z-50 mt-1.5 max-h-[70vh] w-60 overflow-y-auto py-1.5">
+          {#if floors.length > 1 || mode === '2d'}
+            <div class="menu-label">{$t('floorControls.floors')}</div>
+            {#each floors as fl}
+              <button class="menu-item {fl.id === activeFloorId ? '!font-semibold !text-walnut' : ''}" onclick={() => { setActiveFloor(fl.id); moreOpen = false; }}>
+                {fl.name}{#if fl.id === activeFloorId}<AppIcon name="check" size={14} class="ml-auto" />{/if}
+              </button>
+            {/each}
+            <button class="menu-item" onclick={() => { onAddFloor('outer'); }}>+ {$t('floorControls.add')} <span class="text-muted">{$t('floorControls.outerHint')}</span></button>
+            <button class="menu-item" onclick={() => { onAddFloor('copy'); }}>+ {$t('floorControls.add')} <span class="text-muted">{$t('floorControls.allHint')}</span></button>
+            <button class="menu-item" onclick={() => { onAddFloor('empty'); }}>+ {$t('floorControls.add')} <span class="text-muted">{$t('floorControls.emptyHint')}</span></button>
+            <button class="menu-item !text-danger disabled:opacity-40" disabled={floors.length <= 1}
+              onclick={() => { onRemoveFloor(activeFloorId); moreOpen = false; }}>{$t('floorControls.remove')}</button>
+            <div class="my-1 h-px bg-line"></div>
+          {/if}
+          {#if mode === '2d'}
+            <div class="menu-label">{$t('toolbarView.view')}</div>
+            <button class="menu-item" onclick={() => canvasZoom.update(z => Math.min(10, z * 1.25))}>{$t('toolbarView.zoomIn')}</button>
+            <button class="menu-item" onclick={() => canvasZoom.update(z => Math.max($canvasMinimumZoom, z / 1.25))}>{$t('toolbarView.zoomOut')}</button>
+            <button class="menu-item" onclick={() => canvasZoom.set(1)}>{$t('toolbarView.resetZoom')} ({$canvasZoom < 0.01 ? ($canvasZoom * 100).toPrecision(2) : Math.round($canvasZoom * 100)}%)</button>
+            <button class="menu-item" onclick={() => panMode.update(v => !v)}><span class="w-4">{#if $panMode}<AppIcon name="check" size={14} />{/if}</span>{$t('toolbarView.pan')}</button>
+            <button class="menu-item" onclick={() => { snapEnabled.update(v => !v); snapOn = !snapOn; }}><span class="w-4">{#if snapOn}<AppIcon name="check" size={14} />{/if}</span>{$t('toolbarView.snap')}</button>
+            <button class="menu-item" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))}><span class="w-4">{#if $showFurnitureStore}<AppIcon name="check" size={14} />{/if}</span>{$t('toolbarView.showFurniture')}</button>
+            {#if onToggleLayers}
+              <button class="menu-item" aria-pressed={layersOpen} onclick={() => { onToggleLayers?.(); moreOpen = false; }}>{$t('layers.title')}</button>
+            {/if}
+            <div class="my-1 h-px bg-line"></div>
+          {/if}
+          <button class="menu-item" onclick={toggleElevationView}><span class="w-4">{#if $elevationWallId}<AppIcon name="check" size={14} />{/if}</span>{$t('toolbarView.elevationView')}</button>
+          {#if onToggleHistory}
+            <button class="menu-item md:hidden" aria-expanded={historyOpen} aria-label={$t('editorPanels.history')} onclick={() => { onToggleHistory?.(moreButton); moreOpen = false; }}>{$t('undoHistory.title')}</button>
+          {/if}
+          <button class="menu-item" onclick={() => { versionHistoryOpen = true; moreOpen = false; }}>{$t('versions.title')}</button>
+          <button class="menu-item" onclick={() => { areaOpen = true; moreOpen = false; }}>{$t('areaSummary.title')}</button>
+          <button class="menu-item" onclick={() => { settingsOpen = true; moreOpen = false; }}>{$t('settings.title')}</button>
         </div>
       {/if}
     </div>
-    <span class="text-white/40 text-[10px] ml-1">{floors.length}F</span>
-  </div>
 
-  <div class="flex-1"></div>
+    <span class="mx-1 h-6 w-px bg-line max-xl:hidden" aria-hidden="true"></span>
 
-  <button onclick={undo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-  </button>
-  <button onclick={redo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-  </button>
-
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
-
-  <!-- Snap to grid toggle -->
-  <button
-    onclick={() => { snapEnabled.update(v => !v); snapOn = !snapOn; }}
-    class="p-1.5 rounded transition-colors max-xl:hidden {snapOn ? 'text-white bg-white/20' : 'text-white/40 hover:text-white/70 hover:bg-white/10'}"
-    title={`${$t('toolbarView.snap')} (${snapOn ? $t('toolbarView.on') : $t('toolbarView.off')})`}
-    aria-label={$t('toolbarView.snap')}
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-    </svg>
-  </button>
-
-  <!-- Select / Pan toggle (mobile pans with two fingers; toggle lives in overflow menu) -->
-  {#if mode === '2d'}
-  <div class="flex bg-white/15 rounded-full p-0.5 max-xl:hidden">
-    <button
-      onclick={() => panMode.set(false)}
-      class="px-2 py-1 text-xs font-semibold rounded-full transition-colors {!$panMode ? 'bg-white text-slate-800' : 'text-white/80 hover:text-white'}"
-      title={$t('toolbarView.selectHint')}
-      aria-label={$t('toolbarView.selectLabel')}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
-    </button>
-  </div>
-  {/if}
-
-  <!-- Furniture visibility toggle -->
-  <button
-    onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))}
-    class="p-1.5 rounded transition-colors max-xl:hidden {$showFurnitureStore ? 'text-white bg-white/20' : 'text-white/40 hover:text-white/70 hover:bg-white/10'}"
-    title={`${$t('toolbarView.toggleFurniture')} (${$showFurnitureStore ? $t('toolbarView.visible') : $t('toolbarView.hidden')})`}
-    aria-label={$t('toolbarView.toggleFurniture')}
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="12" width="20" height="8" rx="1"/><path d="M4 12V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5"/><line x1="12" y1="12" x2="12" y2="20"/>
-    </svg>
-  </button>
-
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
-
-  <!-- Plan / Elevation sub-toggle (2D only) — sits left of the 2D/3D pill so the
-       two switches read as a family; mobile (<md) uses the overflow menu instead -->
-  {#if mode === '2d'}
-    <div class="flex bg-white/15 rounded-full p-0.5 max-xl:hidden">
+    <!-- Export dropdown -->
+    <div class="relative" bind:this={exportRef}>
       <button
-        onclick={exitElevation}
-        class="px-3 py-1 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 {!$elevationWallId ? 'bg-white text-slate-800' : 'text-white/80 hover:text-white'}"
-        title={$t('toolbarView.planHint')}
-        aria-pressed={!$elevationWallId}
+        onclick={() => { exportOpen = !exportOpen; if (exportOpen) triggerTip('first-export', 300, 60); }}
+        class="flex h-[38px] items-center gap-1.5 rounded-[10px] border border-line bg-cream px-3 text-[13px] font-semibold text-charcoal transition-colors hover:bg-hover max-xl:px-2.5 {exportOpen ? 'bg-hover' : ''}"
+        title={$t('exportMenu.title')}
+        aria-label={$t('exportMenu.title')}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 12h8"/><path d="M11 12v9"/><path d="M15 3v6"/></svg>
-        <span>{$t('toolbarView.plan')}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+        <span class="hidden 2xl:inline">{$t('exportMenu.title')}</span>
       </button>
-      <button
-        onclick={enterElevation}
-        class="px-3 py-1 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 {$elevationWallId ? 'bg-white text-slate-800' : $elevationPickMode ? 'bg-blue-500 text-white' : 'text-white/80 hover:text-white'}"
-        title={$elevationPickMode ? $t('toolbarView.pickHint') : $t('toolbarView.elevationHint')}
-        aria-pressed={!!$elevationWallId || $elevationPickMode}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9H3z"/><rect x="10" y="14" width="4" height="6"/><rect x="5.5" y="13" width="3" height="3"/></svg>
-        <span>{$t('toolbarView.elevation')}</span>
-      </button>
+      {#if exportOpen}
+        <div class="menu-panel absolute right-0 top-full z-50 mt-1.5 w-60 py-1.5">
+          <button class="menu-item" onclick={() => { exportOpen = false; window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true })); }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            {$t('print.entry')}
+          </button>
+          <div class="my-1 h-px bg-line"></div>
+          <button class="menu-item" onclick={onExport2DPNG}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            {$t('exportMenu.png2d')}
+          </button>
+          <button class="menu-item" onclick={onExport3DPNG} disabled={exporting3D}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            {$t('exportMenu.png3d')}
+          </button>
+          <button class="menu-item" onclick={onExportSVG}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+            {$t('exportMenu.svg')}
+          </button>
+          <button class="menu-item" onclick={onExportDXF}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h2"/><path d="M14 16h2"/></svg>
+            {$t('exportMenu.dxf')}
+          </button>
+          <button class="menu-item" onclick={onExportDWG}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 16h6"/></svg>
+            {$t('exportMenu.dwg')}
+          </button>
+          <button class="menu-item" onclick={onExportPDF}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 11v6"/><path d="M8 11v6"/><path d="M12 11v6"/></svg>
+            {$t('exportMenu.pdf')}
+          </button>
+          <button class="menu-item" onclick={onExportJSON}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            {$t('exportMenu.json')}
+          </button>
+          <button class="menu-item" onclick={onExportPackage}>{$t('exportMenu.package')}</button>
+          <p class="px-3 pb-2 text-xs text-muted">{$t('exportMenu.packageHelp')}</p>
+          <button class="menu-item" onclick={onShareWithAssistant}>{$t('exportMenu.assistant')}</button>
+          <div class="my-1 h-px bg-line"></div>
+          <button class="menu-item" onclick={onImportJSON}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {$t('exportMenu.import')}
+          </button>
+          <button class="menu-item" onclick={newProject}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-muted"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            {$t('library.new')}
+          </button>
+        </div>
+      {/if}
     </div>
-  {/if}
 
-  <!-- 2D/3D pill toggle -->
-  <div class="flex bg-white/15 rounded-full p-0.5">
-    <button
-      onclick={() => setMode('2d')}
-      class="px-3 max-xl:px-2 py-1 text-xs font-semibold rounded-full transition-colors {mode === '2d' ? 'bg-white text-slate-800' : 'text-white/80 hover:text-white'}"
-    >2D</button>
-    <button
-      onclick={() => setMode('3d')}
-      class="px-3 max-xl:px-2 py-1 text-xs font-semibold rounded-full transition-colors {mode === '3d' ? 'bg-white text-slate-800' : 'text-white/80 hover:text-white'}"
-    >3D</button>
-  </div>
-
-  <!-- Zoom remains available on the canvas and in the compact toolbar menu. -->
-
-  <!-- Version History button -->
-  <button
-    onclick={() => versionHistoryOpen = true}
-    class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors max-xl:hidden"
-    title={$t('versions.title')}
-    aria-label={$t('versions.title')}
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-  </button>
-
-  <!-- Area summary button -->
-  <button
-    onclick={() => areaOpen = true}
-    class="px-2 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors max-xl:hidden"
-    title={$t('areaSummary.title')}
-    aria-label={$t('areaSummary.title')}
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 3v18"/></svg>
-  </button>
-
-  <!-- Settings button -->
-  <button
-    onclick={() => settingsOpen = true}
-    class="px-2 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors max-xl:hidden"
-    title={$t('settings.title')}
-    aria-label={$t('settings.title')}
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-  </button>
-
-  <!-- Overflow menu (mobile only): secondary actions hidden from the condensed bar -->
-  <div class="relative xl:hidden" bind:this={moreRef}>
-    <button
-      bind:this={moreButton}
-      onclick={() => moreOpen = !moreOpen}
-      class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors"
-      title={$t('toolbarView.more')}
-      aria-label={$t('toolbarView.moreActions')}
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+    <button onclick={save} class="h-[38px] rounded-[10px] bg-walnut px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)] transition-colors hover:bg-walnut-dark max-xl:px-3">
+      {$t('saveControls.save')}
     </button>
-    {#if moreOpen}
-      <div class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-56 z-50 max-h-[70vh] overflow-y-auto">
-        {#if floors.length > 1 || mode === '2d'}
-          <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">{$t('floorControls.floors')}</div>
-          {#each floors as fl}
-            <button class="w-full px-3 py-2 text-sm hover:bg-gray-100 text-left flex items-center gap-2 {fl.id === activeFloorId ? 'text-blue-600 font-semibold' : 'text-gray-700'}" onclick={() => { setActiveFloor(fl.id); moreOpen = false; }}>
-              {fl.name}{fl.id === activeFloorId ? ' ✓' : ''}
-            </button>
-          {/each}
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { onAddFloor('outer'); }}>+ {$t('floorControls.add')} <span class="text-gray-400">{$t('floorControls.outerHint')}</span></button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { onAddFloor('copy'); }}>+ {$t('floorControls.add')} <span class="text-gray-400">{$t('floorControls.allHint')}</span></button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { onAddFloor('empty'); }}>+ {$t('floorControls.add')} <span class="text-gray-400">{$t('floorControls.emptyHint')}</span></button>
-          <button class="w-full px-3 py-2 text-sm text-red-700 hover:bg-gray-100 text-left disabled:opacity-40" disabled={floors.length <= 1}
-            onclick={() => { onRemoveFloor(activeFloorId); moreOpen = false; }}>{$t('floorControls.remove')}</button>
-          <div class="h-px bg-gray-100 my-1"></div>
-        {/if}
-        {#if mode === '2d'}
-          <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">{$t('toolbarView.view')}</div>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => canvasZoom.update(z => Math.min(10, z * 1.25))}>{$t('toolbarView.zoomIn')}</button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => canvasZoom.update(z => Math.max($canvasMinimumZoom, z / 1.25))}>{$t('toolbarView.zoomOut')}</button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => canvasZoom.set(1)}>{$t('toolbarView.resetZoom')} ({$canvasZoom < 0.01 ? ($canvasZoom * 100).toPrecision(2) : Math.round($canvasZoom * 100)}%)</button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => panMode.update(v => !v)}>{$panMode ? '✓ ' : ''}{$t('toolbarView.pan')}</button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { snapEnabled.update(v => !v); snapOn = !snapOn; }}>{snapOn ? '✓ ' : ''}{$t('toolbarView.snap')}</button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))}>{$showFurnitureStore ? '✓ ' : ''}{$t('toolbarView.showFurniture')}</button>
-          {#if onToggleLayers}
-            <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-pressed={layersOpen} onclick={() => { onToggleLayers?.(); moreOpen = false; }}>{$t('layers.title')}</button>
-          {/if}
-          <div class="h-px bg-gray-100 my-1"></div>
-        {/if}
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={toggleElevationView}>{$elevationWallId ? '✓ ' : ''}{$t('toolbarView.elevationView')}</button>
-        {#if onToggleHistory}
-          <button class="md:hidden w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-expanded={historyOpen} aria-label={$t('editorPanels.history')} onclick={() => { onToggleHistory?.(moreButton); moreOpen = false; }}>{$t('undoHistory.title')}</button>
-        {/if}
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { versionHistoryOpen = true; moreOpen = false; }}>{$t('versions.title')}</button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { areaOpen = true; moreOpen = false; }}>{$t('areaSummary.title')}</button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { settingsOpen = true; moreOpen = false; }}>{$t('settings.title')}</button>
-      </div>
-    {/if}
   </div>
-
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
-
-  <!-- Export dropdown -->
-  <div class="relative" bind:this={exportRef}>
-    <button
-      onclick={() => { exportOpen = !exportOpen; if (exportOpen) triggerTip('first-export', 300, 60); }}
-      class="px-3 py-1.5 max-xl:px-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors flex items-center gap-1.5"
-      title={$t('exportMenu.title')}
-      aria-label={$t('exportMenu.title')}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span class="max-xl:hidden">{$t('exportMenu.title')}</span>
-    </button>
-    {#if exportOpen}
-      <div class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-48 z-50">
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={() => { exportOpen = false; window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true })); }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          {$t('print.entry')}
-        </button>
-        <div class="h-px bg-gray-100 my-1"></div>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExport2DPNG}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          {$t('exportMenu.png2d')}
-        </button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExport3DPNG} disabled={exporting3D}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          {$t('exportMenu.png3d')}
-        </button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportSVG}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-          {$t('exportMenu.svg')}
-        </button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportDXF}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h2"/><path d="M14 16h2"/></svg>
-          {$t('exportMenu.dxf')}
-        </button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportDWG}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 16h6"/></svg>
-          {$t('exportMenu.dwg')}
-        </button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportPDF}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 11v6"/><path d="M8 11v6"/><path d="M12 11v6"/></svg>
-          {$t('exportMenu.pdf')}
-        </button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportJSON}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-          {$t('exportMenu.json')}
-        </button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={onExportPackage}>{$t('exportMenu.package')}</button>
-        <p class="px-3 pb-2 text-xs text-gray-500">{$t('exportMenu.packageHelp')}</p>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={onShareWithAssistant}>{$t('exportMenu.assistant')}</button>
-        <div class="h-px bg-gray-100 my-1"></div>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onImportJSON}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          {$t('exportMenu.import')}
-        </button>
-        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={newProject}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          {$t('library.new')}
-        </button>
-      </div>
-    {/if}
-  </div>
-
-  <!-- Reserve the widest translated status so autosave cannot move toolbar targets. -->
-  <span class="inline-grid shrink-0 text-[11px] font-medium max-xl:hidden">
-    {#each (['saveControls.saving', 'saveControls.saved', 'saveControls.unsaved'] as const) as key}
-      <span aria-hidden="true" data-save-label={$t(key)} class="invisible col-start-1 row-start-1 whitespace-nowrap before:content-[attr(data-save-label)]"></span>
-    {/each}
-    <span class="col-start-1 row-start-1 whitespace-nowrap transition-colors duration-300 {$saveState === 'saved' ? 'text-emerald-400' : $saveState === 'saving' ? 'text-amber-300 animate-pulse' : 'text-white/50'}" title={lastSavedText}>
-    {#if $saveState === 'saving'}
-      {$t('saveControls.saving')}
-    {:else if $saveState === 'saved'}
-      {$t('saveControls.saved')}
-    {:else}
-      {$t('saveControls.unsaved')}
-    {/if}
-    </span>
-  </span>
-  <button onclick={save} class="px-3 py-1.5 max-xl:px-2.5 text-sm bg-white text-slate-800 font-semibold rounded-lg hover:bg-blue-50 transition-colors shadow-sm">
-    {$t('saveControls.save')}
-  </button>
 </div>
 
 {#if $saveError}
@@ -643,10 +674,10 @@
 
 {#if areaOpen}
 <dialog use:modalDialog class="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40" aria-label={$t('areaSummary.title')} onclick={(e) => { if (e.target === e.currentTarget) areaOpen = false; }} oncancel={(e) => { e.preventDefault(); areaOpen = false; }}>
-  <div class="bg-white rounded-xl shadow-2xl w-[420px] max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-hidden">
-    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200">
-      <h2 class="text-base font-semibold text-gray-800">📐 {$t('areaSummary.title')}</h2>
-      <button aria-label={$t('areaSummary.close')} onclick={() => areaOpen = false} class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+  <div class="bg-cream rounded-[14px] shadow-2xl w-[420px] max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-line">
+      <h2 class="text-base font-bold text-charcoal">{$t('areaSummary.title')}</h2>
+      <button aria-label={$t('areaSummary.close')} onclick={() => areaOpen = false} class="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-charcoal text-xl leading-none">&times;</button>
     </div>
     <div class="overflow-y-auto max-h-[calc(80vh-52px)] p-1">
       <AreaSummaryPanel />

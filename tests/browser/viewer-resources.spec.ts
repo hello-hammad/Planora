@@ -44,7 +44,7 @@ for (const width of [1440, 390]) test(`camera previews release resources across 
     await expect.poll(async () => (await gpu(page)).filter((item: any) => !item.lost && item.width === 384 && item.draws > 0).length).toBe(1);
     for (let photo = 0; photo < 2; photo++) {
       const pending = page.waitForEvent('download');
-      await page.getByRole('button', { name: '📸 Capture 1920×1080', exact: true }).click();
+      await page.getByRole('button', { name: 'Capture 1920×1080', exact: true }).click();
       const bytes = await readFile((await (await pending).path())!);
       expect(bytes.subarray(1, 4).toString()).toBe('PNG');
       expect(bytes.readUInt32BE(16)).toBe(1920); expect(bytes.readUInt32BE(20)).toBe(1080);
@@ -78,7 +78,7 @@ test('textured scene rebuilds retain a bounded number of GPU resources', async (
     await page.getByRole('button', { name: 'Import JSON', exact: true }).click();
     await (await chooser).setFiles(resolve('tests/fixtures/connected-dimensions.openplan.json'));
     await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-    await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
+    await page.getByRole('button', { name: 'Wall 1', exact: true }).click();
     await page.getByRole('button', { name: '3D', exact: true }).click();
     await page.waitForLoadState('networkidle');
     // Software WebGL can spend more than 10 seconds compiling the first textured frame.

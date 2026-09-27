@@ -63,12 +63,12 @@
   }}
   aria-label={$t('library.actions', { name: name || $t('library.untitled') })}
   aria-haspopup="menu" aria-expanded={open} aria-controls={open ? id : undefined}
-  class="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-lg shadow-sm border border-gray-200 flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-gray-50 disabled:opacity-40">
-  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-gray-500"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+  class="absolute top-3 right-3 w-8 h-8 bg-cream/90 backdrop-blur rounded-lg shadow-sm border border-line flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-gray-50 disabled:opacity-40">
+  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-muted"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
 </button>
 {#if open}
   <div bind:this={menu} {id} role="menu" tabindex="-1" aria-label={$t('library.actions', { name: name || $t('library.untitled') })}
-    onkeydown={keydown} class="absolute top-12 right-3 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-40 z-50">
+    onkeydown={keydown} class="absolute top-12 right-3 bg-cream rounded-[12px] shadow-[0_12px_40px_rgba(50,40,30,0.14)] border border-line py-1 w-40 z-50">
     {#each actions as action}
       <button type="button" role="menuitem" tabindex="-1"
         onclick={() => { close(true); onaction(action); }}

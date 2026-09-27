@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale } from '$lib/i18n';
   import { furnitureName, customModelName } from '$lib/i18n/furnitureNames';
   import { entourageLabels } from '$lib/i18n/entourageLabels';
@@ -53,84 +54,84 @@
     const cats: Category[] = [];
 
     cats.push({
-      key: 'walls', label: $t('layers.walls'), icon: '🧱',
-      items: floor.walls.map((w, i) => ({ id: w.id, label: $t('layers.wall', { number: i + 1 }), icon: '─' })),
+      key: 'walls', label: $t('layers.walls'), icon: 'brick-wall',
+      items: floor.walls.map((w, i) => ({ id: w.id, label: $t('layers.wall', { number: i + 1 }), icon: 'minus' })),
     });
 
     cats.push({
-      key: 'doors', label: $t('layers.doors'), icon: '🚪',
-      items: floor.doors.map((d, i) => ({ id: d.id, label: $t('layers.door', { type: $t(`layers.value.${d.type}`), number: i + 1 }), icon: '🚪' })),
+      key: 'doors', label: $t('layers.doors'), icon: 'door-open',
+      items: floor.doors.map((d, i) => ({ id: d.id, label: $t('layers.door', { type: $t(`layers.value.${d.type}`), number: i + 1 }), icon: 'door-open' })),
     });
 
     cats.push({
-      key: 'windows', label: $t('layers.windows'), icon: '🪟',
-      items: floor.windows.map((w, i) => ({ id: w.id, label: $t('layers.window', { type: $t(`layers.value.${w.type}`), number: i + 1 }), icon: '🪟' })),
+      key: 'windows', label: $t('layers.windows'), icon: 'app-window',
+      items: floor.windows.map((w, i) => ({ id: w.id, label: $t('layers.window', { type: $t(`layers.value.${w.type}`), number: i + 1 }), icon: 'app-window' })),
     });
 
     cats.push({
-      key: 'furniture', label: $t('layers.furniture'), icon: '🪑',
+      key: 'furniture', label: $t('layers.furniture'), icon: 'armchair',
       items: floor.furniture.map((fi) => {
         const cat = getCatalogItem(fi.catalogId);
-        return { id: fi.id, label: customModelName(fi, $currentProject) ?? furnitureName(fi.catalogId, $locale), icon: cat?.icon ?? '📦' };
+        return { id: fi.id, label: customModelName(fi, $currentProject) ?? furnitureName(fi.catalogId, $locale), icon: cat?.icon ?? 'package' };
       }),
     });
 
     if (floor.entourage?.length) {
       cats.push({
-        key: 'entourage', label: $t('layers.entourage'), icon: '🌳',
-        items: floor.entourage.map((en, i) => ({ id: en.id, label: entourageLabels[en.defId] ? $t(entourageLabels[en.defId]) : getEntourageDef(en.defId)?.name ?? $t('layers.custom', { number: i + 1 }), icon: '🌳' })),
+        key: 'entourage', label: $t('layers.entourage'), icon: 'trees',
+        items: floor.entourage.map((en, i) => ({ id: en.id, label: entourageLabels[en.defId] ? $t(entourageLabels[en.defId]) : getEntourageDef(en.defId)?.name ?? $t('layers.custom', { number: i + 1 }), icon: 'trees' })),
       });
     }
 
     if (floor.stairs?.length) {
       cats.push({
-        key: 'stairs', label: $t('layers.stairs'), icon: '🪜',
-        items: floor.stairs.map((s, i) => ({ id: s.id, label: $t('layers.stair', { number: i + 1, direction: $t(`layers.value.${s.direction}`) }), icon: '🪜' })),
+        key: 'stairs', label: $t('layers.stairs'), icon: 'footprints',
+        items: floor.stairs.map((s, i) => ({ id: s.id, label: $t('layers.stair', { number: i + 1, direction: $t(`layers.value.${s.direction}`) }), icon: 'footprints' })),
       });
     }
 
     if (floor.columns?.length) {
       cats.push({
-        key: 'columns', label: $t('layers.columns'), icon: '🏛️',
-        items: floor.columns.map((c, i) => ({ id: c.id, label: $t('layers.column', { shape: $t(`layers.value.${c.shape}`), number: i + 1 }), icon: '🏛️' })),
+        key: 'columns', label: $t('layers.columns'), icon: 'landmark',
+        items: floor.columns.map((c, i) => ({ id: c.id, label: $t('layers.column', { shape: $t(`layers.value.${c.shape}`), number: i + 1 }), icon: 'landmark' })),
       });
     }
 
     if (floor.guides?.length) {
       cats.push({
-        key: 'guides', label: $t('layers.guides'), icon: '📏',
-        items: floor.guides.map((g, i) => ({ id: g.id, label: $t('layers.guide', { orientation: $t(`layers.value.${g.orientation}`), number: i + 1 }), icon: g.orientation === 'horizontal' ? '─' : '│' })),
+        key: 'guides', label: $t('layers.guides'), icon: 'ruler',
+        items: floor.guides.map((g, i) => ({ id: g.id, label: $t('layers.guide', { orientation: $t(`layers.value.${g.orientation}`), number: i + 1 }), icon: g.orientation === 'horizontal' ? 'move-horizontal' : 'move-vertical' })),
       });
     }
 
     if (floor.measurements?.length) {
       cats.push({
-        key: 'measurements', label: $t('layers.measurements'), icon: '📐',
+        key: 'measurements', label: $t('layers.measurements'), icon: 'triangle-right',
         items: floor.measurements.map((m, i) => {
           const dist = Math.round(Math.hypot(m.x2 - m.x1, m.y2 - m.y1));
-          return { id: m.id, label: $t('layers.measurement', { number: i + 1, distance: dist }), icon: '📐' };
+          return { id: m.id, label: $t('layers.measurement', { number: i + 1, distance: dist }), icon: 'triangle-right' };
         }),
       });
     }
 
     if (floor.annotations?.length) {
       cats.push({
-        key: 'annotations', label: $t('layers.annotations'), icon: '📏',
+        key: 'annotations', label: $t('layers.annotations'), icon: 'ruler',
         items: floor.annotations.map((a, i) => {
           const dist = Math.round(Math.hypot(a.x2 - a.x1, a.y2 - a.y1));
           const label = a.label || `${dist} cm`;
-          return { id: a.id, label: $t('layers.annotation', { number: i + 1, label }), icon: '📏' };
+          return { id: a.id, label: $t('layers.annotation', { number: i + 1, label }), icon: 'ruler' };
         }),
       });
     }
 
     if (floor.textAnnotations?.length) {
       cats.push({
-        key: 'textAnnotations', label: $t('layers.textAnnotations'), icon: 'T',
+        key: 'textAnnotations', label: $t('layers.textAnnotations'), icon: 'type',
         items: floor.textAnnotations.map((note, i) => ({
           id: note.id,
           label: $t('layers.note', { number: i + 1, text: note.text.trim().replace(/\s+/g, ' ') || $t('layers.emptyNote') }),
-          icon: 'T',
+          icon: 'type',
         })),
       });
     }
@@ -142,7 +143,7 @@
 <!-- Keep the list above the 45vh phone properties sheet, with room for the 3rem toolbar. -->
 <div class="w-56 bg-white border-l border-gray-200 flex flex-col overflow-hidden text-xs select-none {(selId || $selectedRoomId || floor?.backgroundImage) ? 'max-md:max-h-[calc(55vh-3rem)]' : ''}">
   <div class="shrink-0 px-3 py-2 border-b border-gray-100 font-semibold text-gray-700 text-sm flex items-center gap-1.5">
-    🗂 {$t('layers.title')}
+    <AppIcon name="folders" size={16} /> {$t('layers.title')}
   </div>
   <div class="flex-1 min-h-0 overflow-y-auto">
     {#each categories as cat}
@@ -152,8 +153,8 @@
           class="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-50 text-left"
           onclick={() => toggle(cat.key)}
         >
-          <span class="text-[10px] text-gray-400 w-3">{collapsed[cat.key] ? '▸' : '▾'}</span>
-          <span>{cat.icon}</span>
+          <span class="w-3 text-gray-400"><AppIcon name={collapsed[cat.key] ? 'chevron-right' : 'chevron-down'} size={12} /></span>
+          <AppIcon name={cat.icon} size={14} class="text-muted" />
           <span class="font-medium text-gray-700 flex-1">{cat.label}</span>
           <span class="text-gray-400 mr-1">{cat.items.length}</span>
         </button>
@@ -166,7 +167,7 @@
           onclick={(e) => { e.stopPropagation(); toggleVisibility(cat.key); }}
           onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleVisibility(cat.key); } }}
           title={vis[cat.key] ? $t('layers.hide', { category: cat.label }) : $t('layers.show', { category: cat.label })}
-        >👁</span>
+        ><AppIcon name={vis[cat.key] ? 'eye' : 'eye-off'} size={14} /></span>
         <!-- Items -->
         {#if !collapsed[cat.key]}
           {#each cat.items as item}
@@ -177,7 +178,7 @@
               class:opacity-40={!vis[cat.key]}
               onclick={() => select(item.id, cat.key)}
             >
-              <span class="text-[10px]">{item.icon}</span>
+              <AppIcon name={item.icon} size={12} class="text-muted" />
               <span class="truncate flex-1">{item.label}</span>
             </button>
           {/each}
@@ -191,7 +192,7 @@
       <div class="border-b border-gray-100">
         <button onclick={() => toggle('rooms')} class="flex w-full items-center gap-1.5 px-2 py-1.5 text-left hover:bg-gray-50">
           <span class="w-3 text-[10px] text-gray-400">{collapsed.rooms ? '▸' : '▾'}</span>
-          <span>🏠</span><span class="flex-1 font-medium text-gray-700">{$t('layers.rooms')}</span><span class="text-gray-400">{rooms.length}</span>
+          <span><AppIcon name="house" size={16} /></span><span class="flex-1 font-medium text-gray-700">{$t('layers.rooms')}</span><span class="text-gray-400">{rooms.length}</span>
         </button>
         {#if !collapsed.rooms}
           {#each rooms as room (room.id)}

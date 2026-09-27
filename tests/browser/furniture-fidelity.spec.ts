@@ -58,7 +58,7 @@ for (const width of [1440, 390]) test(`furniture tint, finish and resource reuse
   await page.getByRole('button', { name: 'Show Solid Walls', exact: true }).click();
   await page.getByRole('button', { name: '2D', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-  await page.getByRole('button', { name: '💺 Armchair', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Armchair', exact: true }).first().click();
   await expect(page.getByRole('combobox', { name: 'Material', exact: true })).toHaveValue('');
   await page.getByRole('button', { name: 'Color: #191970', exact: true }).click();
   await page.getByRole('combobox', { name: 'Material', exact: true }).selectOption('Fabric');
@@ -79,7 +79,7 @@ for (const width of [1440, 390]) test(`furniture tint, finish and resource reuse
   }
   await page.reload();
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-  await page.getByRole('button', { name: '💺 Armchair', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Armchair', exact: true }).first().click();
   await expect(page.getByRole('combobox', { name: 'Material', exact: true })).toHaveValue('Fabric');
   await open3D(page);
   await expect.poll(async () => (await colors(page)).blue, { timeout: 60_000 }).toBeGreaterThan(50);

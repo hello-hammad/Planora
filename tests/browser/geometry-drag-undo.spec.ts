@@ -53,7 +53,7 @@ for (const kind of ['stair','column','text','endpoint','parallel','curve','room'
     const xy = kind==='stair' ? [100,300] : kind==='column' ? [450,100] : kind==='text' ? [120,100] : kind==='room' ? [400,300] : kind==='endpoint' ? [0,0] : kind==='curve' ? [300.25,-100] : [300.25,0];
     if (['endpoint','parallel','curve'].includes(kind)) {
       await page.getByRole('button',{name:'Save',exact:true}).press('l');
-      await page.getByRole('button',{name:'─ Wall 1',exact:true}).click();
+      await page.getByRole('button',{name:'Wall 1',exact:true}).click();
       await page.getByRole('button',{name:'Save',exact:true}).press('l');
     } else {
       const p=await point(xy[0],xy[1]); await page.mouse.click(p.x,p.y);

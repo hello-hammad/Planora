@@ -28,7 +28,7 @@ async function openPackage(page: Page, path = fixture) {
 }
 async function selectFurniture(page: Page) {
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-  await page.getByRole('button', { name: '💺 Armchair', exact: true }).click();
+  await page.getByRole('button', { name: 'Armchair', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Item details', exact: true })).toBeVisible();
 }
 async function fill(page: Page, name: string, value: string, numeric = false) {
@@ -126,7 +126,7 @@ for (const width of [1440, 390]) test(`item metadata and optimized photos surviv
   const notes = page.getByRole('textbox', { name: 'Item notes', exact: true });
   await notes.fill(''); await notes.press('l'); await notes.press('?'); await notes.press('/');
   await expect(notes).toHaveValue('l?/');
-  await expect(page.getByRole('button', { name: '💺 Armchair', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Armchair', exact: true })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await fill(page, 'Item cost', '-1', true);
   await expect(page.getByRole('spinbutton', { name: 'Item cost', exact: true })).toHaveValue('456.75');
@@ -136,7 +136,7 @@ for (const width of [1440, 390]) test(`item metadata and optimized photos surviv
   await expect(panel).toContainText('large-item-photo.jpg');
   await page.getByRole('button', { name: `Select room ${original.floors[0].rooms[0].name}`, exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Room use', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '💺 Armchair', exact: true }).click();
+  await page.getByRole('button', { name: 'Armchair', exact: true }).click();
   await expect(notes).toHaveValue('Chosen on the web');
   await expect(page.getByRole('spinbutton', { name: 'Item cost', exact: true })).toHaveValue('123.456');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -200,10 +200,10 @@ for (const locale of ['en', 'pt']) test(`${locale}: room, wall and opening metad
   await fill(page, tr('Item notes', 'Notas do item'), 'Web room update');
   await fill(page, tr('Room ceiling height (cm)', 'Pé-direito do ambiente (cm)'), '297.625', true);
   await page.getByRole('combobox', { name: tr('Room use', 'Uso do ambiente'), exact: true }).selectOption('office');
-  await page.getByRole('button', { name: tr('─ Wall 1', '─ Parede 1'), exact: true }).click();
+  await page.getByRole('button', { name: tr('Wall 1', 'Parede 1'), exact: true }).click();
   await expect(page.getByRole('combobox', { name: tr('Construction material', 'Material de construção'), exact: true })).toHaveValue('concrete');
   await page.getByRole('combobox', { name: tr('Construction material', 'Material de construção'), exact: true }).selectOption({ label: tr('Wood', 'Madeira') });
-  await page.getByRole('button', { name: tr('🚪 single door 1', '🚪 Porta simples 1'), exact: true }).click();
+  await page.getByRole('button', { name: tr('single door 1', 'Porta simples 1'), exact: true }).click();
   await fill(page, tr('Item cost', 'Custo do item'), '12.345', true);
   await page.getByRole('button', { name: tr('Export', 'Exportar'), exact: true }).click();
   const files = await readPackageZip(new Uint8Array(await download(page, tr('Download project package', 'Baixar pacote de projeto'))));
@@ -249,7 +249,7 @@ test('changing selection while a photo decodes cannot attach it to another item'
   });
   await choose(page, 'Add photo', resolve('tests/fixtures/item-photo.png'));
   await expect(page.getByRole('button', { name: 'Preparing photo…', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Wall 1', exact: true }).click();
   await page.evaluate(() => (window as any).finishPhotoDecode());
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   expect(await storedRecords(page)).toEqual(before);

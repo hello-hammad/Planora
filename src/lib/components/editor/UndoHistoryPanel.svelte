@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { onDestroy, tick } from 'svelte';
   import { t, locale, type Locale } from '$lib/i18n';
   import { undoMessage } from '$lib/i18n/undoMessages';
@@ -50,7 +51,7 @@
 </script>
 
 {#if visible}
-  <div bind:this={panel} role="region" aria-label={$t('undoHistory.title')} class="undo-history fixed bottom-12 left-4 w-64 max-h-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden">
+  <div bind:this={panel} role="region" aria-label={$t('undoHistory.title')} class="undo-history fixed top-[62px] right-4 max-md:bottom-4 max-md:top-auto max-md:left-[72px] max-md:right-auto w-64 max-h-80 bg-cream rounded-[14px] shadow-[0_12px_40px_rgba(50,40,30,0.16)] border border-line z-50 flex flex-col overflow-hidden">
     <!-- Header -->
     <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50">
       <div class="flex items-center gap-1.5">
@@ -66,7 +67,7 @@
           onclick={close}
           onkeydown={handleKeydown}
           aria-label={$t('undoHistory.close')}
-        >✕</button>
+        ><AppIcon name="x" size={16} /></button>
       </div>
     </div>
 

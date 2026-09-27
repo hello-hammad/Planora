@@ -36,7 +36,7 @@ for (const width of [1440, 390]) {
     await importProject(page, source);
     await expect(page.getByRole('application')).toContainText('1 room');
     await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-    await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
+    await page.getByRole('button', { name: 'Wall 1', exact: true }).click();
     const thickness = page.getByRole('spinbutton', { name: 'Thickness (cm)', exact: true });
     await thickness.fill('32.5'); await thickness.press('Tab');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -188,7 +188,7 @@ test('imported reserved and punctuated IDs save and reopen through project-libra
     await importProject(page, project);
     await expect(page.getByRole('application')).toContainText('1 room');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Projects', exact: true }).click();
     await page.getByRole('link', { name: project.name, exact: true }).click();
     await expect(page.getByRole('application')).toContainText('1 room');

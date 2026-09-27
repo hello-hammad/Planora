@@ -19,7 +19,7 @@ test(action === 'Escape' ? 'leaving elevation during a window drag retains an un
   }
   const original = await exported();
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-  await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Wall 1', exact: true }).click();
   await page.getByRole('button', { name: 'Elevation', exact: true }).first().click();
   const canvas = page.getByLabel('Wall elevation editor canvas', { exact: true });
   await expect(canvas).toBeVisible();

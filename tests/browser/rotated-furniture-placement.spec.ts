@@ -43,7 +43,7 @@ for (const placement of [0, 30, 'wall'] as const) test(`furniture placement at $
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
   expect(await exported()).toEqual(placed);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   await page.goto(`/editor?id=${projectId}`);
   expect(await exported()).toEqual(placed);
 });

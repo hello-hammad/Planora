@@ -30,7 +30,7 @@ for (const width of [1440, 390]) test(`keyboard room rename and floor materials 
   async function rename() {
     await canvas.focus(); await canvas.press('Shift+F10');
     await page.keyboard.press('ArrowDown');
-    const action = page.getByRole('menuitem', { name: '✏️ Renomear Cômodo', exact: true });
+    const action = page.getByRole('menuitem', { name: 'Renomear Cômodo', exact: true });
     await expect(action).toBeFocused(); await action.press('Enter');
     await expect(editor).toBeFocused();
   }
@@ -52,7 +52,7 @@ for (const width of [1440, 390]) test(`keyboard room rename and floor materials 
   await page.getByRole('button', { name: /Original \{name\}/ }).click();
   await canvas.focus(); await canvas.press('Shift+F10');
   await page.keyboard.press('End');
-  const deleteRoom = page.getByRole('menuitem', { name: '🗑️ Excluir Cômodo', exact: true });
+  const deleteRoom = page.getByRole('menuitem', { name: 'Excluir Cômodo', exact: true });
   await expect(deleteRoom).toBeFocused(); await deleteRoom.press('Enter');
   expect(await exported()).toEqual({ ...before, rooms: [], walls: [], doors: [], windows: [] });
   await page.getByRole('button', { name: 'Desfazer', exact: true }).click();
@@ -78,7 +78,7 @@ for (const width of [1440, 390]) test(`keyboard room rename and floor materials 
   await page.getByRole('button', { name: /Original \{name\}/ }).click();
   await canvas.focus(); await canvas.press('Shift+F10');
   await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown');
-  const materialAction = page.getByRole('menuitem', { name: '🎨 Alterar Textura do Piso', exact: true });
+  const materialAction = page.getByRole('menuitem', { name: 'Alterar Textura do Piso', exact: true });
   await expect(materialAction).toBeFocused(); await materialAction.press('Enter');
   const materials = page.getByRole('group', { name: 'Material do piso', exact: true });
   await expect(materials.locator(':focus')).toHaveCount(1);

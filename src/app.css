@@ -2,11 +2,70 @@
 
 @custom-variant dark (&.dark);
 
+/* Plus Jakarta Sans (SIL OFL 1.1), self-hosted: the app makes no third-party requests. */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Planora design tokens (see 01_PLANORA_DESIGN_SYSTEM.md) ─────
+   Use as Tailwind utilities: bg-ivory, bg-cream, text-charcoal,
+   border-line, bg-walnut, text-terracotta-ink, … */
+@theme {
+  --font-sans: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  --color-ivory: #F7F3ED;          /* page background */
+  --color-cream: #FFFDF9;          /* cards, panels, bars */
+  --color-paper: #FAF7F2;          /* canvas-adjacent surfaces */
+  --color-walnut: #6B4636;         /* primary */
+  --color-walnut-dark: #4A3026;    /* primary hover */
+  --color-walnut-tint: #F3E9DF;    /* selected state fill */
+  --color-wood: #E7D2BC;           /* architectural accents */
+  --color-terracotta: #C96F4A;     /* decorative accent only */
+  --color-terracotta-ink: #A24D2B; /* terracotta that must meet text contrast */
+  --color-terracotta-tint: #FBEEE6;
+  --color-sage: #8B9A83;
+  --color-sage-ink: #4F5C49;
+  --color-sage-tint: #EEF1EB;
+  --color-charcoal: #252321;       /* primary text */
+  --color-muted: #746F69;          /* secondary text */
+  --color-line: #DED7CF;           /* borders */
+  --color-hover: #F3ECE3;          /* hover fill on cream */
+  --color-danger: #B94A48;
+}
+
+html.dark {
+  --color-ivory: #171513;
+  --color-cream: #211e1b;
+  --color-paper: #1b1917;
+  --color-walnut-tint: #3a2a22;
+  --color-wood: #4a3a2e;
+  --color-terracotta-tint: #3a251c;
+  --color-sage-tint: #232b25;
+  --color-sage-ink: #b5c4ac;
+  --color-charcoal: #f1ece6;
+  --color-muted: #a9a097;
+  --color-line: #3a3530;
+  --color-hover: #2c2824;
+  --color-terracotta-ink: #e39a7a;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* ── Dark mode transitions ──────────────────────────────────── */
@@ -152,5 +211,58 @@ dialog.modal-overlay::backdrop { background: transparent; }
     max-width: none !important;
     box-shadow: none !important;
     break-inside: avoid;
+  }
+}
+
+/* ── Planora editor chrome: shared menu + icon-button styles ─────
+   Global because the "on" variants are chosen at runtime. */
+@layer components {
+  .icon-btn {
+    @apply flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] text-muted transition-colors hover:bg-hover hover:text-charcoal;
+  }
+  .icon-btn-on {
+    @apply bg-walnut-tint text-walnut-dark hover:bg-walnut-tint hover:text-walnut-dark;
+  }
+  .menu-panel {
+    @apply rounded-[14px] border border-line bg-cream shadow-[0_12px_40px_rgba(50,40,30,0.14)];
+  }
+  .menu-item {
+    @apply flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-charcoal transition-colors hover:bg-hover disabled:cursor-not-allowed;
+  }
+  .menu-label {
+    @apply px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-[0.08em] text-muted;
+  }
+}
+
+@layer components {
+  .status-chip {
+    @apply flex items-center gap-1 rounded-md px-1 py-0.5 transition-colors hover:bg-hover hover:text-charcoal aria-pressed:text-walnut-dark aria-[pressed=false]:opacity-60;
+  }
+}
+
+@layer components {
+  /* Project library */
+  .lib-util {
+    @apply flex h-9 items-center gap-2 rounded-[10px] border border-line bg-cream px-3 text-[13px] font-semibold text-charcoal transition-colors hover:bg-hover;
+  }
+  .plan-paper {
+    background-color: var(--color-paper);
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+}
+
+@layer components {
+  /* 3D viewer toolbar */
+  .viewer-btn {
+    @apply relative flex h-10 w-10 items-center justify-center rounded-xl text-[#252321] transition-colors hover:bg-[#F3ECE3];
+  }
+  .viewer-btn-on {
+    @apply bg-[#6B4636] text-white hover:bg-[#4A3026];
+  }
+  .viewer-tip {
+    @apply pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#2B2724] px-2 py-1 text-[11px] font-medium text-[#FFFDF9] opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100;
   }
 }

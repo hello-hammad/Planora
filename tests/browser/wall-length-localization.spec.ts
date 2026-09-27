@@ -10,7 +10,7 @@ test('Portuguese wall length controls preserve connections and reject invalid dr
   await page.getByRole('button', { name: 'Importar JSON', exact: true }).click();
   await (await chooser).setFiles(resolve('tests/fixtures/connected-dimensions.openplan.json'));
   await page.getByRole('button', { name: 'Salvar', exact: true }).press('l');
-  await page.getByRole('button', { name: '─ Parede 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Parede 1', exact: true }).click();
   const length = page.getByRole('textbox', { name: 'Comprimento (cm)', exact: true });
   await expect(length).toHaveValue('600.5');
   async function exported() {
@@ -48,7 +48,7 @@ test('Portuguese wall length controls preserve connections and reject invalid dr
   const sloped = await exported();
   expect(sloped.doors).toEqual(original.doors);
   expect(sloped.windows).toEqual(original.windows);
-  await page.getByRole('button', { name: '🔄 Inverter direção', exact: true }).click();
+  await page.getByRole('button', { name: 'Inverter direção', exact: true }).click();
   const reversed = await exported();
   expect(reversed.walls[0].start).toEqual(sloped.walls[0].end);
   expect(reversed.walls[0].end).toEqual(sloped.walls[0].start);

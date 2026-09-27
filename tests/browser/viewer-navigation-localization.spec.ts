@@ -28,9 +28,9 @@ test('Portuguese 3D navigation preserves project data and exports a screenshot',
   await viewer.getByRole('button', { name: 'Sair do modo de edição', exact: true }).click();
   const camera = viewer.getByRole('button', { name: 'Posicionar câmera interna', exact: true });
   await camera.click();
-  await expect(viewer.getByText('📷 Clique no piso para posicionar a câmera', { exact: true })).toBeVisible();
+  await expect(viewer.getByText('Clique no piso para posicionar a câmera', { exact: true })).toBeVisible();
   await camera.click();
-  await expect(viewer.getByText('📷 Clique no piso para posicionar a câmera', { exact: true })).toHaveCount(0);
+  await expect(viewer.getByText('Clique no piso para posicionar a câmera', { exact: true })).toHaveCount(0);
   const lighting = viewer.getByRole('button', { name: 'Controles de iluminação', exact: true });
   await expect(lighting).toHaveAttribute('aria-expanded', 'false');
   await lighting.click();

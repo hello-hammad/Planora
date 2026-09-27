@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale } from '$lib/i18n';
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
   let { message, onDismiss, title }: { message: string; onDismiss: () => void; title?: string } = $props();
@@ -11,6 +12,6 @@
       <p class="mt-1 text-sm text-gray-700">{projectServiceMessage(message, $locale)}</p>
       <p class="mt-2 text-xs text-gray-500">{$t('importError.help')}</p>
     </div>
-    <button aria-label={$t('importError.dismiss')} class="rounded px-2 py-1 text-gray-600 hover:bg-gray-100" onclick={onDismiss}>✕</button>
+    <button aria-label={$t('importError.dismiss')} class="rounded px-2 py-1 text-gray-600 hover:bg-gray-100" onclick={onDismiss}><AppIcon name="x" size={16} /></button>
   </div>
 </div>

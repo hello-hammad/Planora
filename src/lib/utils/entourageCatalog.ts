@@ -171,8 +171,8 @@ export function getEntourageDef(id: string): EntourageDef | undefined {
 }
 
 export const entourageCategories: { key: EntourageDef['category']; label: string; icon: string }[] = [
-  { key: 'people', label: 'People', icon: '🚶' },
-  { key: 'vehicles', label: 'Vehicles', icon: '🚗' },
-  { key: 'planting', label: 'Planting', icon: '🌳' },
-  { key: 'outdoor', label: 'Outdoor', icon: '⛱️' },
+  { key: 'people', label: 'People', icon: 'person-standing' },
+  { key: 'vehicles', label: 'Vehicles', icon: 'car' },
+  { key: 'planting', label: 'Planting', icon: 'trees' },
+  { key: 'outdoor', label: 'Outdoor', icon: 'umbrella' },
 ];

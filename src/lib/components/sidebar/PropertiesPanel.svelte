@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { wallMaterialLabels } from '$lib/i18n/wallMaterialLabels';
   import { entourageLabels } from '$lib/i18n/entourageLabels';
   import { roomTypeLabels, roomColorLabels, floorGroupLabels, floorMaterialLabels } from '$lib/i18n/roomPropertyLabels';
@@ -46,7 +47,34 @@
   }
 
   let { is3D = false }: { is3D?: boolean } = $props();
-  let wallSideTab = $state<'interior' | 'exterior'>('interior');
+  // Which side(s) of the selected wall a colour/texture change applies to.
+  let wallSideTab = $state<'both' | 'interior' | 'exterior'>('both');
+
+  /** Current finish of the selected wall on the chosen side(s); blank when both sides differ. */
+  const wallFinish = $derived.by(() => {
+    const w = selectedWall;
+    const intColor = w?.interiorColor || w?.color || '';
+    const extColor = w?.exteriorColor || w?.color || '';
+    const intTex = !w || w.interiorTexture === 'none' ? undefined : (w.interiorTexture || w.texture);
+    const extTex = !w || w.exteriorTexture === 'none' ? undefined : (w.exteriorTexture || w.texture);
+    return {
+      intColor,
+      sideColor: wallSideTab === 'interior' ? intColor : wallSideTab === 'exterior' ? extColor : intColor === extColor ? intColor : '',
+      sideTex: wallSideTab === 'interior' ? intTex : wallSideTab === 'exterior' ? extTex : intTex === extTex ? intTex : '__mixed',
+    };
+  });
+
+  /** Apply a colour and/or texture to the chosen side(s) of the selected wall as one edit. */
+  function setWallSideFinish(finish: { color?: string; texture?: string }) {
+    if (!selectedWall) return;
+    const sides = wallSideTab === 'both' ? ['interior', 'exterior'] as const : [wallSideTab] as const;
+    const updates: Record<string, string> = {};
+    for (const side of sides) {
+      if (finish.color !== undefined) updates[`${side}Color`] = finish.color;
+      if (finish.texture !== undefined) updates[`${side}Texture`] = finish.texture;
+    }
+    updateWall(selectedWall.id, updates as Partial<Wall>);
+  }
   let selectedWall = $derived(floor?.walls?.find(w => w.id === selId) ?? null);
   let selectedDoor = $derived(floor?.doors?.find(d => d.id === selId) ?? null);
   let selectedWindow = $derived(floor?.windows?.find(w => w.id === selId) ?? null);
@@ -308,17 +336,17 @@
   }
 
   const roomTypes = [
-    { id: 'living', label: 'Living Room', icon: '🛋️' },
-    { id: 'bedroom', label: 'Bedroom', icon: '🛏️' },
-    { id: 'kitchen', label: 'Kitchen', icon: '🍳' },
-    { id: 'bathroom', label: 'Bathroom', icon: '🚿' },
-    { id: 'dining', label: 'Dining Room', icon: '🍽️' },
-    { id: 'office', label: 'Office', icon: '💻' },
-    { id: 'hallway', label: 'Hallway', icon: '🚶' },
-    { id: 'closet', label: 'Closet', icon: '👔' },
-    { id: 'laundry', label: 'Laundry', icon: '🧺' },
-    { id: 'garage', label: 'Garage', icon: '🚗' },
-    { id: 'custom', label: 'Custom', icon: '✏️' },
+    { id: 'living', label: 'Living Room', icon: 'sofa' },
+    { id: 'bedroom', label: 'Bedroom', icon: 'bed-double' },
+    { id: 'kitchen', label: 'Kitchen', icon: 'cooking-pot' },
+    { id: 'bathroom', label: 'Bathroom', icon: 'shower-head' },
+    { id: 'dining', label: 'Dining Room', icon: 'utensils' },
+    { id: 'office', label: 'Office', icon: 'laptop' },
+    { id: 'hallway', label: 'Hallway', icon: 'person-standing' },
+    { id: 'closet', label: 'Closet', icon: 'shirt' },
+    { id: 'laundry', label: 'Laundry', icon: 'shopping-basket' },
+    { id: 'garage', label: 'Garage', icon: 'car' },
+    { id: 'custom', label: 'Custom', icon: 'pencil' },
   ];
 
   function onRoomType(e: Event) {
@@ -353,11 +381,11 @@
     'concrete-block': catalogAssetUrl(`/textures/concrete.webp`), 'subway-tile': catalogAssetUrl(`/textures/subway-tile.webp`),
   };
   const textureGroups = [
-    { label: '🎨 Plain', ids: ['none'] },
-    { label: '🪵 Wood', ids: ['light-oak', 'walnut', 'bamboo', 'laminate'] },
-    { label: '🔲 Tile', ids: ['ceramic-white', 'ceramic-gray', 'porcelain', 'vinyl'] },
-    { label: '🪨 Stone', ids: ['marble-white', 'marble-dark', 'concrete', 'slate'] },
-    { label: '🧶 Carpet', ids: ['carpet-beige', 'carpet-gray'] },
+    { label: 'Plain', icon: 'palette', ids: ['none'] },
+    { label: 'Wood', icon: 'tree-deciduous', ids: ['light-oak', 'walnut', 'bamboo', 'laminate'] },
+    { label: 'Tile', icon: 'grid-2x2', ids: ['ceramic-white', 'ceramic-gray', 'porcelain', 'vinyl'] },
+    { label: 'Stone', icon: 'mountain', ids: ['marble-white', 'marble-dark', 'concrete', 'slate'] },
+    { label: 'Carpet', icon: 'rows-3', ids: ['carpet-beige', 'carpet-gray'] },
   ];
 
   let hasSelection = $derived(!!selectedWall || !!selectedDoor || !!selectedWindow || !!selectedFurniture || !!selectedRoom || !!selectedStair || !!selectedColumn || !!selectedTextAnnotation || !!selectedEntourage || (!is3D && hasBgImage));
@@ -416,7 +444,7 @@
           class="text-xs text-gray-600 hover:text-gray-900 border border-gray-200 px-2 py-0.5 rounded flex items-center gap-1 ml-auto"
           title={$t('wallProperties.reverseHint')}
         >
-          🔄 {$t('wallProperties.reverse')}
+          <AppIcon name="rotate-cw" size={16} /> {$t('wallProperties.reverse')}
         </button>
       </div>
       <button
@@ -451,95 +479,57 @@
           {selectedWall.curvePoint ? $t('wallProperties.curveOn') : $t('wallProperties.curveOff')}
         </button>
       </div>
-      <!-- Wall Material Tabs: Interior / Exterior -->
+      <!-- Wall finish: choose which side(s) a colour or texture applies to -->
       <div>
-        <div class="flex border-b border-gray-200 mb-3">
-          <button
-            class="flex-1 py-1.5 text-xs font-medium border-b-2 transition-colors {wallSideTab === 'interior' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600'}"
-            onclick={() => wallSideTab = 'interior'}
-          >{$t('wallProperties.interior')}</button>
-          <button
-            class="flex-1 py-1.5 text-xs font-medium border-b-2 transition-colors {wallSideTab === 'exterior' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600'}"
-            onclick={() => wallSideTab = 'exterior'}
-          >{$t('wallProperties.exterior')}</button>
+        <span class="mb-1.5 block text-xs text-gray-500">{$t('wallProperties.applyTo')}</span>
+        <div class="mb-1 grid grid-cols-3 gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5" role="group" aria-label={$t('wallProperties.applyTo')}>
+          {#each ([['both', $t('wallProperties.bothSides')], ['exterior', $t('wallProperties.exterior')], ['interior', $t('wallProperties.interior')]] as const) as [side, label]}
+            <button
+              class="rounded-md py-1.5 text-xs font-semibold transition-colors {wallSideTab === side ? 'bg-white text-gray-800 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-700'}"
+              aria-pressed={wallSideTab === side}
+              onclick={() => wallSideTab = side}
+            >{label}</button>
+          {/each}
         </div>
-        {#if wallSideTab === 'interior'}
-          {@const sideColor = selectedWall.interiorColor || selectedWall.color}
-          {@const sideTex = selectedWall.interiorTexture === 'none' ? undefined : (selectedWall.interiorTexture || selectedWall.texture)}
-          <div class="space-y-2">
-            <span class="text-xs text-gray-500">{$t('furnitureProperties.color')}</span>
-            <div class="grid grid-cols-6 gap-1.5">
-              {#each wallColors as wc}
-                <button
-                  class="w-7 h-7 rounded-md border-2 hover:border-gray-300 transition-colors {sideColor === wc.color ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200'}"
-                  style="background-color: {wc.color}"
-                  title={$t(wallMaterialLabels[wc.id])}
-                  onclick={() => { if (selectedWall) updateWall(selectedWall.id, { interiorColor: wc.color }); }}
-                ></button>
-              {/each}
-            </div>
-            <label class="flex items-center gap-2">
-              <span class="text-xs text-gray-500">{$t('furnitureProperties.custom')}</span>
-              <input type="color" value={sideColor} oninput={(e) => { if (selectedWall) updateWall(selectedWall.id, { interiorColor: (e.target as HTMLInputElement).value }); }} class="w-8 h-6 rounded border border-gray-200 cursor-pointer" />
-            </label>
-            <span class="text-xs text-gray-500">{$t('wallProperties.texture')}</span>
-            <div class="grid grid-cols-3 gap-1.5">
+        <p class="mb-3 text-[11px] text-gray-400">{wallSideTab === 'both' ? $t('wallProperties.bothHelp') : wallSideTab === 'exterior' ? $t('wallProperties.exteriorHelp') : $t('wallProperties.interiorHelp')}</p>
+        <div class="space-y-2">
+          <span class="text-xs text-gray-500">{$t('furnitureProperties.color')}</span>
+          <div class="grid grid-cols-6 gap-1.5">
+            {#each wallColors as wc}
               <button
-                class="p-1.5 rounded-md border-2 text-[10px] text-center h-14 {!sideTex ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
-                onclick={() => { if (selectedWall) updateWall(selectedWall.id, { interiorTexture: 'none' }); }}
-              >{$t('wallProperties.none')}</button>
-              {#each wallColors.filter(wc => wc.texture) as wc}
-                {@const texPath = wallTexPaths[wc.id] ?? ''}
-                <button
-                  class="rounded-md border-2 text-[10px] text-center h-14 flex flex-col items-center justify-end overflow-hidden relative {sideTex === wc.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
-                  style={texPath ? `background-image: url(${texPath}); background-size: cover; background-position: center;` : `background-color: ${wc.color}20`}
-                  onclick={() => { if (selectedWall) updateWall(selectedWall.id, { interiorTexture: wc.id, interiorColor: wc.color }); }}
-                ><span class="bg-white/80 backdrop-blur-sm rounded px-1 py-0.5 mb-0.5 text-gray-700">{$t(wallMaterialLabels[wc.id])}</span></button>
-              {/each}
-            </div>
+                class="w-7 h-7 rounded-md border-2 hover:border-gray-300 transition-colors {wallFinish.sideColor === wc.color ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200'}"
+                style="background-color: {wc.color}"
+                title={$t(wallMaterialLabels[wc.id])}
+                onclick={() => setWallSideFinish({ color: wc.color })}
+              ></button>
+            {/each}
           </div>
-        {:else}
-          {@const sideColor = selectedWall.exteriorColor || selectedWall.color}
-          {@const sideTex = selectedWall.exteriorTexture === 'none' ? undefined : (selectedWall.exteriorTexture || selectedWall.texture)}
-          <div class="space-y-2">
-            <span class="text-xs text-gray-500">{$t('furnitureProperties.color')}</span>
-            <div class="grid grid-cols-6 gap-1.5">
-              {#each wallColors as wc}
-                <button
-                  class="w-7 h-7 rounded-md border-2 hover:border-gray-300 transition-colors {sideColor === wc.color ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200'}"
-                  style="background-color: {wc.color}"
-                  title={$t(wallMaterialLabels[wc.id])}
-                  onclick={() => { if (selectedWall) updateWall(selectedWall.id, { exteriorColor: wc.color }); }}
-                ></button>
-              {/each}
-            </div>
-            <label class="flex items-center gap-2">
-              <span class="text-xs text-gray-500">{$t('furnitureProperties.custom')}</span>
-              <input type="color" value={sideColor} oninput={(e) => { if (selectedWall) updateWall(selectedWall.id, { exteriorColor: (e.target as HTMLInputElement).value }); }} class="w-8 h-6 rounded border border-gray-200 cursor-pointer" />
-            </label>
-            <span class="text-xs text-gray-500">{$t('wallProperties.texture')}</span>
-            <div class="grid grid-cols-3 gap-1.5">
+          <label class="flex items-center gap-2">
+            <span class="text-xs text-gray-500">{$t('furnitureProperties.custom')}</span>
+            <input type="color" value={wallFinish.sideColor || wallFinish.intColor} oninput={(e) => setWallSideFinish({ color: (e.target as HTMLInputElement).value })} class="w-8 h-6 rounded border border-gray-200 cursor-pointer" />
+          </label>
+          <span class="text-xs text-gray-500">{$t('wallProperties.texture')}</span>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button
+              class="p-1.5 rounded-md border-2 text-[10px] text-center h-14 {!wallFinish.sideTex ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
+              onclick={() => setWallSideFinish({ texture: 'none' })}
+            >{$t('wallProperties.none')}</button>
+            {#each wallColors.filter(wc => wc.texture) as wc}
+              {@const texPath = wallTexPaths[wc.id] ?? ''}
               <button
-                class="p-1.5 rounded-md border-2 text-[10px] text-center h-14 {!sideTex ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
-                onclick={() => { if (selectedWall) updateWall(selectedWall.id, { exteriorTexture: 'none' }); }}
-              >{$t('wallProperties.none')}</button>
-              {#each wallColors.filter(wc => wc.texture) as wc}
-                {@const texPath = wallTexPaths[wc.id] ?? ''}
-                <button
-                  class="rounded-md border-2 text-[10px] text-center h-14 flex flex-col items-center justify-end overflow-hidden relative {sideTex === wc.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
-                  style={texPath ? `background-image: url(${texPath}); background-size: cover; background-position: center;` : `background-color: ${wc.color}20`}
-                  onclick={() => { if (selectedWall) updateWall(selectedWall.id, { exteriorTexture: wc.id, exteriorColor: wc.color }); }}
-                ><span class="bg-white/80 backdrop-blur-sm rounded px-1 py-0.5 mb-0.5 text-gray-700">{$t(wallMaterialLabels[wc.id])}</span></button>
-              {/each}
-            </div>
+                class="rounded-md border-2 text-[10px] text-center h-14 flex flex-col items-center justify-end overflow-hidden relative {wallFinish.sideTex === wc.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
+                style={texPath ? `background-image: url(${texPath}); background-size: cover; background-position: center;` : `background-color: ${wc.color}20`}
+                onclick={() => setWallSideFinish({ texture: wc.id, color: wc.color })}
+              ><span class="bg-white/80 backdrop-blur-sm rounded px-1 py-0.5 mb-0.5 text-gray-700">{$t(wallMaterialLabels[wc.id])}</span></button>
+            {/each}
           </div>
-        {/if}
+        </div>
       </div>
     </div>
 
   {:else if selectedDoor}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <span class="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-xs">🚪</span>
+      <span class="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-xs"><AppIcon name="door-open" size={16} /></span>
       {$t('openingProperties.door')}
     </h3>
     <div class="space-y-3">
@@ -592,7 +582,7 @@
 
   {:else if selectedWindow}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <span class="w-6 h-6 bg-cyan-100 rounded flex items-center justify-center text-xs">🪟</span>
+      <span class="w-6 h-6 bg-cyan-100 rounded flex items-center justify-center text-xs"><AppIcon name="app-window" size={16} /></span>
       {$t('openingProperties.window')}
     </h3>
     <div class="space-y-3">
@@ -631,14 +621,14 @@
   {:else if selectedFurniture}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
       <span class="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-xs">
-        {getCatalogItem(selectedFurniture.catalogId)?.icon ?? '🪑'}
+        <AppIcon name={getCatalogItem(selectedFurniture.catalogId)?.icon ?? 'armchair'} size={14} />
       </span>
       {$t('furnitureProperties.heading', { name: customModelName(selectedFurniture, $currentProject) ?? (getCatalogItem(selectedFurniture.catalogId) ? furnitureName(selectedFurniture.catalogId, $locale) : $t('furnitureProperties.fallback')) })}
       <button
         onclick={() => { if (selectedFurniture) toggleFurnitureLock(selectedFurniture.id); }}
         class="ml-auto px-1.5 py-0.5 rounded text-xs border transition-colors {selectedFurniture.locked ? 'bg-amber-100 border-amber-400 text-amber-700' : 'border-gray-200 hover:bg-gray-50 text-gray-500'}"
         title={selectedFurniture.locked ? $t('furnitureProperties.unlock') : $t('furnitureProperties.lock')}
-      >{selectedFurniture.locked ? `🔒 ${$t('furnitureProperties.locked')}` : '🔓'}</button>
+      ><span class="inline-flex items-center gap-1"><AppIcon name={selectedFurniture.locked ? 'lock' : 'lock-open'} size={13} />{selectedFurniture.locked ? $t('furnitureProperties.locked') : ''}</span></button>
     </h3>
     {#if selectedFurniture.catalogId === 'imported_object'}
       <p class="mb-3 text-xs text-gray-500 break-words">{$t('furnitureProperties.originalCategory', { category: selectedFurniture.sourceCategory || $t('furnitureProperties.unknown') })}</p>
@@ -772,7 +762,7 @@
 
   {:else if selectedRoom}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <span class="w-6 h-6 bg-green-100 rounded flex items-center justify-center text-xs">⬜</span>
+      <span class="w-6 h-6 bg-green-100 rounded flex items-center justify-center text-xs"><AppIcon name="square" size={16} /></span>
       {$t('roomProperties.heading')}
     </h3>
     <div class="space-y-3">
@@ -791,10 +781,10 @@
       <label class="block">
         <span class="text-xs text-gray-500">{$t('roomProperties.category')}</span>
         <select value={selectedRoom.roomType ?? 'indoor'} onchange={(e) => { if (selectedRoom) { const v = (e.target as HTMLSelectElement).value as RoomCategory; updateRoom(selectedRoom.id, { roomType: v }); updateDetectedRoom(selectedRoom.id, { roomType: v } as any); } }} class="w-full px-2 py-1 border border-gray-200 rounded text-sm">
-          <option value="indoor">🏠 {$t('areaSummary.indoor')}</option>
-          <option value="outdoor">🌳 {$t('areaSummary.outdoor')}</option>
-          <option value="garage">🚗 {$t('areaSummary.garage')}</option>
-          <option value="utility">🔧 {$t('areaSummary.utility')}</option>
+          <option value="indoor"><AppIcon name="house" size={16} /> {$t('areaSummary.indoor')}</option>
+          <option value="outdoor"><AppIcon name="trees" size={16} /> {$t('areaSummary.outdoor')}</option>
+          <option value="garage"><AppIcon name="car" size={16} /> {$t('areaSummary.garage')}</option>
+          <option value="utility"><AppIcon name="wrench" size={16} /> {$t('areaSummary.utility')}</option>
         </select>
       </label>
       <div>
@@ -836,7 +826,7 @@
         <div class="space-y-3">
           {#each textureGroups as group}
             <div>
-              <span class="text-xs font-medium text-gray-600 mb-1.5 block">{$t(floorGroupLabels[group.label])}</span>
+              <span class="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5"><AppIcon name={group.icon} size={13} class="text-muted" />{$t(floorGroupLabels[group.label])}</span>
               <div class="grid grid-cols-3 gap-1.5">
                 {#each group.ids as matId}
                   {@const mat = floorMaterials.find(m => m.id === matId)}
@@ -865,7 +855,7 @@
 
   {:else if selectedEntourage}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <span class="w-6 h-6 bg-green-100 rounded flex items-center justify-center text-xs">🌳</span>
+      <span class="w-6 h-6 bg-green-100 rounded flex items-center justify-center text-xs"><AppIcon name="trees" size={16} /></span>
       {$t('entourageLabels.title')}
     </h3>
     <div class="space-y-3">
@@ -893,7 +883,7 @@
 
   {:else if selectedStair}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <span class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-xs">🪜</span>
+      <span class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-xs"><AppIcon name="footprints" size={16} /></span>
       {$t('stairProperties.heading')}
     </h3>
     <div class="space-y-3">
@@ -932,15 +922,15 @@
     </div>
   {:else if selectedColumn}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <span class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-xs">🏛️</span>
+      <span class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-xs"><AppIcon name="landmark" size={16} /></span>
       {$t('columnProperties.heading')}
     </h3>
     <div class="space-y-3">
       <div role="group" aria-label={$t('columnProperties.shape')}>
         <span class="text-xs text-gray-500">{$t('columnProperties.shape')}</span>
         <div class="flex gap-2">
-          <button aria-pressed={selectedColumn.shape === 'round'} onclick={() => updateColumn(selectedColumn!.id, { shape: 'round' })} class="flex-1 px-2 py-1.5 border rounded text-sm transition-colors {selectedColumn.shape === 'round' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}">⭕ {$t('columnProperties.round')}</button>
-          <button aria-pressed={selectedColumn.shape === 'square'} onclick={() => updateColumn(selectedColumn!.id, { shape: 'square' })} class="flex-1 px-2 py-1.5 border rounded text-sm transition-colors {selectedColumn.shape === 'square' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}">⬜ {$t('columnProperties.square')}</button>
+          <button aria-pressed={selectedColumn.shape === 'round'} onclick={() => updateColumn(selectedColumn!.id, { shape: 'round' })} class="flex-1 px-2 py-1.5 border rounded text-sm transition-colors {selectedColumn.shape === 'round' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}"><AppIcon name="circle" size={16} /> {$t('columnProperties.round')}</button>
+          <button aria-pressed={selectedColumn.shape === 'square'} onclick={() => updateColumn(selectedColumn!.id, { shape: 'square' })} class="flex-1 px-2 py-1.5 border rounded text-sm transition-colors {selectedColumn.shape === 'square' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}"><AppIcon name="square" size={16} /> {$t('columnProperties.square')}</button>
         </div>
       </div>
       <label class="block">
@@ -978,7 +968,7 @@
   {:else if selectedTextAnnotation}
     <div class="space-y-3">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-        <span class="w-6 h-6 bg-emerald-100 rounded flex items-center justify-center text-xs">🏷️</span>
+        <span class="w-6 h-6 bg-emerald-100 rounded flex items-center justify-center text-xs"><AppIcon name="tag" size={13} /></span>
         {$t('annotationProperties.heading')}
       </h3>
       <label class="block">
@@ -1021,7 +1011,7 @@
   {#if hasBgImage && floor?.backgroundImage}
     <div class="mt-4 pt-3 border-t border-gray-200">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-        <span class="w-6 h-6 bg-blue-100 rounded flex items-center justify-center text-xs">🖼️</span>
+        <span class="w-6 h-6 bg-blue-100 rounded flex items-center justify-center text-xs"><AppIcon name="image" size={16} /></span>
         {$t('backgroundProperties.heading')}
       </h3>
       <div class="space-y-3">
@@ -1045,7 +1035,7 @@
           <button
             onclick={() => { calibrationPoints.set([]); calibrationMode.set(true); }}
             class="flex-1 px-2 py-1.5 border rounded text-sm border-gray-200 hover:bg-gray-50"
-          >📏 {$t('backgroundProperties.calibrate')}</button>
+          ><AppIcon name="ruler" size={16} /> {$t('backgroundProperties.calibrate')}</button>
         </div>
         <button
           onclick={() => setBackgroundImage(undefined)}

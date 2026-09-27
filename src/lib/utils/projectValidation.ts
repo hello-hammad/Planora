@@ -171,6 +171,29 @@ export function readProject(value: unknown): Project {
       seen.add(item.id); text(item.name, `${path}.name`); text(item.dataUrl, `${path}.dataUrl`, true); positive(item.aspect, `${path}.aspect`);
     }
   }
+  if (project!.finishes !== undefined) {
+    record(project!.finishes, 'finishes');
+    for (const key of ['doors', 'windowFrames', 'ceiling']) {
+      if (project!.finishes[key] !== undefined) text(project!.finishes[key], `finishes.${key}`);
+    }
+  }
+  if (project!.boards !== undefined) {
+    const kinds = new Set(['wall', 'floor', 'furniture', 'photo', 'color', 'note']);
+    for (const [i, board] of list(project!, 'boards', 'document').entries()) {
+      const path = `boards[${i}]`; record(board, path); text(board.id, `${path}.id`, true); text(board.name, `${path}.name`);
+      if (board.roomId !== undefined) text(board.roomId, `${path}.roomId`);
+      if (board.createdAt === undefined) board.createdAt = new Date(0).toISOString();
+      text(board.createdAt, `${path}.createdAt`);
+      for (const [j, item] of list(board, 'items', path).entries()) {
+        const itemPath = `${path}.items[${j}]`; record(item, itemPath); text(item.id, `${itemPath}.id`, true);
+        if (!kinds.has(item.kind)) fail(`${itemPath}.kind`, 'must be a known board item kind');
+        text(item.label, `${itemPath}.label`);
+        for (const key of ['color', 'texture', 'materialId', 'catalogId', 'dataUrl', 'note']) {
+          if (item[key] !== undefined) text(item[key], `${itemPath}.${key}`);
+        }
+      }
+    }
+  }
   for (const key of ['createdAt', 'updatedAt']) {
     const value = project![key];
     if (value !== undefined && !(value instanceof Date) && typeof value !== 'string') fail(key, 'must be a date');

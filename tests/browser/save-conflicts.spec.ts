@@ -116,8 +116,8 @@ test('simultaneous edits to different projects preserve both library entries', a
     page.getByRole('button', { name: 'Save', exact: true }).click(),
     other.getByRole('button', { name: 'Save', exact: true }).click(),
   ]);
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
-  await expect(other.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+  await expect(other.getByText('Saved', { exact: true })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0); await expect(other.getByRole('alert')).toHaveCount(0);
   const projects = await saved(page);
   expect(projects[source.id].name).toBe('First independent edit');

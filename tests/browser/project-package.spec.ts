@@ -37,12 +37,12 @@ for (const width of [1440, 390]) test(`furniture category previews and original 
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('link', { name: 'QA Furniture Categories (Imported copy)', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-  for (const name of ['🛏️ Queen Bed', '🧊 Fridge', '🪥 Sink', '🪜 Imported stairs', '📦 Unrecognized item']) {
+  for (const name of ['Queen Bed', 'Fridge', 'Sink', 'Imported stairs', 'Unrecognized item']) {
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   }
-  await page.getByRole('button', { name: '📦 Unrecognized item', exact: true }).click();
+  await page.getByRole('button', { name: 'Unrecognized item', exact: true }).click();
   await expect(page.getByText('Original category: future-appliance. Shown as a neutral box.', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '🛏️ Queen Bed', exact: true }).click();
+  await page.getByRole('button', { name: 'Queen Bed', exact: true }).click();
   const field = page.getByRole('spinbutton', { name: 'Width (cm)', exact: true });
   await expect(field).toHaveValue('160.125');
   await field.fill('137.875'); await field.press('Tab');
@@ -94,7 +94,7 @@ for (const width of [1440, 390]) test(`native package preview/import/edit/reload
   await dialog.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('link', { name: 'QA Project Package (Imported copy)', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-  await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Wall 1', exact: true }).click();
   await expect(page.getByRole('spinbutton', { name: 'Thickness (cm)', exact: true })).toHaveValue('27.5');
   await page.getByRole('spinbutton', { name: 'Thickness (cm)', exact: true }).fill('33.75');
   await page.getByRole('spinbutton', { name: 'Thickness (cm)', exact: true }).press('Tab');

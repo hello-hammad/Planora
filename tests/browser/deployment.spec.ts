@@ -168,7 +168,7 @@ test('failed update requests remain quiet and retry after recovery', async ({ pa
     await expect(page.getByRole('button', { name: 'Save and reload' })).toHaveCount(0);
     await rename(page, 'Still editable offline');
     await page.getByRole('button', { name: /^(?:Save|Salvar)$/, exact: true }).click();
-    await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
     await context.setOffline(false);
     server.serve(server.different);
     await advanceCheck(page);

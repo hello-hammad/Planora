@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale } from '$lib/i18n';
   import { furnitureName, customModelName } from '$lib/i18n/furnitureNames';
   import { multiSelectionBounds } from '$lib/utils/multiSelectionBounds';
@@ -83,7 +84,6 @@
   let panStartY = 0;
   let panGestureMoved = false;
   let suppressNextDblClick = false;
-  let leftPanCandidate = false;
   let spaceDown = $state(false);
   let shiftDown = $state(false);
 
@@ -1032,142 +1032,123 @@
       minorStep = tickStep / minorDiv;
     }
 
-    // --- Horizontal ruler (top) ---
-    ctx.fillStyle = '#f1f3f5';
-    ctx.fillRect(R, 0, width - R, R);
-    ctx.strokeStyle = '#d1d5db';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(R, R); ctx.lineTo(width, R); ctx.stroke();
+    // Planora ruler palette: paper strip, warm ticks, walnut cursor marker.
+    const RULER_BG = '#FBF8F3', RULER_EDGE = '#E2D9CE', TICK_MAJOR = '#A89E93', TICK_MINOR = '#D6CDC2';
+    const LABEL = '#857C72', ORIGIN = '#C96F4A', CURSOR = '#6B4636';
+    const labelFont = `500 ${fontSize + 0.5}px "Plus Jakarta Sans", Inter, system-ui, sans-serif`;
+    const tickLen = (major: boolean, mid: boolean) => major ? 9 : mid ? 6 : 3.5;
 
-    // Ticks
+    // --- Horizontal ruler (top) ---
+    ctx.fillStyle = RULER_BG;
+    ctx.fillRect(R, 0, width - R, R);
+    ctx.strokeStyle = RULER_EDGE;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(R, R - 0.5); ctx.lineTo(width, R - 0.5); ctx.stroke();
+
     const worldLeft = screenToWorld(R, 0).x;
     const worldRight = screenToWorld(width, 0).x;
     const startTick = Math.floor(worldLeft / minorStep) * minorStep;
-
-    ctx.fillStyle = '#6b7280';
-    ctx.font = `${fontSize}px sans-serif`;
-    ctx.textAlign = 'center';
+    ctx.font = labelFont;
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     for (let wx = startTick; wx <= worldRight; wx += minorStep) {
-      const sx = worldToScreen(wx, 0).x;
+      const sx = Math.round(worldToScreen(wx, 0).x) + 0.5;
       if (sx < R) continue;
       const isMajor = Math.abs(wx % tickStep) < 0.01;
       const isMid = !isMajor && Math.abs(wx % (tickStep / 2)) < 0.01 && minorDiv >= 4;
-      const tickH = isMajor ? R * 0.7 : isMid ? R * 0.45 : R * 0.25;
-
-      // Highlight origin tick
       const isOrigin = Math.abs(wx) < 0.01;
-      ctx.strokeStyle = isOrigin ? '#ef4444' : isMajor ? '#9ca3af' : '#d1d5db';
-      ctx.lineWidth = isOrigin ? 1.5 : isMajor ? 1 : 0.5;
+      ctx.strokeStyle = isOrigin ? ORIGIN : isMajor ? TICK_MAJOR : TICK_MINOR;
+      ctx.lineWidth = isOrigin ? 1.5 : 1;
       ctx.beginPath();
       ctx.moveTo(sx, R);
-      ctx.lineTo(sx, R - tickH);
+      ctx.lineTo(sx, R - (isOrigin ? R : tickLen(isMajor, isMid)));
       ctx.stroke();
-
       if (isMajor) {
-        ctx.fillStyle = isOrigin ? '#ef4444' : '#6b7280';
-        const label = isOrigin ? '0' : rulerLabel(wx, tickStep, isImperial);
-        ctx.fillText(label, sx, 2);
-        ctx.fillStyle = '#6b7280';
+        ctx.fillStyle = isOrigin ? ORIGIN : LABEL;
+        ctx.fillText(isOrigin ? '0' : rulerLabel(wx, tickStep, isImperial), sx + 3, 4);
       }
     }
 
     // --- Vertical ruler (left) ---
-    ctx.fillStyle = '#f1f3f5';
+    ctx.fillStyle = RULER_BG;
     ctx.fillRect(0, R, R, height - R);
-    ctx.strokeStyle = '#d1d5db';
+    ctx.strokeStyle = RULER_EDGE;
     ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(R, R); ctx.lineTo(R, height); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(R - 0.5, R); ctx.lineTo(R - 0.5, height); ctx.stroke();
 
     const worldTop = screenToWorld(0, R).y;
     const worldBottom = screenToWorld(0, height).y;
     const startTickY = Math.floor(worldTop / minorStep) * minorStep;
 
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-
     for (let wy = startTickY; wy <= worldBottom; wy += minorStep) {
-      const sy = worldToScreen(0, wy).y;
+      const sy = Math.round(worldToScreen(0, wy).y) + 0.5;
       if (sy < R) continue;
       const isMajor = Math.abs(wy % tickStep) < 0.01;
       const isMid = !isMajor && Math.abs(wy % (tickStep / 2)) < 0.01 && minorDiv >= 4;
-      const tickH = isMajor ? R * 0.7 : isMid ? R * 0.45 : R * 0.25;
-
       const isOrigin = Math.abs(wy) < 0.01;
-      ctx.strokeStyle = isOrigin ? '#ef4444' : isMajor ? '#9ca3af' : '#d1d5db';
-      ctx.lineWidth = isOrigin ? 1.5 : isMajor ? 1 : 0.5;
+      ctx.strokeStyle = isOrigin ? ORIGIN : isMajor ? TICK_MAJOR : TICK_MINOR;
+      ctx.lineWidth = isOrigin ? 1.5 : 1;
       ctx.beginPath();
       ctx.moveTo(R, sy);
-      ctx.lineTo(R - tickH, sy);
+      ctx.lineTo(R - (isOrigin ? R : tickLen(isMajor, isMid)), sy);
       ctx.stroke();
-
       if (isMajor) {
-        const label = isOrigin ? '0' : rulerLabel(wy, tickStep, isImperial);
         ctx.save();
-        ctx.translate(R - 3, sy);
+        ctx.translate(4, sy + 3);
         ctx.rotate(-Math.PI / 2);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillStyle = isOrigin ? '#ef4444' : '#6b7280';
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillText(label, 0, 0);
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = isOrigin ? ORIGIN : LABEL;
+        ctx.font = labelFont;
+        ctx.fillText(isOrigin ? '0' : rulerLabel(wy, tickStep, isImperial), 0, 0);
         ctx.restore();
       }
     }
 
-    // Corner square with origin marker
-    ctx.fillStyle = '#e5e7eb';
+    // Corner: unit badge instead of a bare crosshair.
+    ctx.fillStyle = '#F3ECE3';
     ctx.fillRect(0, 0, R, R);
-    ctx.strokeStyle = '#d1d5db';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, R, R);
-    // Origin crosshair in corner
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 1;
-    const cx = R / 2, cy = R / 2;
+    ctx.strokeStyle = RULER_EDGE;
     ctx.beginPath();
-    ctx.moveTo(cx - 4, cy); ctx.lineTo(cx + 4, cy);
-    ctx.moveTo(cx, cy - 4); ctx.lineTo(cx, cy + 4);
+    ctx.moveTo(R - 0.5, 0); ctx.lineTo(R - 0.5, R);
+    ctx.moveTo(0, R - 0.5); ctx.lineTo(R, R - 0.5);
     ctx.stroke();
+    ctx.fillStyle = CURSOR;
+    ctx.font = `700 8.5px "Plus Jakarta Sans", Inter, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(isImperial ? 'ft' : 'cm', R / 2, R / 2 + 0.5);
 
-    // Mouse position indicators on rulers — thin line + triangle
+    // Cursor markers: a walnut line across each ruler with a small value pill.
     const mScreen = worldToScreen(mousePos.x, mousePos.y);
-
-    // Horizontal: thin tracking line spanning ruler height
+    const pill = (text: string, x: number, y: number, vertical: boolean) => {
+      ctx.font = `600 ${fontSize}px "Plus Jakarta Sans", Inter, system-ui, sans-serif`;
+      const w = ctx.measureText(text).width + 8, h = 13;
+      ctx.save();
+      ctx.translate(x, y);
+      if (vertical) ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = CURSOR;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 4);
+      ctx.fill();
+      ctx.fillStyle = '#FFFDF9';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 0, 0.5);
+      ctx.restore();
+    };
     if (mScreen.x > R) {
-      ctx.strokeStyle = 'rgba(59,130,246,0.5)';
+      ctx.strokeStyle = CURSOR;
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(mScreen.x, 0);
-      ctx.lineTo(mScreen.x, R);
-      ctx.stroke();
-      // Triangle indicator
-      ctx.fillStyle = '#3b82f6';
-      ctx.beginPath();
-      ctx.moveTo(mScreen.x, R);
-      ctx.lineTo(mScreen.x - 3, R - 6);
-      ctx.lineTo(mScreen.x + 3, R - 6);
-      ctx.closePath();
-      ctx.fill();
+      ctx.beginPath(); ctx.moveTo(mScreen.x, 0); ctx.lineTo(mScreen.x, R); ctx.stroke();
+      pill(rulerLabel(mousePos.x, minorStep, isImperial), Math.max(R + 18, Math.min(width - 18, mScreen.x)), R / 2, false);
     }
-
-    // Vertical: thin tracking line spanning ruler width
     if (mScreen.y > R) {
-      ctx.strokeStyle = 'rgba(59,130,246,0.5)';
+      ctx.strokeStyle = CURSOR;
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, mScreen.y);
-      ctx.lineTo(R, mScreen.y);
-      ctx.stroke();
-      // Triangle indicator
-      ctx.fillStyle = '#3b82f6';
-      ctx.beginPath();
-      ctx.moveTo(R, mScreen.y);
-      ctx.lineTo(R - 6, mScreen.y - 3);
-      ctx.lineTo(R - 6, mScreen.y + 3);
-      ctx.closePath();
-      ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, mScreen.y); ctx.lineTo(R, mScreen.y); ctx.stroke();
+      pill(rulerLabel(mousePos.y, minorStep, isImperial), R / 2, Math.max(R + 18, Math.min(height - 18, mScreen.y)), true);
     }
 
     ctx.restore();
@@ -1192,7 +1173,7 @@
     if (canvas) updateZoomControlsPosition();
     if (!ctx) return;
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#f8f9fa';
+    ctx.fillStyle = '#FAF8F4';
     ctx.fillRect(0, 0, width, height);
     drawGrid();
     if (layerVis.guides) drawGuides();
@@ -2257,7 +2238,7 @@
   }
 
   function onCanvasMouseLeave() {
-    if (isPanning || leftPanCandidate) onMouseUp(new MouseEvent('mouseup'));
+    if (isPanning) onMouseUp(new MouseEvent('mouseup'));
   }
 
   function onMouseDown(e: MouseEvent) {
@@ -2278,7 +2259,8 @@
     selectionPress = null;
     canvasGestureActive = true;
     canvasPressPosition = { x: e.clientX, y: e.clientY };
-    leftPanCandidate = e.button === 0 && e.detail === 1 && currentTool === 'select';
+    // Left-drag moves what it presses and box-selects on empty canvas. Pan with the
+    // right or middle button, Space+drag, or the Pan toggle.
     if (e.button === 0 && e.shiftKey && currentTool === 'select' && currentFloor && !spaceDown && !$panMode) {
       const rect = canvas.getBoundingClientRect();
       const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
@@ -2817,13 +2799,6 @@
     const rect = canvas.getBoundingClientRect();
     mousePos = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
 
-    if (leftPanCandidate && (e.buttons & 1) !== 0 && Math.hypot(e.clientX - canvasPressPosition.x, e.clientY - canvasPressPosition.y) > 3) {
-      leftPanCandidate = false;
-      isPanning = true;
-      panStartX = e.clientX;
-      panStartY = e.clientY;
-      panGestureMoved = true;
-    }
 
     // Pan before any selection or marquee logic. Some browsers report a
     // right-button drag through `buttons` even when the initial context-menu
@@ -3128,7 +3103,6 @@
   function onMouseUp(e: MouseEvent) {
     markDirty();
     canvasGestureActive = false;
-    leftPanCandidate = false;
     if (isPanning && panGestureMoved) suppressNextDblClick = true;
     isPanning = false;
     panGestureMoved = false;
@@ -4254,7 +4228,7 @@
   {#if currentFloor && !hasPlanContent(currentFloor) && !(layerVis.floorBelow && floorBelow && hasPlanContent(floorBelow))}
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div class="text-center opacity-60">
-        <div class="text-5xl mb-3">🏠</div>
+        <div class="mb-3 text-walnut/70"><AppIcon name="house" size={44} strokeWidth={1.5} /></div>
         <div class="text-sm font-medium text-gray-500">{$t('canvasHints.start')}</div>
         <div class="text-xs text-gray-400 mt-1">{$t('canvasHints.draw')} <span class="font-mono bg-gray-100 px-1 rounded">W</span> {$t('canvasHints.drag')}</div>
       </div>
@@ -4267,60 +4241,113 @@
       aria-label={$t('canvasHints.minimap')}
       width="180"
       height="120"
-      class="absolute bottom-10 right-2 rounded-lg shadow-lg border border-gray-300 cursor-crosshair bg-white max-md:hidden"
+      class="absolute bottom-16 right-2 rounded-xl border border-line bg-cream shadow-[0_8px_30px_rgba(50,40,30,0.1)] cursor-crosshair max-md:hidden"
       style="z-index: 15;"
       onclick={onMinimapClick}
     ></canvas>
   {/if}
   <!-- Keep controls above classic horizontal scrollbars, which consume height on Linux. -->
-  <div style:--visible-bottom={`${zoomControlsBottom}px`} class="absolute bottom-2 right-2 max-md:bottom-[calc(var(--visible-bottom)+3rem)] max-md:left-2 max-md:overflow-x-auto max-md:min-h-12 max-md:items-center max-md:whitespace-nowrap max-md:[&>*]:shrink-0 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex gap-3">
-    {#if detectedRooms.length > 0}
-      <span>{$t(detectedRooms.length === 1 ? 'canvasStatus.roomsOne' : 'canvasStatus.roomsMany', { count: detectedRooms.length })}</span>
-      <span>{formatArea(detectedRooms.reduce((s, r) => s + r.area, 0), $projectSettings.units)}</span>
-      <span class="text-gray-300">|</span>
-    {/if}
-    {#if currentFloor}
-      <span>{$t(currentFloor.walls.length === 1 ? 'canvasStatus.wallsOne' : 'canvasStatus.wallsMany', { count: currentFloor.walls.length })}</span>
-      {#if currentFloor.doors.length > 0}
-        <span>{$t(currentFloor.doors.length === 1 ? 'canvasStatus.doorsOne' : 'canvasStatus.doorsMany', { count: currentFloor.doors.length })}</span>
+  <!-- Bottom bar: zoom · plan stats · display toggles. One bar so nothing overlaps.
+       Kept above classic horizontal scrollbars, which consume height on Linux. -->
+  <div style:--visible-bottom={`${zoomControlsBottom}px`} class="@container pointer-events-none absolute left-3 right-2 z-20 bottom-[var(--visible-bottom)] max-md:left-2 max-md:bottom-[calc(var(--visible-bottom)+4rem)]">
+    <div class="pointer-events-auto flex w-full items-center gap-2 overflow-x-auto whitespace-nowrap rounded-xl border border-line bg-cream/90 py-1 pl-1 pr-3 text-[11.5px] font-medium text-muted shadow-[0_8px_30px_rgba(50,40,30,0.08)] backdrop-blur-md [&>*]:shrink-0">
+      <div class="flex items-center gap-0.5 text-charcoal">
+      <button
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-lg font-semibold text-charcoal hover:bg-hover"
+        title={$t('canvasZoom.outHint')}
+        aria-label={$t('canvasZoom.out')}
+        onclick={() => {
+          const newZoom = Math.max(minimumZoom, zoom * 0.8);
+          // Zoom towards canvas center
+          const worldCX = (width / 2 - width / 2) / zoom + camX;
+          const worldCY = (height / 2 - height / 2) / zoom + camY;
+          camX = worldCX - (width / 2 - width / 2) / newZoom;
+          camY = worldCY - (height / 2 - height / 2) / newZoom;
+          zoom = newZoom;
+        }}
+      >−</button>
+      <button
+        class="flex h-8 min-w-[3.5rem] items-center justify-center rounded-lg text-xs font-semibold tabular-nums text-charcoal hover:bg-hover"
+        title={$t('canvasZoom.resetHint')}
+        aria-label={$t('canvasZoom.reset')}
+        onclick={() => { zoom = 1; }}
+      >{zoom < 0.01 ? (zoom * 100).toPrecision(2) : Math.round(zoom * 100)}%</button>
+      <button
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-lg font-semibold text-charcoal hover:bg-hover"
+        title={$t('canvasZoom.inHint')}
+        aria-label={$t('canvasZoom.in')}
+        onclick={() => {
+          const newZoom = Math.min(10, zoom * 1.25);
+          zoom = newZoom;
+        }}
+      >+</button>
+      <div class="mx-0.5 h-5 w-px bg-line"></div>
+      <button
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-charcoal"
+        title={$t('canvasZoom.fitHint')}
+        aria-label={$t('canvasZoom.fit')}
+        onclick={() => zoomToFit()}
+      ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-charcoal disabled:cursor-not-allowed disabled:opacity-30"
+        title={$t('canvasZoom.selectionHint')}
+        aria-label={$t('canvasZoom.selection')}
+        disabled={fitSelectionIds().size === 0}
+        onclick={() => zoomToFit(true)}
+      ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5M9 9h6v6H9z"/></svg></button>
+      </div>
+      <span class="h-5 w-px bg-line" aria-hidden="true"></span>
+      {#if currentSelectedIds.size > 1}
+        <!-- Always visible: the selection count matters more than plan stats on narrow canvases. -->
+        <span class="rounded-md bg-walnut-tint px-2 py-0.5 font-semibold text-walnut-dark">{$t('canvasStatus.selected', { count: currentSelectedIds.size })}</span>
       {/if}
-      {#if currentFloor.windows.length > 0}
-        <span>{$t(currentFloor.windows.length === 1 ? 'canvasStatus.windowsOne' : 'canvasStatus.windowsMany', { count: currentFloor.windows.length })}</span>
-      {/if}
-      {#if currentFloor.furniture.length > 0}
-        <span>{$t(currentFloor.furniture.length === 1 ? 'canvasStatus.objectsOne' : 'canvasStatus.objectsMany', { count: currentFloor.furniture.length })}</span>
-      {/if}
-      <span class="text-gray-300">|</span>
-    {/if}
-    {#if currentSelectedIds.size > 1}
-      <span class="text-blue-600 font-medium">{$t('canvasStatus.selected', { count: currentSelectedIds.size })}</span>
-      <span class="text-gray-300">|</span>
-    {/if}
-    <span>{$t('canvasStatus.zoom', { value: Math.round(zoom * 100) })}</span>
-    <button class="hover:text-gray-700" onclick={() => zoomToFit()} title={$t('canvasZoom.fitHint')}>⊞ {$t('canvasDisplay.fit')}</button>
-    <button class="hover:text-gray-700" onclick={() => showGrid = !showGrid} title={$t('canvasDisplay.gridHint')} aria-pressed={showGrid}>
-      {showGrid ? '▦' : '▢'} {$t('canvasDisplay.grid')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => projectSettings.update(s => ({ ...s, snapToGrid: !s.snapToGrid }))} title={$t('canvasDisplay.snapHint')} aria-pressed={currentSnapToGrid}>
-      {currentSnapToGrid ? '🧲' : '↔'} {$t('canvasDisplay.snap')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))} title={$t('canvasDisplay.furnitureHint')} aria-pressed={showFurniture}>
-      {showFurniture ? '🪑' : '👻'} {$t('canvasDisplay.furniture')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showLayerPanel = !showLayerPanel} title={$t('layerVisibility.title')}>
-      🗂 {$t('layers.title')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showRulers = !showRulers} title={$t('canvasDisplay.rulersHint')} aria-pressed={showRulers}>
-      {showRulers ? '📏' : '📐'} {$t('canvasDisplay.rulers')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showMinimap = !showMinimap} title={$t('canvasDisplay.mapHint')} aria-pressed={showMinimap}>
-      {showMinimap ? '🗺' : '🗺'} {$t('canvasDisplay.map')}
-    </button>
+      <div class="hidden items-center gap-2.5 @[880px]:flex">
+        {#if detectedRooms.length > 0}
+          <span>{$t(detectedRooms.length === 1 ? 'canvasStatus.roomsOne' : 'canvasStatus.roomsMany', { count: detectedRooms.length })}</span>
+          <span>{formatArea(detectedRooms.reduce((s, r) => s + r.area, 0), $projectSettings.units)}</span>
+          <span class="h-3.5 w-px bg-line" aria-hidden="true"></span>
+        {/if}
+        {#if currentFloor}
+          <span>{$t(currentFloor.walls.length === 1 ? 'canvasStatus.wallsOne' : 'canvasStatus.wallsMany', { count: currentFloor.walls.length })}</span>
+          {#if currentFloor.doors.length > 0}
+            <span>{$t(currentFloor.doors.length === 1 ? 'canvasStatus.doorsOne' : 'canvasStatus.doorsMany', { count: currentFloor.doors.length })}</span>
+          {/if}
+          {#if currentFloor.windows.length > 0}
+            <span>{$t(currentFloor.windows.length === 1 ? 'canvasStatus.windowsOne' : 'canvasStatus.windowsMany', { count: currentFloor.windows.length })}</span>
+          {/if}
+          {#if currentFloor.furniture.length > 0}
+            <span>{$t(currentFloor.furniture.length === 1 ? 'canvasStatus.objectsOne' : 'canvasStatus.objectsMany', { count: currentFloor.furniture.length })}</span>
+          {/if}
+          <span class="h-3.5 w-px bg-line" aria-hidden="true"></span>
+        {/if}
+      </div>
+      <span class="min-w-2 flex-1" aria-hidden="true"></span>
+      <div class="flex items-center gap-2.5">
+        <button class="status-chip" onclick={() => showGrid = !showGrid} title={$t('canvasDisplay.gridHint')} aria-pressed={showGrid}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg> {$t('canvasDisplay.grid')}<span class="sr-only" aria-hidden="true">{showGrid ? 'on' : 'off'}</span>
+        </button>
+        <button class="status-chip" onclick={() => projectSettings.update(s => ({ ...s, snapToGrid: !s.snapToGrid }))} title={$t('canvasDisplay.snapHint')} aria-pressed={currentSnapToGrid}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v8a6 6 0 0 0 12 0V3M6 7h4M14 7h4"/></svg> {$t('canvasDisplay.snap')}<span class="sr-only" aria-hidden="true">{currentSnapToGrid ? 'on' : 'off'}</span>
+        </button>
+        <button class="status-chip" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))} title={$t('canvasDisplay.furnitureHint')} aria-pressed={showFurniture}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M3 11h18v6H3zM5 17v2M19 17v2"/></svg> {$t('canvasDisplay.furniture')}<span class="sr-only" aria-hidden="true">{showFurniture ? 'on' : 'off'}</span>
+        </button>
+        <button class="status-chip" onclick={() => showLayerPanel = !showLayerPanel} title={$t('layerVisibility.title')}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg> {$t('layers.title')}
+        </button>
+        <button class="status-chip" onclick={() => showRulers = !showRulers} title={$t('canvasDisplay.rulersHint')} aria-pressed={showRulers}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17L17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2"/></svg> {$t('canvasDisplay.rulers')}<span class="sr-only" aria-hidden="true">{showRulers ? 'on' : 'off'}</span>
+        </button>
+        <button class="status-chip" onclick={() => showMinimap = !showMinimap} title={$t('canvasDisplay.mapHint')} aria-pressed={showMinimap}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/></svg> {$t('canvasDisplay.map')}
+        </button>
+      </div>
+    </div>
   </div>
   <!-- Layer Visibility Panel -->
   {#if showLayerPanel}
-    <div style:--visible-bottom={`${zoomControlsBottom}px`} class="absolute bottom-12 right-2 max-md:bottom-[calc(var(--visible-bottom)+6rem)] z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 text-xs min-w-[160px]">
-      <div class="font-semibold text-gray-700 mb-2">{$t('layers.title')}</div>
+    <div style:--visible-bottom={`${zoomControlsBottom}px`} class="absolute bottom-16 right-2 max-md:bottom-[calc(var(--visible-bottom)+7.5rem)] z-20 min-w-[180px] rounded-[14px] border border-line bg-cream p-3 text-xs text-charcoal shadow-[0_12px_40px_rgba(50,40,30,0.14)]">
+      <div class="mb-2 font-bold text-charcoal">{$t('layers.title')}</div>
       {#each [['walls',$t('layers.walls')],['doors',$t('layers.doors')],['windows',$t('layers.windows')],['furniture',$t('layers.furniture')],['stairs',$t('layers.stairs')],['columns',$t('layers.columns')],['guides',$t('layers.guides')],['measurements',$t('layers.measurements')],['annotations',$t('layerVisibility.dimensions')],['textAnnotations',$t('layers.textAnnotations')]] as [key, label]}
         <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1">
           <input type="checkbox" checked={(layerVis as Record<string, boolean>)[key]} onchange={() => layerVisibility.update(v => ({ ...v, [key]: !(v as Record<string, boolean>)[key] }))} class="accent-blue-500" />
@@ -4349,8 +4376,12 @@
       const f = currentFloor;
       const wall = f.walls.find(w => w.id === currentSelectedId);
       if (wall) {
-        const s = worldToScreen((wall.start.x + wall.end.x) / 2, (wall.start.y + wall.end.y) / 2);
-        return { type: 'wall', pos: s, wall };
+        // Anchor above the wall's highest point (its curve bulge included) so the
+        // toolbar never covers the endpoint or curve handles it is about.
+        const mid = worldToScreen((wall.start.x + wall.end.x) / 2, (wall.start.y + wall.end.y) / 2);
+        const ys = [wall.start, wall.end, ...(wall.curvePoint ? [wall.curvePoint] : [])].map(p => worldToScreen(p.x, p.y).y);
+        const top = Math.min(...ys) - 14;
+        return top - 58 > 8 ? { type: 'wall', pos: { x: mid.x, y: top }, wall } : { type: 'wall', pos: { x: mid.x, y: Math.max(...ys) + 82 }, wall };
       }
       const door = f.doors.find(d => d.id === currentSelectedId);
       if (door) {
@@ -4381,24 +4412,24 @@
     })()}
     {#if el}
       <div
-        class="absolute z-40 flex w-max max-w-[min(460px,calc(100vw-24px))] items-center gap-0.5 overflow-x-auto rounded-xl border border-gray-300 bg-white px-1.5 py-1 shadow-xl"
+        class="absolute z-40 flex w-max max-w-[min(460px,calc(100vw-24px))] items-center gap-0.5 overflow-x-auto rounded-xl border border-line bg-cream/95 px-1.5 py-1 shadow-[0_8px_30px_rgba(50,40,30,0.12)] backdrop-blur-md"
         style="left: {el.pos.x}px; top: {el.pos.y - 58}px; transform: translateX(-50%);"
       >
-        <span class="px-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{el.type}</span>
-        <div class="h-5 w-px bg-gray-200"></div>
+        <span class="px-1 text-[10px] font-bold uppercase tracking-[0.08em] text-muted">{el.type}</span>
+        <div class="h-5 w-px bg-line"></div>
         {#if el.type === 'wall' && el.wall}
           {@const wallLength = Math.round(Math.hypot(el.wall.end.x - el.wall.start.x, el.wall.end.y - el.wall.start.y))}
           {@const wallAngle = Math.round(Math.atan2(el.wall.end.y - el.wall.start.y, el.wall.end.x - el.wall.start.x) * 180 / Math.PI)}
-          <span class="rounded bg-gray-50 px-1.5 py-1 text-[11px] text-gray-600" title="Wall angle">{wallAngle}°</span>
-          <label class="flex items-center gap-1 text-[10px] text-gray-500" title="Wall length">
+          <span class="rounded bg-ivory px-1.5 py-1 text-[11px] text-charcoal" title="Wall angle">{wallAngle}°</span>
+          <label class="flex items-center gap-1 text-[10px] text-muted" title="Wall length">
             <span>Length</span>
-            <input type="number" min="1" value={wallLength} class="w-14 rounded border border-gray-200 px-1 py-1 text-[11px]" onchange={(e) => setSelectedWallLength(Number((e.target as HTMLInputElement).value))} />
+            <input type="number" min="1" value={wallLength} class="w-14 rounded-md border border-line px-1 py-1 text-[11px]" onchange={(e) => setSelectedWallLength(Number((e.target as HTMLInputElement).value))} />
           </label>
-          <label class="flex items-center gap-1 text-[10px] text-gray-500" title="Wall thickness">
+          <label class="flex items-center gap-1 text-[10px] text-muted" title="Wall thickness">
             <span>Thick.</span>
-            <input type="number" min="1" value={el.wall.thickness} class="w-12 rounded border border-gray-200 px-1 py-1 text-[11px]" onchange={(e) => updateWall(el.wall!.id, { thickness: Math.max(1, Number((e.target as HTMLInputElement).value) || el.wall!.thickness) })} />
+            <input type="number" min="1" value={el.wall.thickness} class="w-12 rounded-md border border-line px-1 py-1 text-[11px]" onchange={(e) => updateWall(el.wall!.id, { thickness: Math.max(1, Number((e.target as HTMLInputElement).value) || el.wall!.thickness) })} />
           </label>
-          <div class="h-5 w-px bg-gray-200"></div>
+          <div class="h-5 w-px bg-line"></div>
         {/if}
         <button
           class="rounded border border-gray-200 px-1.5 py-1 text-[11px] text-gray-600 hover:bg-gray-50"
@@ -4494,53 +4525,6 @@
       {annotationStart ? 'Click second point to create annotation' : 'Click first point'} · N to exit · Esc to cancel
     </div>
   {/if}
-
-  <!-- Zoom Controls (bottom-left) -->
-  <div style:bottom={`${zoomControlsBottom}px`} class="absolute left-3 max-md:left-20 z-20 flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
-      title={$t('canvasZoom.outHint')}
-      aria-label={$t('canvasZoom.out')}
-      onclick={() => {
-        const newZoom = Math.max(minimumZoom, zoom * 0.8);
-        // Zoom towards canvas center
-        const worldCX = (width / 2 - width / 2) / zoom + camX;
-        const worldCY = (height / 2 - height / 2) / zoom + camY;
-        camX = worldCX - (width / 2 - width / 2) / newZoom;
-        camY = worldCY - (height / 2 - height / 2) / newZoom;
-        zoom = newZoom;
-      }}
-    >−</button>
-    <button
-      class="min-w-[3.5rem] h-7 flex items-center justify-center rounded hover:bg-gray-100 text-xs font-medium text-gray-600 hover:text-gray-800 tabular-nums"
-      title={$t('canvasZoom.resetHint')}
-      aria-label={$t('canvasZoom.reset')}
-      onclick={() => { zoom = 1; }}
-    >{zoom < 0.01 ? (zoom * 100).toPrecision(2) : Math.round(zoom * 100)}%</button>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
-      title={$t('canvasZoom.inHint')}
-      aria-label={$t('canvasZoom.in')}
-      onclick={() => {
-        const newZoom = Math.min(10, zoom * 1.25);
-        zoom = newZoom;
-      }}
-    >+</button>
-    <div class="w-px h-5 bg-gray-200"></div>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 text-sm"
-      title={$t('canvasZoom.fitHint')}
-      aria-label={$t('canvasZoom.fit')}
-      onclick={() => zoomToFit()}
-    >⊞</button>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 text-sm disabled:opacity-30 disabled:cursor-not-allowed"
-      title={$t('canvasZoom.selectionHint')}
-      aria-label={$t('canvasZoom.selection')}
-      disabled={fitSelectionIds().size === 0}
-      onclick={() => zoomToFit(true)}
-    >⊡</button>
-  </div>
 
   {#if splitBlocked}
     <div role="status" class="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-md max-w-[90%]">

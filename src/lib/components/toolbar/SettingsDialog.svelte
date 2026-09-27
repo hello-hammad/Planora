@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { onDestroy } from 'svelte';
   import { locale, t, type Locale } from '$lib/i18n';
   import { modalDialog } from '$lib/utils/modalDialog';
@@ -98,7 +99,7 @@
       <!-- Header -->
       <div class="flex items-center justify-between px-5 pt-4 pb-2">
         <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">{$t('settings.title')}</h2>
-        <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none" onclick={close} aria-label={$t('settings.close')}>✕</button>
+        <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none" onclick={close} aria-label={$t('settings.close')}><AppIcon name="x" size={16} /></button>
       </div>
 
       <!-- Tabs -->
@@ -288,12 +289,12 @@
             <div>
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">{$t('settings.theme')}</span>
               <div class="flex gap-3">
-                {#each [['light', '☀️', $t('settings.themeLight')], ['dark', '🌙', $t('settings.themeDark')], ['system', '💻', $t('settings.themeSystem')]] as [value, icon, label]}
+                {#each [['light', 'sun', $t('settings.themeLight')], ['dark', 'moon', $t('settings.themeDark')], ['system', 'laptop', $t('settings.themeSystem')]] as [value, icon, label]}
                   <button
                     class="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all {currentTheme === value ? 'border-slate-600 bg-slate-50 dark:border-slate-400 dark:bg-slate-700' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
                     onclick={() => themePreference.set(value as ThemePreference)}
                   >
-                    <span class="text-2xl">{icon}</span>
+                    <AppIcon name={icon} size={24} />
                     <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{label}</span>
                   </button>
                 {/each}
@@ -319,7 +320,7 @@
                     onclick={() => geminiKeyVisible = !geminiKeyVisible}
                     aria-label={geminiKeyVisible ? $t('settings.hideKey') : $t('settings.showKey')}
                   >
-                    {geminiKeyVisible ? '🙈' : '👁️'}
+                    <AppIcon name={geminiKeyVisible ? 'eye-off' : 'eye'} size={16} />
                   </button>
                 </div>
               </div>

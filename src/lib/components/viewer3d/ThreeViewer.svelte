@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale, type TranslationKey } from '$lib/i18n';
   import { furnitureName } from '$lib/i18n/furnitureNames';
   import { catalogCategoryLabels } from '$lib/i18n/catalogCategories';
@@ -19,6 +20,7 @@
   import { createRoomSlabGeometry } from '$lib/utils/roomSlabGeometry';
   import { roomHoles } from '$lib/utils/roomNesting';
   import { createSlopedBoxGeometry } from '$lib/utils/slopedWallGeometry';
+  import { wallEndExtensions, frontFacesInterior, type WallEndExtension } from '$lib/utils/wallJoins';
   import { buildWallSegments, roomCeilingHeight, wallProfileSpans, wallPathProfile, pathOpening, doorPanelPose } from '$lib/utils/wallProfiles';
   import { assembleFloorStack } from '$lib/utils/floorStack';
   import { setFloorCameraPose } from '$lib/utils/floorCamera';
@@ -29,12 +31,17 @@
   import { WalkthroughMotion } from '$lib/utils/walkthroughMotion';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
   import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+  import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+  import { createGrassTexture, createSiteGroup, skyGradientStops, GRASS_TILE_CM } from '$lib/utils/siteScene';
   import { getCatalogItem, furnitureCatalog, furnitureCategories } from '$lib/utils/furnitureCatalog';
   import type { FurnitureDef } from '$lib/utils/furnitureCatalog';
   import { createWallHighlight } from '$lib/utils/wallHighlight';
   import { disposeModel, ownTexture } from '$lib/utils/furnitureModelResources';
   import { createFurnitureModelWithGLB, createPlacedFurnitureModel } from '$lib/utils/furnitureModelLoader';
-  import { addFurniture } from '$lib/stores/project';
+  import { addFurniture, addDoor, addWindow, addStair, addColumn, selectedTool, placingFurnitureId, placingDoorType, placingWindowType, placingStair, placingColumn, placingColumnShape } from '$lib/stores/project';
+  import { roomPresets } from '$lib/utils/roomPresets';
+  import { createEntourageModel } from '$lib/utils/entourage3d';
+  import { roomTemplates, placeRoomTemplate } from '$lib/utils/roomTemplates';
   import { detectRooms, resolveRoomGeometry, getRoomPolygon, roomCentroid, roomLabelPosition } from '$lib/utils/roomDetection';
   import { getMaterial } from '$lib/utils/materials';
   import { getWallTextureCanvas, getFloorTextureCanvas, setTextureLoadCallback } from '$lib/utils/textureGenerator';
@@ -95,8 +102,8 @@
 
   // Lighting controls state
   let lightingPanelOpen = $state(false);
-  let sunAzimuth = $state(135);      // 0-360 degrees
-  let sunElevation = $state(60);     // 0-90 degrees
+  let sunAzimuth = $state(58);       // 0-360 degrees — late-morning sun from the front-right
+  let sunElevation = $state(42);     // 0-90 degrees — low enough for readable shadows
   let ambientIntensity = $state(0.35);
   let timeOfDay = $state<'morning' | 'noon' | 'evening' | 'night' | null>(null);
 
@@ -106,6 +113,15 @@
   let sunLight: THREE.DirectionalLight;
   let fillLight: THREE.DirectionalLight;
   let rimLight: THREE.DirectionalLight;
+  /** Slowly orbit the camera around the house (the AI studio's 360° presentation view). */
+  let { autoRotate = false }: { autoRotate?: boolean } = $props();
+  let environmentTarget: THREE.WebGLRenderTarget | null = null;
+  let siteGroup: THREE.Group | null = null;
+  const siteCenter = new THREE.Vector3();
+  let sunDistance = 1500;
+  /** Trees and shrubs around the terrace (the lawn and terrace always show). */
+  let showLandscape = $state(true);
+  const DAY_SKY = { top: '#4f86c9', mid: '#96bfe6', horizon: '#dde7ec' };
   let skyCanvas: HTMLCanvasElement;
   let skyTexture: THREE.CanvasTexture;
 
@@ -143,8 +159,8 @@
   let aiProvider = $state<'gemini' | 'openai'>('gemini');
   let aiModel = $state('gemini-2.5-flash-image');
   const AI_MODELS = [
-    { id: 'gemini-2.5-flash-image', name: 'Nano Banana (2.5 Flash)', desc: 'Fast & efficient image gen ✓' },
-    { id: 'gemini-3-pro-image-preview', name: 'Nano Banana Pro (3 Pro)', desc: 'Best quality, thinking, up to 4K ✓' },
+    { id: 'gemini-2.5-flash-image', name: 'Nano Banana (2.5 Flash)', desc: 'Fast & efficient image gen' },
+    { id: 'gemini-3-pro-image-preview', name: 'Nano Banana Pro (3 Pro)', desc: 'Best quality, thinking, up to 4K' },
   ];
   let openaiModel = $state('');
   let renderController: AbortController | null = null;
@@ -555,22 +571,24 @@
   let ghostIntersection = new THREE.Vector3();
 
   const TIME_PRESETS = {
-    morning: { azimuth: 90, elevation: 25, ambient: 0.3, sunColor: 0xffe0a0, sunIntensity: 0.8, skyTop: '#f5a86c', skyMid: '#fdd89b', skyHorizon: '#ffe8c0', hemiSky: '#fdd89b', hemiGround: '#9b8060' },
-    noon:    { azimuth: 180, elevation: 80, ambient: 0.45, sunColor: 0xffffff, sunIntensity: 1.2, skyTop: '#3a7bd5', skyMid: '#87ceeb', skyHorizon: '#c8e8f8', hemiSky: '#87ceeb', hemiGround: '#8b7355' },
-    evening: { azimuth: 270, elevation: 15, ambient: 0.2, sunColor: 0xff8040, sunIntensity: 0.6, skyTop: '#2d1b69', skyMid: '#c84e3c', skyHorizon: '#f4a460', hemiSky: '#c84e3c', hemiGround: '#4a3520' },
-    night:   { azimuth: 0, elevation: 5, ambient: 0.08, sunColor: 0x8899cc, sunIntensity: 0.15, skyTop: '#0a0a2e', skyMid: '#141432', skyHorizon: '#1a1a3e', hemiSky: '#141432', hemiGround: '#0a0a15' },
+    morning: { azimuth: 90, elevation: 25, ambient: 0.1, sunColor: 0xffdcaa, sunIntensity: 1.9, skyTop: '#6a8fc4', skyMid: '#f2c9a0', skyHorizon: '#fbe3c8', hemiSky: '#f6d6b4', hemiGround: '#6f7f52' },
+    noon:    { azimuth: 150, elevation: 65, ambient: 0.1, sunColor: 0xfff6e6, sunIntensity: 2.4, skyTop: '#4f86c9', skyMid: '#96bfe6', skyHorizon: '#dde7ec', hemiSky: '#cfe3f5', hemiGround: '#6f7f52' },
+    evening: { azimuth: 270, elevation: 12, ambient: 0.08, sunColor: 0xff9a5c, sunIntensity: 1.6, skyTop: '#39406f', skyMid: '#d9825f', skyHorizon: '#f5b98a', hemiSky: '#e0a07a', hemiGround: '#4f5a3b' },
+    night:   { azimuth: 0, elevation: 5, ambient: 0.08, sunColor: 0x8899cc, sunIntensity: 0.2, skyTop: '#0a0f2a', skyMid: '#18203d', skyHorizon: '#2a3350', hemiSky: '#1c2440', hemiGround: '#10140d' },
   };
 
   function updateSunPosition() {
     if (!sunLight) return;
     const azRad = (sunAzimuth * Math.PI) / 180;
     const elRad = (sunElevation * Math.PI) / 180;
-    const dist = 1500;
+    const dist = sunDistance;
     sunLight.position.set(
-      dist * Math.cos(elRad) * Math.sin(azRad),
-      dist * Math.sin(elRad),
-      dist * Math.cos(elRad) * Math.cos(azRad)
+      siteCenter.x + dist * Math.cos(elRad) * Math.sin(azRad),
+      siteCenter.y + dist * Math.sin(elRad),
+      siteCenter.z + dist * Math.cos(elRad) * Math.cos(azRad)
     );
+    sunLight.target.position.copy(siteCenter);
+    sunLight.target.updateMatrixWorld();
     markSceneDirty();
   }
 
@@ -583,14 +601,13 @@
     if (!skyCanvas || !skyTexture) return;
     const cx = skyCanvas.getContext('2d')!;
     const grad = cx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0, topColor);
-    grad.addColorStop(0.4, midColor);
-    grad.addColorStop(0.55, horizonColor);
-    grad.addColorStop(0.7, '#d4cfc4');
-    grad.addColorStop(1.0, '#b8b0a0');
+    for (const [stop, color] of skyGradientStops(topColor, midColor, horizonColor)) grad.addColorStop(stop, color);
     cx.fillStyle = grad;
     cx.fillRect(0, 0, 4, 512);
     skyTexture.needsUpdate = true;
+    // Fog matches the horizon so the lawn fades into the sky instead of ending at an edge.
+    if (scene?.fog) (scene.fog as THREE.Fog).color.set(horizonColor);
+    markSceneDirty();
   }
 
   function applyTimePreset(preset: 'morning' | 'noon' | 'evening' | 'night') {
@@ -610,38 +627,14 @@
       hemiLight.groundColor.set(p.hemiGround);
       hemiLight.intensity = preset === 'night' ? 0.1 : 0.4;
     }
-    if (fillLight) fillLight.intensity = preset === 'night' ? 0.05 : 0.4;
-    if (rimLight) rimLight.intensity = preset === 'night' ? 0.05 : 0.25;
+    if (fillLight) fillLight.intensity = preset === 'night' ? 0.05 : 0.15;
+    if (rimLight) rimLight.intensity = preset === 'night' ? 0.05 : 0.12;
+    if (scene) scene.environmentIntensity = preset === 'night' ? 0.06 : 0.3;
     updateSkyGradient(p.skyTop, p.skyMid, p.skyHorizon);
   }
 
   const WALL_THICKNESS = 15;
   const BASEBOARD_HEIGHT = 8;
-
-  // Create a canvas-based floor texture
-  function createFloorTexture(): THREE.CanvasTexture {
-    const size = 256;
-    const c = document.createElement('canvas');
-    c.width = size; c.height = size;
-    const cx = c.getContext('2d')!;
-    // Hardwood pattern
-    cx.fillStyle = '#c4a882';
-    cx.fillRect(0, 0, size, size);
-    for (let y = 0; y < size; y += 32) {
-      for (let x = 0; x < size; x += 64) {
-        const offset = (y / 32) % 2 === 0 ? 0 : 32;
-        cx.fillStyle = y % 64 < 32 ? '#b89b72' : '#d4b892';
-        cx.fillRect(x + offset, y, 62, 30);
-        cx.strokeStyle = '#a08060';
-        cx.lineWidth = 0.5;
-        cx.strokeRect(x + offset, y, 62, 30);
-      }
-    }
-    const tex = ownTexture(new THREE.CanvasTexture(c));
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(10, 10);
-    return tex;
-  }
 
   function exitWalkthroughMode() {
     walkthroughMode = false;
@@ -656,12 +649,14 @@
 
   function onKeyDown(event: KeyboardEvent) {
     if (hasOpenModal()) return;
+    if (event.code === 'Escape' && armed3D) { cancelArmed3D(); return; }
     // ESC exits edit mode
     if (event.code === 'Escape' && editMode && !walkthroughMode) {
       if (furniturePlacementMode) {
         furniturePlacementMode = false;
         furniturePickerOpen = false;
         selectedCatalogId = null;
+        placingFurnitureId.set(null);
         removeGhostPreview();
         return;
       }
@@ -707,67 +702,29 @@
   function init() {
     scene = new THREE.Scene();
 
-    // Sky dome — hemisphere with gradient texture mapped inside
+    // Sky dome — equirectangular gradient; the lower half matches the horizon haze
     skyCanvas = document.createElement('canvas');
     skyCanvas.width = 4; skyCanvas.height = 512;
     const cx = skyCanvas.getContext('2d')!;
     const grad = cx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0, '#4a90d9');
-    grad.addColorStop(0.3, '#87ceeb');
-    grad.addColorStop(0.5, '#b8ddf0');
-    grad.addColorStop(0.55, '#f0ece4');
-    grad.addColorStop(0.7, '#d4cfc4');
-    grad.addColorStop(1.0, '#b8b0a0');
+    for (const [stop, color] of skyGradientStops(DAY_SKY.top, DAY_SKY.mid, DAY_SKY.horizon)) grad.addColorStop(stop, color);
     cx.fillStyle = grad;
     cx.fillRect(0, 0, 4, 512);
     skyTexture = ownTexture(new THREE.CanvasTexture(skyCanvas));
+    skyTexture.colorSpace = THREE.SRGBColorSpace;
     // Use as scene background (maps onto equirectangular projection)
     skyTexture.mapping = THREE.EquirectangularReflectionMapping;
     scene.background = skyTexture;
+    scene.fog = new THREE.Fog(DAY_SKY.horizon, 6000, 19000);
 
-    // Ground plane — textured concrete with grid overlay
+    // Ground — a lawn that fades into the horizon fog
     const groundSize = 40000;
     const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize);
-    // Generate a subtle concrete texture with grid
-    const groundCanvas = document.createElement('canvas');
-    groundCanvas.width = 1024; groundCanvas.height = 1024;
-    const gctx = groundCanvas.getContext('2d')!;
-    // Base concrete color with noise
-    gctx.fillStyle = '#c8c2b8';
-    gctx.fillRect(0, 0, 1024, 1024);
-    // Add subtle noise for concrete feel
-    for (let i = 0; i < 30000; i++) {
-      const nx = Math.random() * 1024;
-      const ny = Math.random() * 1024;
-      const v = 180 + Math.random() * 30;
-      gctx.fillStyle = `rgba(${v},${v-5},${v-12},0.15)`;
-      gctx.fillRect(nx, ny, 2, 2);
-    }
-    // Grid lines every 128px (= 500cm real-world at current repeat)
-    gctx.strokeStyle = 'rgba(0,0,0,0.08)';
-    gctx.lineWidth = 1;
-    const gridStep = 128;
-    for (let x = 0; x <= 1024; x += gridStep) {
-      gctx.beginPath(); gctx.moveTo(x, 0); gctx.lineTo(x, 1024); gctx.stroke();
-    }
-    for (let y = 0; y <= 1024; y += gridStep) {
-      gctx.beginPath(); gctx.moveTo(0, y); gctx.lineTo(1024, y); gctx.stroke();
-    }
-    // Thicker lines every 4 grid cells (= 2000cm / 20m)
-    gctx.strokeStyle = 'rgba(0,0,0,0.15)';
-    gctx.lineWidth = 2;
-    for (let x = 0; x <= 1024; x += gridStep * 4) {
-      gctx.beginPath(); gctx.moveTo(x, 0); gctx.lineTo(x, 1024); gctx.stroke();
-    }
-    for (let y = 0; y <= 1024; y += gridStep * 4) {
-      gctx.beginPath(); gctx.moveTo(0, y); gctx.lineTo(1024, y); gctx.stroke();
-    }
-    const groundTex = ownTexture(new THREE.CanvasTexture(groundCanvas));
-    groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
-    groundTex.repeat.set(groundSize / 4000, groundSize / 4000);
+    const groundTex = createGrassTexture();
+    groundTex.repeat.set(groundSize / GRASS_TILE_CM, groundSize / GRASS_TILE_CM);
     const groundMat = new THREE.MeshStandardMaterial({
       map: groundTex,
-      roughness: 0.92,
+      roughness: 0.96,
       metalness: 0
     });
     groundMat.polygonOffset = true;
@@ -789,15 +746,28 @@
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.05;
     renderer.domElement.dataset.plan3dCanvas = 'true';
     container.appendChild(renderer.domElement);
+    groundTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+    // Soft image-based lighting: gives walls and furniture gentle, realistic
+    // reflections and bounce light. Generated locally; no HDR download.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envScene = new RoomEnvironment();
+    environmentTarget = pmrem.fromScene(envScene, 0.04);
+    envScene.traverse(o => { if ((o as THREE.Mesh).isMesh) { (o as THREE.Mesh).geometry.dispose(); ((o as THREE.Mesh).material as THREE.Material).dispose(); } });
+    pmrem.dispose();
+    scene.environment = environmentTarget.texture;
+    scene.environmentIntensity = 0.3;
 
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.target.set(0, 100, 0);
     controls.maxPolarAngle = Math.PI / 2.05;
+    controls.autoRotateSpeed = 0.9;
+    controls.autoRotate = autoRotate;
     // Mark dirty when orbit controls move the camera
     controls.addEventListener('change', markSceneDirty);
 
@@ -807,6 +777,11 @@
       pointerDownPos = { x: e.clientX, y: e.clientY };
     });
     renderer.domElement.addEventListener('pointerup', (e) => {
+      // Build-panel placements (doors, windows, stairs, columns) work without Edit mode.
+      if (armed3D && !walkthroughMode && Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y) <= 5) {
+        placeArmedAt(e.clientX, e.clientY);
+        return;
+      }
       // Only select in edit mode, and only if mouse didn't move much (not a drag/orbit)
       if (!editMode) return;
       const dx = e.clientX - pointerDownPos.x;
@@ -909,6 +884,10 @@
         markSceneDirty();
       }
 
+      if (armed3D) {
+        renderer.domElement.style.cursor = 'crosshair';
+        return;
+      }
       if (!editMode) {
         if (hoveredMesh) { hoveredMesh = null; renderer.domElement.style.cursor = ''; }
         return;
@@ -930,6 +909,9 @@
     });
 
     // Initialize PointerLock controls for walkthrough mode
+    renderer.domElement.addEventListener('dragover', onViewerDragOver);
+    renderer.domElement.addEventListener('drop', onViewerDrop);
+
     pointerControls = new PointerLockControls(camera, renderer.domElement);
     pointerControls.addEventListener('change', markSceneDirty);
 
@@ -948,17 +930,21 @@
     });
 
     // Lights — improved multi-source setup
-    ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+    ambientLight = new THREE.AmbientLight(0xffffff, 0.08);
     scene.add(ambientLight);
-    hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.4);
+    hemiLight = new THREE.HemisphereLight(0xcfe3f5, 0x6f7f52, 0.4);
     scene.add(hemiLight);
 
     // Key light (sun)
-    sunLight = new THREE.DirectionalLight(0xfff8e7, 1.0);
+    sunLight = new THREE.DirectionalLight(0xfff1d8, 2.4);
     sunLight.position.set(500, 1200, 800);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.normalBias = 1.5;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 6000;
+    scene.add(sunLight.target);
     sunLight.shadow.camera.left = -1500;
     sunLight.shadow.camera.right = 1500;
     sunLight.shadow.camera.top = 1500;
@@ -967,27 +953,18 @@
     scene.add(sunLight);
 
     // Fill light — softer, opposite side to reduce harsh shadows
-    fillLight = new THREE.DirectionalLight(0xc8d8f0, 0.4);
+    fillLight = new THREE.DirectionalLight(0xc8d8f0, 0.15);
     fillLight.position.set(-600, 800, -400);
     scene.add(fillLight);
 
     // Rim/back light for depth
-    rimLight = new THREE.DirectionalLight(0xffe4c4, 0.25);
+    rimLight = new THREE.DirectionalLight(0xffe4c4, 0.12);
     rimLight.position.set(-200, 600, 1000);
     scene.add(rimLight);
 
-    // Textured floor
-    const floorTex = createFloorTexture();
-    const floorGeo = new THREE.PlaneGeometry(4000, 4000);
-    const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, side: THREE.DoubleSide, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-    floorMesh.rotation.x = -Math.PI / 2;
-    floorMesh.position.y = 0.5;
-    floorMesh.receiveShadow = true;
-    scene.add(floorMesh);
-
     wallGroup = new THREE.Group();
     scene.add(wallGroup);
+    updateSunPosition();
   }
 
   function createGhostPreview(catalogId: string) {
@@ -1007,6 +984,119 @@
       ghostGroup = null;
       markSceneDirty();
     }
+  }
+
+  // Auto-rotation keeps the render loop running (each orbit step marks the scene dirty).
+  $effect(() => {
+    const spin = autoRotate;
+    if (!controls) return;
+    controls.autoRotate = spin && !walkthroughMode;
+    if (spin) markSceneDirty();
+  });
+
+  // ── Placing Build-panel items directly in 3D ─────────────────────────
+  /** Which Build-panel placement is armed while the 3D view is open. */
+  let armed3D = $state<'door' | 'window' | 'stair' | 'column' | null>(null);
+
+  function pointerRay(clientX: number, clientY: number) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+  }
+
+  function floorPointAt(clientX: number, clientY: number): { x: number; y: number } | null {
+    pointerRay(clientX, clientY);
+    const hit = new THREE.Vector3();
+    return raycaster.ray.intersectPlane(floorPlane, hit) ? { x: hit.x, y: hit.z } : null;
+  }
+
+  /** The wall under the pointer and the 0–1 position along it, for doors and windows. */
+  function wallPointAt(clientX: number, clientY: number): { wallId: string; position: number } | null {
+    pointerRay(clientX, clientY);
+    const hit = raycaster.intersectObjects(wallGroup.children, false).find(h => h.object.userData.wallId);
+    const wall = hit && currentFloor?.walls.find(w => w.id === hit.object.userData.wallId);
+    if (!hit || !wall) return null;
+    const dx = wall.end.x - wall.start.x, dz = wall.end.y - wall.start.y;
+    const len2 = dx * dx + dz * dz || 1;
+    const t = ((hit.point.x - wall.start.x) * dx + (hit.point.z - wall.start.y) * dz) / len2;
+    return { wallId: wall.id, position: Math.min(0.95, Math.max(0.05, t)) };
+  }
+
+  function cancelArmed3D() {
+    placingStair.set(false);
+    placingColumn.set(false);
+    if (get(selectedTool) === 'door' || get(selectedTool) === 'window') selectedTool.set('select');
+  }
+
+  /** Place the armed door/window/stair/column at the pointer. */
+  function placeArmedAt(clientX: number, clientY: number) {
+    if (!armed3D) return;
+    if (armed3D === 'door' || armed3D === 'window') {
+      const target = wallPointAt(clientX, clientY);
+      if (!target) return; // keep the tool armed until a wall is clicked
+      if (armed3D === 'door') addDoor(target.wallId, target.position, get(placingDoorType));
+      else addWindow(target.wallId, target.position, get(placingWindowType));
+      selectedTool.set('select');
+      return;
+    }
+    const point = floorPointAt(clientX, clientY);
+    if (!point) return;
+    if (armed3D === 'stair') { addStair(point); placingStair.set(false); }
+    else { addColumn(point, get(placingColumnShape)); placingColumn.set(false); }
+  }
+
+  /** Items dragged from the Build panel onto the 3D view. */
+  function onViewerDragOver(e: DragEvent) {
+    if (e.dataTransfer?.types.includes('application/o3d-type')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
+  }
+  function onViewerDrop(e: DragEvent) {
+    const type = e.dataTransfer?.getData('application/o3d-type');
+    const id = e.dataTransfer?.getData('application/o3d-id');
+    if (!type || !id || walkthroughMode) return;
+    e.preventDefault();
+    if (type === 'door' || type === 'window') {
+      const target = wallPointAt(e.clientX, e.clientY);
+      if (!target) return;
+      if (type === 'door') addDoor(target.wallId, target.position, id as Door['type']);
+      else addWindow(target.wallId, target.position, id as Win['type']);
+      return;
+    }
+    const point = floorPointAt(e.clientX, e.clientY);
+    if (!point) return;
+    if (type === 'furniture') addFurniture(id, point);
+    else if (type === 'room') { const preset = roomPresets.find(p => p.id === id); if (preset) placeRoomTemplate(preset, point, null); }
+    else if (type === 'room-template') {
+      const template = roomTemplates.find(t => t.name === id);
+      const preset = template && roomPresets.find(p => p.id === template.presetId);
+      if (preset) placeRoomTemplate(preset, point, template);
+    }
+  }
+
+  /** Rebuild the terrace/planting around the current building and fit sun shadows and fog to it. */
+  function fitSite() {
+    if (!scene || !wallGroup) return;
+    if (siteGroup) { scene.remove(siteGroup); disposeModel(siteGroup); siteGroup = null; }
+    // The terrace hugs the building; cars and planting placed outside must not stretch it.
+    const box = new THREE.Box3();
+    for (const child of wallGroup.children) if (!child.userData.excludeFromSite) box.expandByObject(child);
+    const groundY = sceneGround.position.y + 1;
+    siteGroup = createSiteGroup(box, { groundY, planting: showLandscape });
+    scene.add(siteGroup);
+    const size = box.isEmpty() ? new THREE.Vector3(1000, 300, 1000) : box.getSize(new THREE.Vector3());
+    if (box.isEmpty()) siteCenter.set(0, 0, 0); else box.getCenter(siteCenter).setY(groundY);
+    const reach = Math.max(size.x, size.z) / 2 + 900;
+    const cam = sunLight.shadow.camera;
+    cam.left = -reach; cam.right = reach; cam.top = reach; cam.bottom = -reach;
+    sunDistance = Math.max(1500, reach * 1.6);
+    cam.far = sunDistance * 2 + size.y;
+    cam.updateProjectionMatrix();
+    if (scene.fog) {
+      const fog = scene.fog as THREE.Fog;
+      fog.near = Math.max(5000, reach * 5);
+      fog.far = Math.min(19500, fog.near + 13000);
+    }
+    updateSunPosition();
   }
 
   function autoCenterCamera() {
@@ -1199,6 +1289,27 @@
     }
   }
 
+  /** Grow the segments that touch a wall's ends so corners close (see wallEndExtensions). */
+  function extendEdgeSegments<T extends { width: number; offsetX: number }>(segments: T[], len: number, ext: WallEndExtension | undefined): T[] {
+    if (!ext) return segments;
+    return segments.map(seg => {
+      let { width, offsetX } = seg;
+      if (ext.start && offsetX - width / 2 < 0.5) { width += ext.start; offsetX -= ext.start / 2; }
+      if (ext.end && offsetX + width / 2 > len - 0.5) { width += ext.end; offsetX += ext.end / 2; }
+      return width >= 1 ? { ...seg, width, offsetX } : seg;
+    });
+  }
+
+  /** Room outlines and plan centre used to tell each wall's inside face from its outside face. */
+  function wallSideContext(floor: Floor) {
+    const roomPolygons = resolveRoomGeometry(floor).map(r => r.polygon);
+    const pts = floor.walls.flatMap(w => [w.start, w.end]);
+    const centre = pts.length
+      ? { x: pts.reduce((a, p) => a + p.x, 0) / pts.length, y: pts.reduce((a, p) => a + p.y, 0) / pts.length }
+      : { x: 0, y: 0 };
+    return { roomPolygons, centre };
+  }
+
   function buildWalls(floor: Floor) {
     wallHighlight.clear();
     clearGroup(wallGroup);
@@ -1206,8 +1317,14 @@
     wallMeshMap.clear();
 
     const defaultInteriorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-    const defaultExteriorMat = new THREE.MeshStandardMaterial({ color: 0xd4cfc9, roughness: 0.85 });
+    const defaultExteriorMat = new THREE.MeshStandardMaterial({ color: 0xe9e2d6, roughness: 0.88 });
     const baseboardMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d4, roughness: 0.7 });
+    const joints = wallEndExtensions(floor.walls, WALL_THICKNESS);
+    const sides = wallSideContext(floor);
+    // House-wide trim finishes chosen in the Finishes panel.
+    const trim = get(currentProject)?.finishes ?? {};
+    const doorPanelColor = new THREE.Color(trim.doors ?? 0x8B6914);
+    const doorFrameColor = trim.doors ? new THREE.Color(trim.doors).offsetHSL(0, 0, -0.12) : new THREE.Color(0x6b4423);
 
     for (const wall of floor.walls) {
       // Resolve per-side materials: interior and exterior can have independent color/texture
@@ -1255,10 +1372,11 @@
       // Curved wall handling
       if (wall.curvePoint) {
         const t = Math.max(wall.thickness, WALL_THICKNESS);
+        const curvedFront = frontFacesInterior(wall, sides.roomPolygons, sides.centre);
         const materials = [
           exteriorMat, exteriorMat,
           interiorMat, interiorMat,
-          interiorMat, exteriorMat,
+          curvedFront ? interiorMat : exteriorMat, curvedFront ? exteriorMat : interiorMat,
         ];
         const doors = floor.doors.filter(d => d.wallId === wall.id);
         const windows = floor.windows.filter(w => w.wallId === wall.id);
@@ -1300,16 +1418,19 @@
 
         const doorOpenings = floor.doors.filter((d) => d.wallId === wall.id);
         const winOpenings = floor.windows.filter((w) => w.wallId === wall.id);
-        const segments = buildWallSegments(len, startH, endH, doorOpenings, winOpenings);
+        // Extend end segments so corners meet without a notch.
+        const segments = extendEdgeSegments(buildWallSegments(len, startH, endH, doorOpenings, winOpenings), len, joints.get(wall.id));
+        // The box's +Z face is only the interior when the wall was drawn with the room on its left.
+        const frontIsInterior = frontFacesInterior(wall, sides.roomPolygons, sides.centre);
 
         for (const seg of segments) {
           const geo = createSlopedBoxGeometry(seg.width, t, seg.bottomY, seg.topYLeft, seg.topYRight);
 
-          // Create a multi-material wall: interior white, exterior brown
           const materials = [
-            exteriorMat, exteriorMat, // left, right
+            exteriorMat, exteriorMat, // left, right (ends)
             interiorMat, interiorMat, // top, bottom
-            interiorMat, exteriorMat, // front (interior), back (exterior)
+            frontIsInterior ? interiorMat : exteriorMat, // front (+Z)
+            frontIsInterior ? exteriorMat : interiorMat, // back (-Z)
           ];
           const mesh = new THREE.Mesh(geo, materials);
           mesh.castShadow = true;
@@ -1393,7 +1514,7 @@
       const angle = Math.atan2(right.y - left.y, right.x - left.x);
       const wt = Math.max(wall.thickness, WALL_THICKNESS);
 
-      const frameMat = new THREE.MeshStandardMaterial({ color: 0x6b4423, roughness: 0.6 });
+      const frameMat = new THREE.MeshStandardMaterial({ color: doorFrameColor, roughness: 0.6 });
       const doorHeight = opening.top;
       const jamb = 5; // jamb thickness
 
@@ -1420,7 +1541,7 @@
         }
       } else {
         // Door panel — honor the saved hinge and opening side, slightly ajar (15°)
-        const panelMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.5 });
+        const panelMat = new THREE.MeshStandardMaterial({ color: doorPanelColor, roughness: 0.5 });
         const panelGeo = new THREE.BoxGeometry(door.width - 2, doorHeight - 4, 4);
         // Shift geometry so pivot is at left edge
         panelGeo.translate(door.width / 2 - 1, 0, 0);
@@ -1461,7 +1582,7 @@
       const effectiveWinH = opening.top - opening.bottom;
       const winCY = win.sillHeight + effectiveWinH / 2;
 
-      const frameMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.4, metalness: 0.1 });
+      const frameMat = new THREE.MeshStandardMaterial({ color: trim.windowFrames ?? 0xe0e0e0, roughness: 0.4, metalness: 0.1 });
       const mullionW = 4; // mullion bar width
 
       // Outer frame — 4 bars forming rectangle
@@ -1501,6 +1622,12 @@
     // Furniture
     for (const fi of floor.furniture) {
       const model = createPlacedFurnitureModel(fi, markSceneDirty, get(currentProject) ?? undefined);
+      if (model) wallGroup.add(model);
+    }
+
+    // Entourage: people, vehicles and planting placed on the plan get 3D stand-ins
+    for (const item of floor.entourage ?? []) {
+      const model = createEntourageModel(item);
       if (model) wallGroup.add(model);
     }
 
@@ -1635,7 +1762,7 @@
       const ceilingHeight = roomCeilingHeight(room.walls, floor.walls);
       if (ceilingHeight !== undefined) {
         const ceilMat = new THREE.MeshStandardMaterial({
-          color: 0xf5f5f0,
+          color: trim.ceiling ?? 0xf5f5f0,
           roughness: 0.95,
           side: THREE.BackSide // visible from below
         });
@@ -1657,6 +1784,7 @@
 
     applyWallTransparency();
     autoCenterCamera();
+    fitSite();
   }
 
   /** Build all floors stacked vertically in 3D */
@@ -1681,6 +1809,7 @@
     // Keep the presentation ground below basements as well as above-ground floors.
     sceneGround.position.y = Math.min(0, ...entries.map(entry => entry.yOffset)) - 1;
     autoCenterCamera();
+    fitSite();
   }
 
   function addFloorLabel(name: string, yOffset: number, labelX: number, labelZ: number) {
@@ -1712,7 +1841,8 @@
     });
 
     const defaultInteriorMat = transparentMat(0xffffff);
-    const defaultExteriorMat = transparentMat(0xd4cfc9, 0.85);
+    const defaultExteriorMat = transparentMat(0xe9e2d6, 0.85);
+    const joints = wallEndExtensions(floor.walls, WALL_THICKNESS);
 
     for (const sourceWall of floor.walls) {
       for (const span of wallProfileSpans(sourceWall, floor.doors.filter(d => d.wallId === sourceWall.id), floor.windows.filter(w => w.wallId === sourceWall.id))) {
@@ -1729,7 +1859,7 @@
         const cx = (wall.start.x + wall.end.x) / 2;
         const cy = (wall.start.y + wall.end.y) / 2;
 
-        const segments = span.segments;
+        const segments = sourceWall.curvePoint ? span.segments : extendEdgeSegments(span.segments, len, joints.get(sourceWall.id));
 
         const materials = [
           defaultExteriorMat, defaultExteriorMat,
@@ -2020,6 +2150,27 @@
       if (currentFloor) rebuildScene();
     });
 
+    // Follow the Build panel: furniture uses the viewer's ghost placement; doors,
+    // windows, stairs and columns are placed by clicking walls or the floor.
+    const syncArmed = () => {
+      const tool = get(selectedTool);
+      armed3D = get(placingStair) ? 'stair' : get(placingColumn) ? 'column' : tool === 'door' ? 'door' : tool === 'window' ? 'window' : null;
+      if (armed3D && walkthroughMode) exitWalkthroughMode();
+    };
+    const stopTool = selectedTool.subscribe(syncArmed);
+    const stopStair = placingStair.subscribe(syncArmed);
+    const stopColumn = placingColumn.subscribe(syncArmed);
+    const stopFurniture = placingFurnitureId.subscribe((id) => {
+      if (!id) return;
+      if (walkthroughMode) exitWalkthroughMode();
+      removeGhostPreview();
+      editMode = true;
+      cameraPlacementMode = false;
+      furniturePlacementMode = true;
+      furniturePickerOpen = false;
+      selectedCatalogId = id;
+    });
+
     const unsubSel = selectedElementId.subscribe((id) => {
       selectedWallId3D = id;
       wallHighlight.apply(wallMeshMap, id);
@@ -2035,6 +2186,9 @@
       unsub();
       stopSettings();
       unsubSel();
+      stopTool(); stopStair(); stopColumn(); stopFurniture();
+      renderer.domElement.removeEventListener('dragover', onViewerDragOver);
+      renderer.domElement.removeEventListener('drop', onViewerDrop);
       if (animId !== undefined) cancelAnimationFrame(animId);
       animId = undefined;
       document.removeEventListener('keydown', onKeyDown, false);
@@ -2048,6 +2202,8 @@
       removeGhostPreview();
       skyTexture.dispose();
       sunLight.shadow.dispose();
+      environmentTarget?.dispose();
+      siteGroup = null;
       clearGroup(scene);
       wallMeshMap.clear();
       pointerControls.removeEventListener('change', markSceneDirty);
@@ -2060,72 +2216,89 @@
 
 <div bind:this={container} class="w-full h-full relative" role="region" aria-label={$t('viewerNav.region')}>
   <div class="absolute bottom-16 left-4 z-10 max-w-xs">
-    {#if renderExportMessage}<p role="status" class="mb-2 rounded bg-black/80 p-2 text-xs text-white">{renderExportLabels[renderExportMessage] ? $t(renderExportLabels[renderExportMessage]) : renderExportMessage}</p>{/if}
-    <button class="rounded bg-black/70 px-3 py-2 text-sm text-white hover:bg-black/80" onclick={exportBlenderScene}
+    {#if renderExportMessage}<p role="status" class="mb-2 rounded-xl bg-[#2B2724]/90 p-2.5 text-xs text-[#FFFDF9] backdrop-blur-md">{renderExportLabels[renderExportMessage] ? $t(renderExportLabels[renderExportMessage]) : renderExportMessage}</p>{/if}
+    <button class="flex h-9 items-center rounded-xl border border-white/70 bg-[#FFFDF9]/85 px-3.5 text-[13px] font-semibold text-[#252321] shadow-[0_6px_20px_rgba(40,32,24,0.14)] backdrop-blur-md transition-colors hover:bg-[#FFFDF9]" onclick={exportBlenderScene}
       title={$t('viewerExport.help')}>{$t('viewerExport.button')}</button>
   </div>
   {#if showAllFloors && currentFloor}
-    <div class="absolute bottom-4 right-4 z-10 rounded bg-black/70 px-3 py-2 text-xs text-white pointer-events-none">
+    <div class="absolute bottom-4 right-4 z-10 rounded-xl bg-[#2B2724]/80 px-3 py-2 text-xs font-medium text-[#FFFDF9] backdrop-blur-md pointer-events-none">
       {$t('viewerExport.elevation', { name: currentFloor.name, value: activeFloorElevation })}
     </div>
   {/if}
   <!-- 3D Toolbar Row -->
-  <div class="absolute top-4 right-4 z-50 flex gap-1.5">
-    <!-- Multi-Floor Stacking Toggle -->
+  {#snippet tip(label: string)}
+    <span class="viewer-tip" aria-hidden="true">{label}</span>
+  {/snippet}
+  <div class="absolute top-4 right-4 z-50 flex max-w-[calc(100%-2rem)] flex-wrap items-center justify-end gap-1 rounded-2xl border border-white/70 bg-[#FFFDF9]/85 p-1.5 text-[#252321] shadow-[0_10px_34px_rgba(40,32,24,0.18)] backdrop-blur-md">
+    <!-- View -->
     <button
       onclick={() => { showAllFloors = !showAllFloors; rebuildScene(); }}
-      class="p-2 rounded-lg transition-colors {showAllFloors ? 'bg-purple-600 text-white ring-2 ring-purple-300' : 'bg-black/70 text-white hover:bg-black/80'}"
+      class="viewer-btn group {showAllFloors ? 'viewer-btn-on' : ''}"
       title={showAllFloors ? $t('viewerNav.activeFloor') : $t('viewerNav.allFloors')}
       aria-label={showAllFloors ? $t('viewerNav.activeFloor') : $t('viewerNav.allFloors')}
+      aria-pressed={showAllFloors}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="4" y="14" width="16" height="4" rx="1"/>
-        <rect x="4" y="8" width="16" height="4" rx="1" opacity="0.6"/>
-        <rect x="4" y="2" width="16" height="4" rx="1" opacity="0.3"/>
-      </svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5zM3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5" /></svg>
+      {@render tip(showAllFloors ? $t('viewerNav.activeFloor') : $t('viewerNav.allFloors'))}
+    </button>
+
+    <button
+      onclick={() => { if (walkthroughMode) exitWalkthroughMode(); autoCenterCamera(); markSceneDirty(); }}
+      class="viewer-btn group"
+      title="Fit view"
+      aria-label="Fit view"
+    >
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5M12 8l4 2v4l-4 2-4-2v-4z" /></svg>
+      {@render tip('Fit view')}
     </button>
 
     <!-- Top-Down View Button -->
     <button
       onclick={viewTopDown}
-      class="p-2 rounded-lg bg-black/70 text-white hover:bg-black/80 transition-colors"
+      class="viewer-btn group"
       title={$t('viewerNav.top')}
       aria-label={$t('viewerNav.top')}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="2" x2="12" y2="6"/>
-        <line x1="12" y1="18" x2="12" y2="22"/>
-        <line x1="2" y1="12" x2="6" y2="12"/>
-        <line x1="18" y1="12" x2="22" y2="12"/>
-      </svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM4 12h8M12 4v16M12 15h8" /></svg>
+      {@render tip($t('viewerNav.top'))}
     </button>
 
     <!-- Wall Transparency Toggle -->
     <button
       onclick={toggleWallTransparency}
-      class="p-2 rounded-lg transition-colors {wallsTransparent ? 'bg-blue-600 text-white ring-2 ring-blue-300' : 'bg-black/70 text-white hover:bg-black/80'}"
+      class="viewer-btn group {wallsTransparent ? 'viewer-btn-on' : ''}"
       title={wallsTransparent ? $t('viewerNav.solid') : $t('viewerNav.transparent')}
       aria-label={wallsTransparent ? $t('viewerNav.solid') : $t('viewerNav.transparent')}
+      aria-pressed={wallsTransparent}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="18" height="18" rx="2" opacity={wallsTransparent ? 0.3 : 1}/>
-        <line x1="3" y1="12" x2="21" y2="12"/>
-        <line x1="12" y1="3" x2="12" y2="21"/>
-      </svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5z" stroke-dasharray={wallsTransparent ? '2.5 2.5' : undefined} /><path d="M3 8l9 5 9-5M12 13v8" /></svg>
+      {@render tip(wallsTransparent ? $t('viewerNav.solid') : $t('viewerNav.transparent'))}
     </button>
+
+    <!-- Landscape (trees and shrubs) -->
+    <button
+      onclick={() => { showLandscape = !showLandscape; fitSite(); }}
+      class="viewer-btn group {showLandscape ? 'viewer-btn-on' : ''}"
+      title={showLandscape ? 'Hide landscape' : 'Show landscape'}
+      aria-label="Landscape"
+      aria-pressed={showLandscape}
+    >
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-6M8 15h8a4 4 0 0 0 .6-7.96A5 5 0 0 0 7.1 8.1 3.5 3.5 0 0 0 8 15zM3 21h18" /></svg>
+      {@render tip(showLandscape ? 'Hide landscape' : 'Show landscape')}
+    </button>
+
+    <span class="mx-0.5 h-6 w-px bg-[#DED7CF]" aria-hidden="true"></span>
 
     <!-- Edit Mode Toggle -->
     <button
       onclick={() => { editMode = !editMode; if (editMode && walkthroughMode) { exitWalkthroughMode(); } if (!editMode) { selectedElementId.set(null); } }}
-      class="p-2 rounded-lg transition-colors {editMode ? 'bg-blue-600 text-white ring-2 ring-blue-300' : 'bg-black/70 text-white hover:bg-black/80'}"
+      class="viewer-btn group {editMode ? 'viewer-btn-on' : ''}"
       title={editMode ? $t('viewerNav.exitEdit') : $t('viewerNav.editHelp')}
       aria-label={editMode ? $t('viewerNav.exitEdit') : $t('viewerNav.edit')}
+      aria-pressed={editMode}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-      </svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+      {@render tip(editMode ? $t('viewerNav.exitEdit') : $t('viewerNav.edit'))}
     </button>
 
     <!-- Interior Camera Button -->
@@ -2141,61 +2314,50 @@
           furniturePlacementMode = false;
         }
       }}
-      class="p-2 rounded-lg transition-colors {cameraPlacementMode ? 'bg-blue-600 text-white ring-2 ring-blue-300' : 'bg-black/70 text-white hover:bg-black/80'}"
+      class="viewer-btn group {cameraPlacementMode ? 'viewer-btn-on' : ''}"
       title={cameraPlacementMode ? $t('viewerNav.cameraCancel') : $t('viewerNav.cameraHelp')}
       aria-label={$t('viewerNav.camera')}
+      aria-pressed={cameraPlacementMode}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M23 7l-7 5 7 5V7z"/>
-        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-      </svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 10l5-3v10l-5-3z" /><rect x="3" y="6" width="12" height="12" rx="2.5" /></svg>
+      {@render tip($t('viewerNav.camera'))}
     </button>
 
     <!-- 3D Screenshot Button -->
     <button
       onclick={takeScreenshot}
-      class="p-2 rounded-lg bg-black/70 text-white hover:bg-black/80 transition-colors"
+      class="viewer-btn group"
       title={$t('viewerNav.screenshot')}
       aria-label={$t('viewerNav.screenshot')}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-        <circle cx="12" cy="13" r="4"/>
-      </svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+      {@render tip($t('viewerNav.screenshot'))}
     </button>
+
+    <span class="mx-0.5 h-6 w-px bg-[#DED7CF]" aria-hidden="true"></span>
 
     <!-- Walkthrough Mode Toggle Button -->
     <button
       onclick={toggleWalkthroughMode}
-      class="p-2 rounded-lg bg-black/70 text-white hover:bg-black/80 transition-colors"
+      class="group flex h-10 items-center gap-1.5 rounded-xl px-3 text-[13px] font-semibold transition-colors {walkthroughMode ? 'bg-[#C96F4A] text-white hover:bg-[#A24D2B]' : 'bg-[#6B4636] text-white hover:bg-[#4A3026]'}"
       title={walkthroughMode ? $t('viewerNav.exitWalk') : $t('viewerNav.enterWalk')}
       aria-label={walkthroughMode ? $t('viewerNav.exitWalk') : $t('viewerNav.enterWalk')}
-  >
-    {#if walkthroughMode}
-      <!-- Exit/Eye closed icon -->
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-        <line x1="1" y1="1" x2="23" y2="23"/>
-      </svg>
-    {:else}
-      <!-- Walking person icon -->
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="4" r="2"/>
-        <path d="M10 16v6"/>
-        <path d="M14 16v6"/>
-        <path d="M12 6h2l4 4"/>
-        <path d="M10 14l2-2 1 2"/>
-      </svg>
-    {/if}
+    >
+      {#if walkthroughMode}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
+      {:else}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4" r="1.8" /><path d="M9.5 21l2-6.5 3 3V21M8 11.5l2.5-4 3.5 1 2.5 3.5M10.5 7.5L9 13" /></svg>
+      {/if}
+      <span class="max-sm:hidden" aria-hidden="true">Walk</span>
     </button>
   </div><!-- end 3D toolbar row -->
 
   {#if cameraPlacementMode && !cameraPlaced}
-    <div class="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-black/80 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+    <div class="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-[#2B2724]/90 text-[#FFFDF9] px-4 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-md">
       {$t('viewerNav.cameraPosition')}
     </div>
   {:else if cameraPlacementMode && cameraPlaced}
-    <div class="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-black/80 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+    <div class="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-[#2B2724]/90 text-[#FFFDF9] px-4 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-md">
       {$t('viewerNav.cameraAim')}
     </div>
   {/if}
@@ -2209,7 +2371,7 @@
           <button class="text-xs text-blue-400 hover:text-blue-300" onclick={() => { cancelAIRender(); aiRenderOpen = !aiRenderOpen; }}>
             {aiRenderOpen ? $t('viewerAI.hide') : $t('viewerAI.show')}
           </button>
-          <button class="text-gray-400 hover:text-white text-lg leading-none" onclick={closeCamera} aria-label={$t('viewerCamera.close')}>✕</button>
+          <button class="text-gray-400 hover:text-white text-lg leading-none" onclick={closeCamera} aria-label={$t('viewerCamera.close')}><AppIcon name="x" size={16} /></button>
         </div>
       </div>
       <!-- Preview canvas with drag-to-rotate -->
@@ -2238,7 +2400,7 @@
         <label class="flex items-center justify-between text-xs text-gray-300">
           <span>{$t('viewerCamera.fov')}</span>
           <div class="flex items-center gap-2">
-            <input type="range" min="50" max="120" bind:value={cameraFOV} class="w-28 h-1 accent-blue-400"
+            <input type="range" min="50" max="120" bind:value={cameraFOV} class="w-28 h-1 accent-[#C96F4A]"
               oninput={() => { cameraPreviewDirty = true; }} />
             <span class="w-10 text-right">{cameraFOV}°</span>
           </div>
@@ -2246,13 +2408,13 @@
         <label class="flex items-center justify-between text-xs text-gray-300">
           <span>{$t('viewerCamera.height')}</span>
           <div class="flex items-center gap-2">
-            <input type="range" min="80" max="220" bind:value={cameraHeight} class="w-28 h-1 accent-blue-400"
+            <input type="range" min="80" max="220" bind:value={cameraHeight} class="w-28 h-1 accent-[#C96F4A]"
               oninput={() => { cameraPreviewDirty = true; }} />
             <span class="w-10 text-right">{cameraHeight}cm</span>
           </div>
         </label>
         <label class="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
-          <input type="checkbox" bind:checked={cameraXrayWalls} class="accent-blue-400" onchange={() => { cameraPreviewDirty = true; }} />
+          <input type="checkbox" bind:checked={cameraXrayWalls} class="accent-[#C96F4A]" onchange={() => { cameraPreviewDirty = true; }} />
           <span>{$t('viewerCamera.xray')}</span>
         </label>
         <div class="flex gap-2 pt-1">
@@ -2341,7 +2503,7 @@
             disabled={aiRendering}
           >
             {#if aiRendering}
-              <span class="animate-spin">⏳</span> {$t('viewerAI.rendering')}
+              <span class="animate-spin"><AppIcon name="loader-circle" size={16} /></span> {$t('viewerAI.rendering')}
             {:else}
               {$t('viewerAI.generate')}
             {/if}
@@ -2392,7 +2554,7 @@
     </div>
 
     <!-- Controls Panel -->
-    <div class="absolute top-4 left-4 z-10 bg-black/70 text-white text-xs rounded-lg backdrop-blur-sm p-3 space-y-2 min-w-[180px]">
+    <div class="absolute top-4 left-4 z-10 bg-[#2B2724]/85 text-[#FFFDF9] text-xs rounded-2xl shadow-lg backdrop-blur-md p-3.5 space-y-2 min-w-[190px]">
       <div class="font-semibold text-white/90 mb-1">{$t('viewerNav.walkControls')}</div>
       {#if walkthroughMouseUnavailable}
         <p role="status" class="max-w-56 text-amber-200">{$t('viewerNav.mouseUnavailable')}</p>
@@ -2400,21 +2562,21 @@
       <label class="flex items-center justify-between gap-2">
         <span class="text-white/70">{$t('viewerNav.eyeHeight')}</span>
         <div class="flex items-center gap-1">
-          <input type="range" min="80" max="220" bind:value={eyeHeight} oninput={markSceneDirty} class="w-16 h-1 accent-blue-400" />
+          <input type="range" min="80" max="220" bind:value={eyeHeight} oninput={markSceneDirty} class="w-16 h-1 accent-[#C96F4A]" />
           <span class="w-10 text-right">{eyeHeight}cm</span>
         </div>
       </label>
       <label class="flex items-center justify-between gap-2">
         <span class="text-white/70">{$t('viewerNav.walkSpeed')}</span>
         <div class="flex items-center gap-1">
-          <input type="range" min="100" max="1000" step="50" bind:value={moveSpeed} class="w-16 h-1 accent-blue-400" />
+          <input type="range" min="100" max="1000" step="50" bind:value={moveSpeed} class="w-16 h-1 accent-[#C96F4A]" />
           <span class="w-10 text-right">{moveSpeed}</span>
         </div>
       </label>
       <label class="flex items-center justify-between gap-2">
         <span class="text-white/70">{$t('viewerNav.sprintSpeed')}</span>
         <div class="flex items-center gap-1">
-          <input type="range" min="200" max="2000" step="100" bind:value={sprintSpeed} class="w-16 h-1 accent-blue-400" />
+          <input type="range" min="200" max="2000" step="100" bind:value={sprintSpeed} class="w-16 h-1 accent-[#C96F4A]" />
           <span class="w-10 text-right">{sprintSpeed}</span>
         </div>
       </label>
@@ -2422,86 +2584,50 @@
 
     <!-- Help Text -->
     <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-      <div class="bg-black/70 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm">
+      <div class="bg-[#2B2724]/85 text-[#FFFDF9] text-sm px-4 py-2 rounded-xl shadow-lg backdrop-blur-md">
         {$t('viewerNav.walkHelp')}
       </div>
     </div>
   {/if}
 
+  {#if armed3D && !walkthroughMode}
+    <div class="absolute bottom-16 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-[#2B2724]/90 py-1.5 pl-4 pr-1.5 text-sm font-medium text-white shadow-lg backdrop-blur-md" role="status">
+      {armed3D === 'door' ? 'Click a wall to add the door' : armed3D === 'window' ? 'Click a wall to add the window' : armed3D === 'stair' ? 'Click the floor to place the stairs' : 'Click the floor to place the column'}
+      <button class="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-semibold hover:bg-white/25" onclick={cancelArmed3D}>Cancel</button>
+    </div>
+  {/if}
+
   {#if editMode && !walkthroughMode}
     <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-      <div class="bg-blue-600/90 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm flex items-center gap-2">
+      <div class="bg-[#6B4636]/95 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-lg backdrop-blur-md flex items-center gap-2">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
         {#if furniturePlacementMode}
           {$t('viewerFurniture.hint', { name: selectedCatalogId ? furnitureName(selectedCatalogId, $locale) : $t('viewerFurniture.fallback') })}
+          <button class="ml-1 rounded-lg bg-white/15 px-2.5 py-0.5 text-xs font-semibold hover:bg-white/25"
+            onclick={() => { furniturePlacementMode = false; selectedCatalogId = null; placingFurnitureId.set(null); removeGhostPreview(); }}
+            aria-label={$t('viewerFurniture.exit')}>Done</button>
         {:else}
           {$t('viewerFurniture.paint')}
         {/if}
       </div>
     </div>
 
-    <!-- Furniture Placement Toggle -->
-    <button
-      onclick={() => { furniturePlacementMode = !furniturePlacementMode; if (!furniturePlacementMode) { removeGhostPreview(); selectedCatalogId = null; furniturePickerOpen = false; } else { furniturePickerOpen = true; } }}
-      class="absolute top-16 right-28 z-50 p-2 rounded-lg transition-colors {furniturePlacementMode ? 'bg-green-600 text-white ring-2 ring-green-300' : 'bg-black/70 text-white hover:bg-black/80'}"
-      title={furniturePlacementMode ? $t('viewerFurniture.exit') : $t('viewerFurniture.place')}
-      aria-label={furniturePlacementMode ? $t('viewerFurniture.exit') : $t('viewerFurniture.place')}
-    >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="12" width="18" height="8" rx="1"/>
-        <path d="M5 12V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4"/>
-        <line x1="5" y1="20" x2="5" y2="22"/>
-        <line x1="19" y1="20" x2="19" y2="22"/>
-      </svg>
-    </button>
-
-    <!-- Furniture Picker Panel -->
-    {#if furniturePlacementMode && furniturePickerOpen}
-      <div class="absolute top-4 left-4 z-50 bg-black/85 text-white rounded-lg backdrop-blur-sm w-56 max-h-[70vh] flex flex-col overflow-hidden select-none">
-        <div class="p-2 border-b border-white/10 flex items-center justify-between">
-          <span class="font-semibold text-sm">{$t('viewerFurniture.title')}</span>
-          <button onclick={() => { furniturePickerOpen = false; }} aria-label={$t('viewerFurniture.close')} class="text-white/50 hover:text-white text-lg leading-none">&times;</button>
-        </div>
-        <!-- Category tabs -->
-        <div class="flex flex-wrap gap-1 p-2 border-b border-white/10">
-          {#each furnitureCategories.filter(c => c !== 'Electrical' && c !== 'Plumbing') as cat}
-            <button
-              onclick={() => { furniturePickerCategory = cat; }}
-              aria-pressed={furniturePickerCategory === cat}
-              class="px-2 py-0.5 rounded text-[10px] transition-colors {furniturePickerCategory === cat ? 'bg-green-600 text-white' : 'bg-white/10 hover:bg-white/20 text-white/70'}"
-            >{catalogCategoryLabels[cat] ? $t(catalogCategoryLabels[cat]) : cat}</button>
-          {/each}
-        </div>
-        <!-- Items -->
-        <div class="overflow-y-auto p-1 flex-1">
-          {#each furnitureCatalog.filter(f => f.category === furniturePickerCategory && !f.symbol) as item}
-            <button
-              onclick={() => { selectedCatalogId = item.id; removeGhostPreview(); }}
-              class="w-full text-left px-2 py-1.5 rounded text-xs flex items-center gap-2 transition-colors {selectedCatalogId === item.id ? 'bg-green-600/80 text-white' : 'hover:bg-white/10 text-white/80'}"
-            >
-              <span class="text-base">{item.icon}</span>
-              <span>{furnitureName(item.id, $locale)}</span>
-              <span class="ml-auto text-[10px] text-white/40">{item.width}×{item.depth}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-    {/if}
+    <!-- Furniture is chosen from the Build panel (Objects), which places it straight into 3D. -->
   {/if}
 
   <!-- Lighting Controls Toggle Button -->
   <button
     onclick={() => { lightingPanelOpen = !lightingPanelOpen; }}
-    class="absolute bottom-4 left-4 md:left-14 z-50 p-2 rounded-lg transition-colors {lightingPanelOpen ? 'bg-amber-500 text-white ring-2 ring-amber-300' : 'bg-black/70 text-white hover:bg-black/80'}"
+    class="absolute bottom-4 left-4 z-50 flex h-9 w-9 items-center justify-center rounded-xl border border-white/70 shadow-[0_6px_20px_rgba(40,32,24,0.14)] backdrop-blur-md transition-colors {lightingPanelOpen ? 'bg-[#6B4636] text-white' : 'bg-[#FFFDF9]/85 text-[#252321] hover:bg-[#FFFDF9]'}"
     title={$t('viewerLighting.title')}
     aria-label={$t('viewerLighting.title')}
     aria-expanded={lightingPanelOpen}
   >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="5"/>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="12" cy="12" r="4.5"/>
       <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
       <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
       <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
@@ -2511,7 +2637,7 @@
 
   <!-- Lighting Controls Panel -->
   {#if lightingPanelOpen}
-    <div class="absolute bottom-14 left-4 md:left-14 z-50 bg-black/80 text-white text-xs rounded-lg backdrop-blur-sm p-3 space-y-3 min-w-[220px] select-none">
+    <div class="absolute bottom-16 left-4 z-50 bg-[#2B2724]/90 text-[#FFFDF9] text-xs rounded-2xl shadow-lg backdrop-blur-md p-3.5 space-y-3 min-w-[230px] select-none">
       <div class="font-semibold text-white/90 text-sm flex items-center gap-1.5">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
         {$t('viewerLighting.title')}
@@ -2525,9 +2651,9 @@
             <button
               onclick={() => applyTimePreset(preset)}
               aria-pressed={timeOfDay === preset}
-              class="flex-1 px-1.5 py-1 rounded text-[11px] transition-colors {timeOfDay === preset ? 'bg-amber-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white/80'}"
+              class="flex-1 px-1.5 py-1 rounded text-[11px] transition-colors {timeOfDay === preset ? 'bg-[#C96F4A] text-white' : 'bg-white/10 hover:bg-white/20 text-white/80'}"
             >
-              {preset === 'morning' ? '🌅' : preset === 'noon' ? '☀️' : preset === 'evening' ? '🌇' : '🌙'}
+              <AppIcon name={preset === 'morning' ? 'sunrise' : preset === 'noon' ? 'sun' : preset === 'evening' ? 'sunset' : 'moon'} size={15} />
               <span class="block capitalize">{$t(`viewerLighting.${preset}`)}</span>
             </button>
           {/each}
@@ -2539,7 +2665,7 @@
         <div class="flex justify-between text-white/60">
           <span>{$t('viewerLighting.azimuth')}</span><span>{sunAzimuth}°</span>
         </div>
-        <input type="range" min="0" max="360" bind:value={sunAzimuth} oninput={() => { timeOfDay = null; updateSunPosition(); }} class="w-full h-1 accent-amber-400" />
+        <input type="range" min="0" max="360" bind:value={sunAzimuth} oninput={() => { timeOfDay = null; updateSunPosition(); }} class="w-full h-1 accent-[#C96F4A]" />
       </label>
 
       <!-- Sun Elevation -->
@@ -2547,7 +2673,7 @@
         <div class="flex justify-between text-white/60">
           <span>{$t('viewerLighting.elevation')}</span><span>{sunElevation}°</span>
         </div>
-        <input type="range" min="0" max="90" bind:value={sunElevation} oninput={() => { timeOfDay = null; updateSunPosition(); }} class="w-full h-1 accent-amber-400" />
+        <input type="range" min="0" max="90" bind:value={sunElevation} oninput={() => { timeOfDay = null; updateSunPosition(); }} class="w-full h-1 accent-[#C96F4A]" />
       </label>
 
       <!-- Ambient Intensity -->
@@ -2555,7 +2681,7 @@
         <div class="flex justify-between text-white/60">
           <span>{$t('viewerLighting.ambient')}</span><span>{Math.round(ambientIntensity * 100)}%</span>
         </div>
-        <input type="range" min="0" max="100" value={Math.round(ambientIntensity * 100)} oninput={(e) => { ambientIntensity = parseInt(e.currentTarget.value) / 100; timeOfDay = null; updateAmbientIntensity(); }} class="w-full h-1 accent-blue-400" />
+        <input type="range" min="0" max="100" value={Math.round(ambientIntensity * 100)} oninput={(e) => { ambientIntensity = parseInt(e.currentTarget.value) / 100; timeOfDay = null; updateAmbientIntensity(); }} class="w-full h-1 accent-[#C96F4A]" />
       </label>
     </div>
   {/if}

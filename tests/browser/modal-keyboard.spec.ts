@@ -17,7 +17,7 @@ async function seed(page: Page, locale = 'en') {
   }, project);
   await page.goto(`/editor?id=${id}`);
   await page.getByRole('button', { name: locale === 'pt' ? 'Salvar' : 'Save', exact: true }).press('l');
-  await page.getByRole('button', { name: locale === 'pt' ? '─ Parede 1' : '─ Wall 1', exact: true }).click();
+  await page.getByRole('button', { name: locale === 'pt' ? 'Parede 1' : 'Wall 1', exact: true }).click();
   return project;
 }
 function observe(page: Page) {

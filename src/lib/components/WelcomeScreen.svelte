@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t } from '$lib/i18n';
   import { templateLabels } from '$lib/i18n/templateLabels';
   import { onDestroy } from 'svelte';
@@ -20,10 +21,10 @@
   let tourStep = $state(0);
 
   const tourSteps = $derived([
-    { title: $t('welcome.tourLeftSidebarTitle'), desc: $t('welcome.tourLeftSidebarDesc'), icon: '📦' },
-    { title: $t('welcome.tourCanvasTitle'), desc: $t('welcome.tourCanvasDesc'), icon: '✏️' },
-    { title: $t('welcome.tourTopBarTitle'), desc: $t('welcome.tourTopBarDesc'), icon: '🔄' },
-    { title: $t('welcome.tourStatusBarTitle'), desc: $t('welcome.tourStatusBarDesc'), icon: '⚙️' },
+    { title: $t('welcome.tourLeftSidebarTitle'), desc: $t('welcome.tourLeftSidebarDesc'), icon: 'package' },
+    { title: $t('welcome.tourCanvasTitle'), desc: $t('welcome.tourCanvasDesc'), icon: 'pencil' },
+    { title: $t('welcome.tourTopBarTitle'), desc: $t('welcome.tourTopBarDesc'), icon: 'rotate-cw' },
+    { title: $t('welcome.tourStatusBarTitle'), desc: $t('welcome.tourStatusBarDesc'), icon: 'settings' },
   ]);
 
   function markSeen() {
@@ -100,7 +101,7 @@
   {#if showTour}
     <!-- Tour overlay -->
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
-      <div class="text-5xl mb-4">{tourSteps[tourStep].icon}</div>
+      <div class="mb-4 text-walnut"><AppIcon name={tourSteps[tourStep].icon} size={44} strokeWidth={1.5} /></div>
       <h2 class="text-xl font-bold text-gray-800 mb-2">{tourSteps[tourStep].title}</h2>
       <p class="text-gray-500 mb-6">{tourSteps[tourStep].desc}</p>
       <div class="flex items-center justify-between">
@@ -129,7 +130,7 @@
             onclick={() => useHouseTemplate(i)}
             class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
           >
-            <span class="text-3xl">{template.icon}</span>
+            <span class="text-walnut"><AppIcon name={template.icon} size={28} /></span>
             <div class="flex-1 min-w-0">
               <div class="font-semibold text-gray-800">{templateLabels[template.name] ? $t(templateLabels[template.name].name) : template.name}</div>
               <div class="text-xs text-gray-400">{templateLabels[template.name] ? $t(templateLabels[template.name].description) : template.description}</div>
@@ -142,7 +143,7 @@
   {:else}
     <!-- Main welcome card -->
     <div class="bg-white rounded-2xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
-      <div class="text-5xl mb-4">🏠</div>
+      <div class="mb-4 text-walnut"><AppIcon name="house" size={48} strokeWidth={1.5} /></div>
       <h1 class="text-3xl font-bold text-gray-800 mb-2">{$t('welcome.title')}</h1>
       <p class="text-gray-500 mb-8">{$t('welcome.subtitle')}</p>
 
@@ -151,7 +152,7 @@
           onclick={startFromScratch}
           class="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
         >
-          <span class="text-2xl">✨</span>
+          <span class="text-walnut"><AppIcon name="sparkles" size={24} /></span>
           <div>
             <div class="font-semibold text-gray-800">{$t('welcome.startFromScratch')}</div>
             <div class="text-xs text-gray-400">{$t('welcome.startFromScratchDesc')}</div>
@@ -162,7 +163,7 @@
           onclick={() => showTemplates = true}
           class="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
         >
-          <span class="text-2xl">📐</span>
+          <span class="text-walnut"><AppIcon name="triangle-right" size={24} /></span>
           <div>
             <div class="font-semibold text-gray-800">{$t('welcome.useTemplate')}</div>
             <div class="text-xs text-gray-400">{$t('welcome.useTemplateDesc')}</div>
@@ -173,7 +174,7 @@
           onclick={handleImport}
           class="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
         >
-          <span class="text-2xl">📂</span>
+          <span class="text-walnut"><AppIcon name="folder-open" size={24} /></span>
           <div>
             <div class="font-semibold text-gray-800">{$t('welcome.importPlan')}</div>
             <div class="text-xs text-gray-400">{$t('welcome.importPlanDesc')}</div>
@@ -184,7 +185,7 @@
           onclick={startTour}
           class="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-left"
         >
-          <span class="text-2xl">🎓</span>
+          <span class="text-walnut"><AppIcon name="graduation-cap" size={24} /></span>
           <div>
             <div class="font-semibold text-gray-800">{$t('welcome.quickTour')}</div>
             <div class="text-xs text-gray-400">{$t('welcome.quickTourDesc')}</div>

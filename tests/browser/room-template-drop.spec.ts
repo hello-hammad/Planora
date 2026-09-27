@@ -34,7 +34,7 @@ test('dragging a furnished room template places walls and furniture in one undo'
   await page.getByRole('button', { name: 'Refazer', exact: true }).click();
   expect(await exported()).toEqual(placed);
   await page.getByRole('button', { name: 'Salvar', exact: true }).click();
-  await expect(page.getByText('Salvo ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await page.goto(`/editor?id=${projectId}`);
   expect(await exported()).toEqual(placed);
 });

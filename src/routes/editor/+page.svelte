@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale } from '$lib/i18n';
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
   import { CaptureImportError } from '$lib/i18n/captureImportError';
@@ -14,7 +15,7 @@
   import { autoSave, markClean, saveState } from '$lib/stores/saveStatus';
   import { createProjectFromRoomPlan, isRoomPlanJson } from '$lib/utils/roomplanImport';
   import TopBar from '$lib/components/toolbar/TopBar.svelte';
-  import EditorSideRail from '$lib/components/editor/EditorSideRail.svelte';
+  import EditorSideRail, { type RailAction } from '$lib/components/editor/EditorSideRail.svelte';
   import BuildPanel from '$lib/components/sidebar/BuildPanel.svelte';
   import PropertiesPanel from '$lib/components/sidebar/PropertiesPanel.svelte';
   import LayersPanel from '$lib/components/sidebar/LayersPanel.svelte';
@@ -27,22 +28,27 @@
   import ElevationView from '$lib/components/editor/ElevationView.svelte';
   import PrintLayout from '$lib/components/editor/PrintLayout.svelte';
   import OnboardingTooltip from '$lib/components/OnboardingTooltip.svelte';
+  import PlanoraLoader from '$lib/components/PlanoraLoader.svelte';
   import { triggerTip } from '$lib/stores/onboarding.svelte';
 
   let commandPaletteOpen = $state(false);
   let printOpen = $state(false);
-  let railActive = $state<'project' | 'build' | 'info' | 'objects' | 'styleboards' | 'finishes' | 'exports' | 'help'>('build');
-  let buildPanelTab = $state<'draw' | 'rooms' | 'objects'>('draw');
+  let railActive = $state<RailAction>('build');
+  let buildPanelTab = $state<'draw' | 'rooms' | 'objects' | 'finishes' | 'boards' | 'assistant'>('draw');
 
-  function handleRailAction(action: typeof railActive) {
-    railActive = action;
+  function handleRailAction(action: RailAction, trigger: HTMLButtonElement) {
+    const wasActive = railActive === action;
+    // Momentary actions (layers, history, help…) must not steal the panel's section.
+    const panelSection = action === 'assistant' || action === 'build' || action === 'rooms' || action === 'objects' || action === 'finishes' || action === 'styleboards';
+    if (panelSection) railActive = action;
     if (action === 'project') window.location.href = `${base}/`;
-    if (action === 'build' || action === 'objects') {
-      buildPanelTab = action === 'objects' ? 'objects' : 'draw';
-      buildPanelOpen = true;
+    if (panelSection) {
+      buildPanelTab = action === 'build' ? 'draw' : action === 'styleboards' ? 'boards' : action;
+      buildPanelOpen = !(action === 'build' && wasActive && buildPanelOpen);
     }
     if (action === 'info') showLayers = !showLayers;
-    if (action === 'help') showHelp = true;
+    if (action === 'history') toggleHistory(trigger);
+    if (action === 'help') showHelp = !showHelp;
     if (action === 'exports') commandPaletteOpen = true;
   }
 
@@ -74,11 +80,17 @@
     showUndoHistory = !showUndoHistory;
   }
 
-  // Mobile (< md): BuildPanel becomes an off-canvas drawer toggled by the Tools FAB.
-  let buildPanelOpen = $state(false);
-  // Close the drawer once the user has picked a tool / item so the canvas is usable
-  selectedTool.subscribe(() => { if (buildPanelOpen) buildPanelOpen = false; });
-  placingFurnitureId.subscribe((id) => { if (id && buildPanelOpen) buildPanelOpen = false; });
+  // Desktop (md+): BuildPanel is docked beside the rail and starts open.
+  // Mobile (< md): it becomes an off-canvas drawer toggled by the rail or the Tools FAB.
+  const isCompact = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+  let buildPanelOpen = $state(typeof window !== 'undefined' && !isCompact());
+  // On mobile, close the drawer once the user has picked a tool / item so the canvas is usable
+  selectedTool.subscribe((tool) => {
+    if (buildPanelOpen && isCompact()) buildPanelOpen = false;
+    // Drawing tools need the plan; objects, doors, windows, stairs and columns place in 3D.
+    if (get(viewMode) === '3d' && (tool === 'wall' || tool === 'text' || tool === 'annotate' || tool === 'measure')) viewMode.set('2d');
+  });
+  placingFurnitureId.subscribe((id) => { if (id && buildPanelOpen && isCompact()) buildPanelOpen = false; });
 
   // iOS capture handoff (?import=CODE → fetch RoomPlan JSON from Firebase Storage inbox)
   let importingCapture = $state(false);
@@ -238,17 +250,19 @@
 <svelte:window on:keydown={onEditorKeydown} />
 
 {#if ready}
-  <div class="relative h-screen flex flex-col overflow-hidden">
+  <div class="relative h-screen flex flex-col overflow-hidden bg-ivory">
     <TopBar onToggleLayers={() => showLayers = !showLayers} layersOpen={showLayers} onToggleHistory={toggleHistory} historyOpen={showUndoHistory} />
-    <EditorSideRail active={railActive} onAction={handleRailAction} />
-    {#if mode === '2d' && buildPanelOpen}
-      <div class="absolute inset-0 z-30 bg-slate-950/20 md:hidden" onclick={() => buildPanelOpen = false} aria-hidden="true"></div>
-      <div class="absolute bottom-4 left-20 top-16 z-40 w-64 max-w-[calc(100vw-6rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl md:left-[88px]">
-        <BuildPanel initialTab={buildPanelTab} />
-      </div>
-    {/if}
     <!-- Keep canvas/viewer controls beneath toolbar menus and project dialogs. -->
-    <div class="flex flex-1 overflow-hidden isolate">
+    <div class="relative flex flex-1 overflow-hidden isolate">
+      <EditorSideRail active={railActive} panelOpen={buildPanelOpen} layersOpen={showLayers} historyOpen={showUndoHistory} onAction={handleRailAction} />
+      <!-- The Build panel works in 2D and 3D: in 3D its items are placed straight into the scene. -->
+      {#if buildPanelOpen}
+        <div class="absolute inset-0 z-30 bg-charcoal/20 md:hidden" onclick={() => buildPanelOpen = false} aria-hidden="true"></div>
+        <!-- Docked on desktop; floating drawer beside the rail on mobile -->
+        <div class="z-20 h-full shrink-0 border-r border-line bg-cream max-md:absolute max-md:bottom-2 max-md:left-[70px] max-md:top-2 max-md:z-40 max-md:h-auto max-md:max-w-[calc(100vw-5.5rem)] max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:shadow-2xl">
+          <BuildPanel initialTab={buildPanelTab} onClose={() => buildPanelOpen = false} />
+        </div>
+      {/if}
       <div class="flex-1 min-w-0 relative">
         {#if mode === '2d'}
           <FloorPlanCanvas />
@@ -261,7 +275,7 @@
           {#if ThreeViewer}
             <ThreeViewer />
           {:else}
-            <div class="flex items-center justify-center h-full text-slate-400">{$t('shortcuts.loading3d')}</div>
+            <PlanoraLoader variant="inline" label={$t('shortcuts.loading3d')} detail="Raising the walls and lighting the scene" />
           {/if}
         {/if}
       </div>
@@ -273,9 +287,9 @@
   </div>
 
   <!-- Tools drawer FAB (mobile only) -->
-  {#if mode === '2d'}
+  {#if true}
     <button
-      class="md:hidden fixed bottom-4 left-4 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg active:bg-blue-700 transition-colors z-40 flex items-center justify-center"
+      class="md:hidden fixed bottom-4 left-[76px] w-12 h-12 rounded-full bg-walnut text-white shadow-lg active:bg-walnut-dark transition-colors z-40 flex items-center justify-center"
       onclick={() => buildPanelOpen = !buildPanelOpen}
       title={$t('buildTools.tools')}
       aria-label={$t('editorPanels.tools')}
@@ -285,43 +299,8 @@
     </button>
   {/if}
 
-  <!-- Layers toggle button -->
-  {#if mode === '2d'}
-    <button
-      class="max-md:hidden fixed bottom-4 left-14 w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
-      class:bg-blue-600={showLayers}
-      class:text-white={showLayers}
-      class:bg-slate-700={!showLayers}
-      class:text-gray-300={!showLayers}
-      onclick={() => showLayers = !showLayers}
-      title={$t('editorPanels.layersTitle')}
-      aria-label={$t('editorPanels.layers')}
-      aria-expanded={showLayers}
-    >🗂</button>
-  {/if}
-
-  <!-- Undo History toggle button -->
-  <button
-    class="max-md:hidden fixed bottom-4 left-24 w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
-    class:bg-blue-600={showUndoHistory}
-    class:text-white={showUndoHistory}
-    class:bg-slate-700={!showUndoHistory}
-    class:text-gray-300={!showUndoHistory}
-    onclick={(event) => toggleHistory(event.currentTarget)}
-    title={$t('undoHistory.title')}
-    aria-label={$t('editorPanels.history')}
-      aria-expanded={showUndoHistory}
-  >⟲</button>
-
+  <!-- Layers, Undo History and Keyboard Shortcuts toggles live in the editor side rail. -->
   <UndoHistoryPanel bind:visible={showUndoHistory} returnFocusTo={historyTrigger} />
-
-  <!-- Help button (desktop only — keyboard shortcuts are meaningless on touch) -->
-  <button
-    class="max-md:hidden fixed bottom-4 left-4 w-8 h-8 rounded-full bg-slate-700 text-white text-sm font-bold shadow-lg hover:bg-slate-600 transition-colors z-50"
-    onclick={() => showHelp = !showHelp}
-    title={`${$t('shortcuts.title')} (?)`}
-    aria-label={$t('shortcuts.title')}
-  >?</button>
 
   <!-- Shortcuts overlay -->
   {#if showHelp}
@@ -398,7 +377,7 @@
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
               {$t('shortcuts.copyAll')}
             </button>
-            <button class="text-gray-400 hover:text-gray-600 text-xl leading-none" onclick={() => showHelp = false} aria-label={$t('shortcuts.close')}>✕</button>
+            <button class="text-gray-400 hover:text-gray-600 text-xl leading-none" onclick={() => showHelp = false} aria-label={$t('shortcuts.close')}><AppIcon name="x" size={16} /></button>
           </div>
         </div>
 
@@ -507,18 +486,15 @@
   <CommandPalette bind:open={commandPaletteOpen} />
   <PrintLayout bind:open={printOpen} />
   <OnboardingTooltip />
+{:else if !loadError}
+  <PlanoraLoader label={importingCapture ? $t('editorRecovery.importing') : $t('editorRecovery.loading')} detail={importingCapture ? '' : 'Laying out walls, rooms and furniture'} />
 {:else}
-  <div class="h-screen flex flex-col items-center justify-center gap-3">
+  <div class="h-screen flex flex-col items-center justify-center gap-3 bg-ivory">
     {#if loadError}
       <p role="alert" class="max-w-lg px-6 text-center text-red-700">{projectServiceMessage(loadError, $locale)}</p>
       <button class="text-blue-700 underline" onclick={initializeEditor}>{$t('library.retry')}</button>
       <button class="text-blue-700 underline" onclick={backupLibrary}>{$t('library.backup')}</button>
       <a class="text-blue-700 underline" href={`${base}/`}>{$t('editorRecovery.back')}</a>
-    {:else if importingCapture}
-      <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" aria-hidden="true"></div>
-      <p class="text-gray-400">{$t('editorRecovery.importing')}</p>
-    {:else}
-      <p class="text-gray-400">{$t('editorRecovery.loading')}</p>
     {/if}
   </div>
 {/if}
@@ -531,6 +507,6 @@
       <p class="font-semibold">{$t('editorRecovery.failed')}</p>
       <p>{importError instanceof CaptureImportError ? $t(importError.key, importError.variables) : importError}</p>
     </div>
-    <button class="text-red-400 hover:text-red-600 text-lg leading-none" onclick={() => importError = null} aria-label={$t('editorRecovery.dismiss')}>✕</button>
+    <button class="text-red-400 hover:text-red-600 text-lg leading-none" onclick={() => importError = null} aria-label={$t('editorRecovery.dismiss')}><AppIcon name="x" size={16} /></button>
   </div>
 {/if}

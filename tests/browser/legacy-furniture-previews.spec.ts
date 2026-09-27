@@ -18,7 +18,7 @@ async function seed(page: Page) {
   }, { id, raw, history });
   await page.goto(`/editor?id=${id}`);
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-  await expect(page.getByRole('button', { name: '🛏️ Queen Bed', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Queen Bed', exact: true })).toBeVisible();
   // The existing editor appends a Session start snapshot. Its pooling may change
   // the history wrapper, but the archived original project bytes must survive.
   await expect.poll(async () => readSnapshotStorage((await storedRecords(page, 'history'))[id]).length).toBe(2);
@@ -46,12 +46,12 @@ for (const width of [1440, 390]) test(`saved legacy furniture refreshes without 
   test.slow();
   await page.setViewportSize({ width, height: 900 });
   const { models, check } = observe(page), { raw, history } = await seed(page);
-  for (const name of ['🪥 Sink', '🪜 Imported stairs', '📦 Unrecognized item']) {
+  for (const name of ['Sink', 'Imported stairs', 'Unrecognized item']) {
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   }
-  await page.getByRole('button', { name: '📦 Unrecognized item', exact: true }).click();
+  await page.getByRole('button', { name: 'Unrecognized item', exact: true }).click();
   await expect(page.getByText('Original category: future-appliance. Shown as a neutral box.', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '🛏️ Queen Bed', exact: true }).click();
+  await page.getByRole('button', { name: 'Queen Bed', exact: true }).click();
   const field = page.getByRole('spinbutton', { name: 'Width (cm)', exact: true });
   await expect(field).toHaveValue('121.875');
   await expect(page.getByRole('textbox', { name: 'Item notes', exact: true })).toHaveValue('Edited locally before preview refresh');
@@ -90,7 +90,7 @@ for (const width of [1440, 390]) test(`saved legacy furniture refreshes without 
 
 test('quota recovery keeps old saved bytes and exports a refreshed draft', async ({ page }) => {
   const { check } = observe(page), { raw, history } = await seed(page);
-  await page.getByRole('button', { name: '🛏️ Queen Bed', exact: true }).click();
+  await page.getByRole('button', { name: 'Queen Bed', exact: true }).click();
   await failProjectWrites(page);
   const notes = page.getByRole('textbox', { name: 'Item notes', exact: true });
   await notes.fill('Keep this refreshed draft'); await notes.press('Tab');
@@ -106,6 +106,6 @@ test('quota recovery keeps old saved bytes and exports a refreshed draft', async
   await expect.poll(async () => (await savedProjects(page))[id].floors[0].furniture[2].details.note).toBe('Keep this refreshed draft');
   await page.reload();
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-  await expect(page.getByRole('button', { name: '🛏️ Queen Bed', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Queen Bed', exact: true })).toBeVisible();
   check();
 });

@@ -57,7 +57,7 @@ test('import, numeric edit, undo/redo, save/reload and export preserve a multi-f
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
   await expect(thickness).toHaveValue('32.5');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
 
   const beforeReload = await exportJSON(page);
   expect(beforeReload.name).toBe('Browser regression home');
@@ -66,7 +66,7 @@ test('import, numeric edit, undo/redo, save/reload and export preserve a multi-f
   await floor.selectOption({ label: 'Future Floor' });
   await expect(page.getByRole('application')).toContainText('0 walls');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   const saved = await exportJSON(page);
   await page.reload();
   await expect(floor.locator('option:checked')).toHaveText('Future Floor');
@@ -91,7 +91,7 @@ test('import, numeric edit, undo/redo, save/reload and export preserve a multi-f
   await page.getByRole('button', { name: 'Import', exact: true }).click();
   await expect(floor.locator('option:checked')).toHaveText('Entry');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
   expect(externalRequests).toEqual([]);
 });
@@ -163,7 +163,7 @@ test('catalog and 3D use bounded, cacheable assets with zero startup model downl
   }));
   await page.getByRole('button', { name: '2D', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
   // Prove the previously loaded 3D assets remain usable without network access.
@@ -232,7 +232,7 @@ test('sloped walls preserve heights and openings through edits, reversal, elevat
   await testInfo.attach('sloped-elevation', { body: await page.screenshot(), contentType: 'image/png' });
   await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   await page.reload();
   expect((await exportJSON(page)).floors).toEqual(reversed.floors);
   await page.getByRole('button', { name: '3D', exact: true }).click();
@@ -297,7 +297,7 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Close settings', exact: true }).click();
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     // The completed-save text remains in the DOM but is hidden on narrow screens.
-    await expect(page.getByText('Saved ✓', { exact: true })).toHaveCount(1);
+    await expect(page.getByText('Saved', { exact: true })).toHaveCount(1);
     const saved = await exportJSON(page);
     expect(saved.floors.map((floor: { elevation: number }) => floor.elevation)).toEqual([-50.5, 425.5]);
     expect(saved.floors.map(({ elevation: _, ...floor }: { elevation: number }) => floor)).toEqual(original.floors);

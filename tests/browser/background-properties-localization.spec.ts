@@ -18,7 +18,7 @@ test('Portuguese background controls preserve image bytes and restore removed im
   await (await chooser).setFiles({ name: 'background.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(plan)) });
   const panel = page.locator('[data-plan-properties]');
   await expect(panel.getByRole('heading', { name: /Imagem de fundo/ })).toBeVisible();
-  await expect(panel.getByRole('button', { name: '📏 Definir escala', exact: true })).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Definir escala', exact: true })).toBeVisible();
   async function exported(floorIndex = 0) {
     await page.getByRole('button', { name: 'Exportar', exact: true }).click();
     const pending = page.waitForEvent('download');
@@ -30,14 +30,14 @@ test('Portuguese background controls preserve image bytes and restore removed im
   let unexpectedPrompts = 0;
   const dismissUnexpected = async (dialog: import('@playwright/test').Dialog) => { unexpectedPrompts++; await dialog.dismiss(); };
   page.on('dialog', dismissUnexpected);
-  await panel.getByRole('button', { name: '📏 Definir escala', exact: true }).click();
+  await panel.getByRole('button', { name: 'Definir escala', exact: true }).click();
   await canvas.click({ position: { x: 200, y: 200 } });
   await page.keyboard.press('Escape');
   await canvas.click({ position: { x: 400, y: 200 } });
   page.off('dialog', dismissUnexpected);
   expect(unexpectedPrompts).toBe(0);
   page.on('dialog', dismissUnexpected);
-  await panel.getByRole('button', { name: '📏 Definir escala', exact: true }).click();
+  await panel.getByRole('button', { name: 'Definir escala', exact: true }).click();
   await canvas.click({ position: { x: 200, y: 200 } });
   await page.getByRole('combobox', { name: 'Pavimento atual', exact: true }).selectOption(upper.id);
   await canvas.click({ position: { x: 400, y: 200 } });
@@ -49,7 +49,7 @@ test('Portuguese background controls preserve image bytes and restore removed im
   expect((await exported()).backgroundImage).toEqual(original.backgroundImage);
 
   for (const answer of ['Infinity', '0', '-5', null]) {
-    await panel.getByRole('button', { name: '📏 Definir escala', exact: true }).click();
+    await panel.getByRole('button', { name: 'Definir escala', exact: true }).click();
     await canvas.click({ position: { x: 200, y: 200 } });
     let message = '';
     page.once('dialog', async dialog => {
@@ -66,7 +66,7 @@ test('Portuguese background controls preserve image bytes and restore removed im
   }
   const rotation = panel.getByRole('spinbutton', { name: 'Rotação', exact: true });
   await rotation.fill('27.5'); await rotation.press('Tab');
-  await panel.getByRole('button', { name: '🔓 Desbloqueado', exact: true }).click();
+  await panel.getByRole('button', { name: 'Desbloqueado', exact: true }).click();
   const edited = await exported();
   expect(edited.backgroundImage).toEqual({ ...original.backgroundImage, scale: 1.05, opacity: .55, rotation: 27.5, locked: true });
   for (const key of ['walls','doors','windows','rooms','furniture']) expect(edited[key]).toEqual(original[key]);
@@ -77,7 +77,7 @@ test('Portuguese background controls preserve image bytes and restore removed im
 
   await page.getByRole('button', { name: 'Zoom em 100%', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Zoom em 100%', exact: true })).toHaveText('100%');
-  await panel.getByRole('button', { name: '📏 Definir escala', exact: true }).click();
+  await panel.getByRole('button', { name: 'Definir escala', exact: true }).click();
   await canvas.click({ position: { x: 200, y: 200 } });
   page.once('dialog', dialog => dialog.accept('400'));
   await canvas.click({ position: { x: 400, y: 200 } });

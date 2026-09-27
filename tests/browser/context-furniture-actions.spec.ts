@@ -16,7 +16,7 @@ test('furniture context actions preserve size and undo stacking order', async ({
   }
   const before = await exported();
   await page.getByRole('button', { name: 'Toggle Layers Panel', exact: true }).click();
-  await page.getByRole('button', { name: '💺 Armchair', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Armchair', exact: true }).first().click();
   async function action(name: RegExp) {
     const canvas = page.getByLabel('Floor plan editor canvas', { exact: true });
     await canvas.focus(); await canvas.press('Shift+F10');

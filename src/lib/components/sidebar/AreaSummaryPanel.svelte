@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
+  const categoryIcons: Record<string, string> = { indoor: 'house', outdoor: 'trees', garage: 'car', utility: 'wrench', uncategorized: 'box' };
   import { t } from '$lib/i18n';
   import { activeFloor, detectedRoomsStore } from '$lib/stores/project';
   import { projectSettings, formatArea, formatLength } from '$lib/stores/settings';
@@ -46,7 +48,7 @@
   let categoryTotals = $derived.by(() => {
     const cats = roomsByCategory;
     const result: { category: SummaryCategory; label: string; area: number; count: number }[] = [];
-    const labels: Record<SummaryCategory, string> = { indoor: `🏠 ${$t('areaSummary.indoor')}`, outdoor: `🌳 ${$t('areaSummary.outdoor')}`, garage: `🚗 ${$t('areaSummary.garage')}`, utility: `🔧 ${$t('areaSummary.utility')}`, uncategorized: $t('areaSummary.uncategorized') };
+    const labels: Record<SummaryCategory, string> = { indoor: $t('areaSummary.indoor'), outdoor: $t('areaSummary.outdoor'), garage: $t('areaSummary.garage'), utility: $t('areaSummary.utility'), uncategorized: $t('areaSummary.uncategorized') };
     for (const [cat, rooms] of Object.entries(cats) as [SummaryCategory, Room[]][]) {
       if (rooms.length > 0) {
         result.push({ category: cat, label: labels[cat], area: rooms.reduce((s: number, r: Room) => s + r.area, 0), count: rooms.length });
@@ -113,7 +115,7 @@
       <div class="space-y-1">
         {#each categoryTotals as cat}
           <div class="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1.5">
-            <span class="text-gray-700">{cat.label} <span class="text-gray-400">({cat.count})</span></span>
+            <span class="flex items-center gap-1.5 text-gray-700"><AppIcon name={categoryIcons[cat.category] ?? 'box'} size={14} class="text-muted" />{cat.label} <span class="text-gray-400">({cat.count})</span></span>
             <span class="font-medium text-gray-800">{formatArea(cat.area, settings.units)}</span>
           </div>
         {/each}

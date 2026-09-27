@@ -40,7 +40,7 @@ for (const width of [1440, 390]) {
       const field = page.getByRole('spinbutton', { name, exact: true });
       await field.fill(value); await field.press('Tab'); return field;
     }
-    await page.getByRole('button', { name: '🌳 Person', exact: true }).click();
+    await page.getByRole('button', { name: 'Person', exact: true }).click();
     for (const draft of ['', '0', '-1', '.5']) await expect(await edit('Width (cm)', draft)).toHaveValue('55.125');
     await expect(await edit('Rotation (°)', '')).toHaveValue('15.125');
     await expect(await edit('Rotation', '')).toHaveValue('10.125');
@@ -57,9 +57,9 @@ for (const width of [1440, 390]) {
     expect((await exportFloor(page)).entourage[0].width).toBe(1.27);
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     expect((await exportFloor(page)).entourage).toEqual(floor.entourage);
-    await page.getByRole('button', { name: '📦 qa-furniture', exact: true }).click();
+    await page.getByRole('button', { name: 'qa-furniture', exact: true }).click();
     await expect(await edit('Rotation (degrees)', '')).toHaveValue('22.125');
-    await page.getByRole('button', { name: '🏛️ square column 1', exact: true }).click();
+    await page.getByRole('button', { name: 'square column 1', exact: true }).click();
     await expect(await edit('Rotation (degrees)', '')).toHaveValue('30.125');
     // Observe the actual painted text anchor so selection follows responsive canvas layout.
     await page.getByRole('button', { name: 'Save', exact: true }).press('l');
@@ -83,7 +83,7 @@ for (const width of [1440, 390]) {
     const changed = await exportFloor(page);
     expect(changed.textAnnotations[0]).toMatchObject({ x: -25.125, fontSize: 22.75 });
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByText('Saved ✓', { exact: true })).toHaveCount(1);
+    await expect(page.getByText('Saved', { exact: true })).toHaveCount(1);
     await page.reload();
     expect((await exportFloor(page)).textAnnotations).toEqual(changed.textAnnotations);
   });

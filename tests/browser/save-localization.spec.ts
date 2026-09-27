@@ -26,7 +26,7 @@ test('Portuguese save recovery retains edits and translates the elapsed tooltip 
   await page.evaluate(() => { (window as any).failProjectWrites = false; });
   await alert.getByRole('button', { name: 'Tentar salvar novamente', exact: true }).click();
   await expect(alert).toHaveCount(0);
-  const saved = page.getByText('Salvo ✓', { exact: true });
+  const saved = page.getByText('Salvo', { exact: true });
   await expect(saved).toHaveAttribute('title', 'Último salvamento: agora');
   expect((await savedProjects(page))[backup.id].name).toBe(backup.name);
   expect(await page.getByRole('button', { name: 'Desfazer', exact: true }).boundingBox()).toEqual(undoBeforeSave);
@@ -35,5 +35,5 @@ test('Portuguese save recovery retains edits and translates the elapsed tooltip 
   await page.getByRole('button', { name: 'Configurações', exact: true }).click();
   await page.getByRole('button', { name: 'Aparência', exact: true }).click();
   await page.getByRole('combobox', { name: 'Idioma', exact: true }).selectOption('en');
-  await expect(page.getByText('Saved ✓', { exact: true })).toHaveAttribute('title', 'Last saved: 1 min ago');
+  await expect(page.getByText('Saved', { exact: true })).toHaveAttribute('title', 'Last saved: 1 min ago');
 });

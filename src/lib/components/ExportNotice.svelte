@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { t } from '$lib/i18n';
   import { exportNotice } from '$lib/stores/exportNotice';
 </script>
@@ -10,7 +11,7 @@
         <p class="font-semibold text-gray-900">{$t($exportNotice.title)}</p>
         <p class="mt-1 text-sm text-gray-700">{$t($exportNotice.message)}</p>
       </div>
-      <button aria-label={$t('exportNotice.dismiss')} class="rounded px-2 py-1 text-gray-600 hover:bg-gray-100" onclick={() => exportNotice.set(null)}>✕</button>
+      <button aria-label={$t('exportNotice.dismiss')} class="rounded px-2 py-1 text-gray-600 hover:bg-gray-100" onclick={() => exportNotice.set(null)}><AppIcon name="x" size={16} /></button>
     </div>
   </div>
 {/if}

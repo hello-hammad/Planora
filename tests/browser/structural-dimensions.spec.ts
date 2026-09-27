@@ -20,7 +20,7 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Import JSON', exact: true }).click();
     await (await chooser).setFiles({ name: 'structural.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(plan)) });
     await page.getByRole('button', { name: 'Save', exact: true }).press('l');
-    await page.getByRole('button', { name: '🪜 Stair 1 (up)', exact: true }).click();
+    await page.getByRole('button', { name: 'Stair 1 (up)', exact: true }).click();
     async function edit(name: string, value: string) {
       const field = page.getByRole('spinbutton', { name, exact: true });
       await field.fill(value); await field.press('Tab');
@@ -38,7 +38,7 @@ for (const width of [1440, 390]) {
     await edit('Width (cm)', '125.75');
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     expect((await exportedFloor(page)).stairs).toEqual(plan.floors[0].stairs);
-    await page.getByRole('button', { name: '🏛️ round column 1', exact: true }).click();
+    await page.getByRole('button', { name: 'round column 1', exact: true }).click();
     for (const [name, saved, invalid] of [
       ['Diameter (cm)', '30.125', ['', '0', '9', '201']],
       ['Height (cm)', '280.125', ['', '-1', '49', '1001']],
@@ -61,7 +61,7 @@ for (const width of [1440, 390]) {
     const changed = await exportedFloor(page);
     expect(changed.columns[0]).toMatchObject({ diameter: 12.7, height: 50.8 });
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByText('Saved ✓', { exact: true })).toHaveCount(1);
+    await expect(page.getByText('Saved', { exact: true })).toHaveCount(1);
     await page.reload();
     expect((await exportedFloor(page)).columns).toEqual(changed.columns);
   });

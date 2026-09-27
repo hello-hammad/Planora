@@ -27,17 +27,17 @@ for (const curved of [false, true]) test(`Portuguese ${curved ? 'curved' : 'stra
   }
   const original = await exported();
   await page.getByRole('button', { name: 'Salvar', exact: true }).press('l');
-  await page.getByRole('button', { name: '🚪 Porta aberta 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Porta aberta 1', exact: true }).click();
   await page.getByRole('button', { name: 'Inverter abertura', exact: true }).click();
   const flipped = await exported();
   expect(flipped.doors[0]).toEqual({ ...original.doors[0], swingDirection: 'right' });
   await page.getByRole('button', { name: 'Desfazer', exact: true }).click();
   expect(await exported()).toEqual(original);
-  await page.getByRole('button', { name: '─ Parede 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Parede 1', exact: true }).click();
   if (curved) {
     const canvas = page.getByLabel(/^(?:Floor plan editor canvas|Área de edição da planta baixa)$/, { exact: true });
     await canvas.focus(); await canvas.press('Shift+F10');
-    const splitAction = page.getByRole('menuitem', { name: '✂️ Dividir Parede', exact: true });
+    const splitAction = page.getByRole('menuitem', { name: 'Dividir Parede', exact: true });
     await expect(splitAction).toBeFocused(); await splitAction.press('Enter');
     await expect(canvas).toBeFocused();
   } else {
@@ -65,7 +65,7 @@ for (const curved of [false, true]) test(`Portuguese ${curved ? 'curved' : 'stra
   await page.getByRole('button', { name: 'Refazer', exact: true }).click();
   expect(await exported()).toEqual(split);
   await page.getByRole('button', { name: 'Salvar', exact: true }).click();
-  await expect(page.getByText('Salvo ✓', { exact: true })).toBeVisible();
+  await expect(page.getByText('Salvo', { exact: true })).toBeVisible();
   await page.goto(`/editor?id=${encodeURIComponent(exportedProjectId)}`);
   expect(await exported()).toEqual(split);
 });
@@ -92,7 +92,7 @@ for (const kind of ['door', 'window']) test(`midpoint split explains and preserv
   }
   const before = await exported();
   await page.getByRole('button', { name: 'Salvar', exact: true }).press('l');
-  await page.getByRole('button', { name: '─ Parede 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Parede 1', exact: true }).click();
   await page.getByRole('button', { name: 'Dividir parede ao meio', exact: true }).click();
   const notice = page.getByRole('status').filter({ hasText: 'Escolha um ponto de divisão fora de portas e janelas.' });
   await expect(notice).toBeVisible();
@@ -103,7 +103,7 @@ for (const kind of ['door', 'window']) test(`midpoint split explains and preserv
   await canvas.focus();
   await canvas.press(kind === 'door' ? 'Shift+F10' : 'ContextMenu');
   const menu = page.getByRole('menu');
-  const splitAction = menu.getByRole('menuitem', { name: '✂️ Dividir Parede', exact: true });
+  const splitAction = menu.getByRole('menuitem', { name: 'Dividir Parede', exact: true });
   await expect(splitAction).toBeFocused();
   // An editor Delete shortcut must not remove the selected wall behind a menu.
   await page.keyboard.press('Delete');

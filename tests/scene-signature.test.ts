@@ -14,7 +14,7 @@ it('ignores project metadata, item details and 2D payloads without serializing p
     for (const key of ['walls', 'rooms', 'doors', 'windows', 'furniture'] as const)
       for (const item of floor[key]) item.details = { note: 'New note', price: 45, material: 'Metadata only', ceilingHeight: 240, photos: ['assets/photo.jpg'] };
     Object.assign(floor, { backgroundImage: unread, guides: unread, measurements: unread,
-      annotations: unread, textAnnotations: unread, groups: unread, entourage: unread });
+      annotations: unread, textAnnotations: unread, groups: unread });
   }
   expect(signature(project, true)).toBe(before);
 });
@@ -38,6 +38,7 @@ for (const [name, edit] of Object.entries({
   'furniture size': (p: Project) => { p.floors[0].furniture[0].width = 110; },
   'room label': (p: Project) => { p.floors[0].rooms[0].name = 'Kitchen'; },
   'room finish': (p: Project) => { p.floors[0].rooms[0].floorTexture = 'wood'; },
+  'entourage placement': (p: Project) => { p.floors[0].entourage = [{ id: 'car', defId: 'car-sedan', position: { x: 0, y: 900 }, width: 460, rotation: 0 }]; },
   'column': (p: Project) => { p.floors[0].columns.push({ id: 'column', shape: 'round', position: { x: 0, y: 0 }, rotation: 0, diameter: 30, height: 280, color: '#aaa' }); },
   'future render field': (p: Project) => { Object.assign(p.floors[0].walls[0], { futureRenderField: true }); },
 })) it(`invalidates ${name}`, () => {

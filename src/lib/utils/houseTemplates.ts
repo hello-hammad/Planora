@@ -338,7 +338,7 @@ export const houseTemplates: HouseTemplate[] = [
   {
     name: 'Studio Apartment',
     description: 'Open plan living/kitchen, bathroom, closet',
-    icon: '🏢',
+    icon: 'building',
     area: '~30m²',
     tags: ['apartment', 'small', 'open-plan'],
     create: createStudioApartment,
@@ -346,7 +346,7 @@ export const houseTemplates: HouseTemplate[] = [
   {
     name: '1-Bedroom Apartment',
     description: 'Bedroom, living room, kitchen, bathroom',
-    icon: '🏠',
+    icon: 'house',
     area: '~50m²',
     tags: ['apartment', 'medium'],
     create: createOneBedroom,
@@ -354,7 +354,7 @@ export const houseTemplates: HouseTemplate[] = [
   {
     name: '2-Bedroom House',
     description: '2 bedrooms, living room, kitchen, bathroom, hallway',
-    icon: '🏡',
+    icon: 'house',
     area: '~80m²',
     tags: ['house', 'family'],
     create: createTwoBedroom,
@@ -362,7 +362,7 @@ export const houseTemplates: HouseTemplate[] = [
   {
     name: 'Open Concept Home',
     description: 'Large open living/kitchen/dining, 2 bedrooms, 2 bathrooms',
-    icon: '✨',
+    icon: 'sparkles',
     area: '~100m²',
     tags: ['house', 'modern', 'open-plan'],
     create: createOpenConcept,
@@ -370,7 +370,7 @@ export const houseTemplates: HouseTemplate[] = [
   {
     name: 'L-Shaped House',
     description: 'L-shaped layout with garage, 3 bedrooms, 2 bathrooms',
-    icon: '🏘️',
+    icon: 'house-plus',
     area: '~120m²',
     tags: ['house', 'large', 'garage'],
     create: createLShaped,
