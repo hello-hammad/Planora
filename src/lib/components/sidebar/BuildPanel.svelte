@@ -21,6 +21,8 @@
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, roomPlanImportOptions, validateRoomPlan, ORTHO_VERSION } from '$lib/utils/roomplanImport';
   import { currentProject } from '$lib/stores/project';
 
+  let { initialTab = 'draw' }: { initialTab?: 'draw' | 'rooms' | 'objects' } = $props();
+
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
 
@@ -28,6 +30,7 @@
 
   // AreaSummaryPanel moved to top bar dialog
   let activeTab = $state<'draw' | 'rooms' | 'objects'>('draw');
+  $effect(() => { activeTab = initialTab; });
   let constructionOpen = $state(true);
   let selectedCategory = $state<string>('All');
   // RoomPlan import dialog state
@@ -350,7 +353,7 @@
   };
 </script>
 
-<div class="w-64 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
+<div class="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
   <!-- Tabs -->
   <div class="flex border-b border-gray-200">
     <button
@@ -448,7 +451,6 @@
             <div class="text-xs text-gray-400">{$t('buildTools.textHelp')}</div>
           </div>
         </button>
-
         <button
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'annotate' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
           onclick={() => setTool('annotate')}

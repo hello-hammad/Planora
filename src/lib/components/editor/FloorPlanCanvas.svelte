@@ -81,6 +81,9 @@
   let isPanning = $state(false);
   let panStartX = 0;
   let panStartY = 0;
+  let panGestureMoved = false;
+  let suppressNextDblClick = false;
+  let leftPanCandidate = false;
   let spaceDown = $state(false);
   let shiftDown = $state(false);
 
@@ -120,6 +123,59 @@
       updateAnnotation(editingDimensionId, { label: dimensionLabel.trim() });
     }
     editingDimensionId = null;
+  }
+
+  function rotateContextSelection(degrees: number) {
+    if (!currentSelectedId || !currentFloor) return;
+    const text = currentFloor.textAnnotations?.find(item => item.id === currentSelectedId);
+    if (text) {
+      updateTextAnnotation(text.id, { rotation: text.rotation + degrees });
+      return;
+    }
+    const furniture = currentFloor.furniture.find(item => item.id === currentSelectedId);
+    if (furniture) {
+      rotateFurniture(furniture.id, degrees);
+      return;
+    }
+    const wall = currentFloor.walls.find(item => item.id === currentSelectedId);
+    if (wall) {
+      const radians = degrees * Math.PI / 180;
+      const center = { x: (wall.start.x + wall.end.x) / 2, y: (wall.start.y + wall.end.y) / 2 };
+      const rotatePoint = (point: Point) => {
+        const x = point.x - center.x;
+        const y = point.y - center.y;
+        return { x: center.x + x * Math.cos(radians) - y * Math.sin(radians), y: center.y + x * Math.sin(radians) + y * Math.cos(radians) };
+      };
+      updateWall(wall.id, {
+        start: rotatePoint(wall.start),
+        end: rotatePoint(wall.end),
+        curvePoint: wall.curvePoint ? rotatePoint(wall.curvePoint) : undefined,
+      });
+      return;
+    }
+    rotateSelection(currentSelectedIds.size ? currentSelectedIds : new Set([currentSelectedId]), degrees);
+  }
+
+  function deleteContextSelection() {
+    const ids = currentSelectedIds.size ? currentSelectedIds : currentSelectedId ? new Set([currentSelectedId]) : new Set<string>();
+    if (!ids.size) return;
+    beginUndoGroup();
+    for (const id of ids) removeElement(id);
+    endUndoGroup();
+    selectedElementIds.set(new Set());
+    selectedElementId.set(null);
+    selectedTextAnnotationId = null;
+  }
+
+  function setSelectedWallLength(value: number) {
+    if (!currentSelectedId || !currentFloor || !Number.isFinite(value) || value <= 0) return;
+    const wall = currentFloor.walls.find(item => item.id === currentSelectedId);
+    if (!wall) return;
+    const dx = wall.end.x - wall.start.x;
+    const dy = wall.end.y - wall.start.y;
+    const currentLength = Math.hypot(dx, dy);
+    if (!currentLength) return;
+    updateWall(wall.id, { end: { x: wall.start.x + dx * value / currentLength, y: wall.start.y + dy * value / currentLength } });
   }
 
   function focusInlineEditor(node: HTMLInputElement) {
@@ -2200,17 +2256,29 @@
     if (canvasGestureActive && e.target !== canvas) onMouseUp(e);
   }
 
+  function onCanvasMouseLeave() {
+    if (isPanning || leftPanCandidate) onMouseUp(new MouseEvent('mouseup'));
+  }
+
   function onMouseDown(e: MouseEvent) {
     markDirty();
-    if (e.button !== 0 && e.button !== 1) return;
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
     finishCanvasGesture();
     // Native double-clicks belong to the original press even if selection opened
     // a sidebar and resized the canvas. Do not select a second object underneath
     // the now-shifted pixel before the dblclick handler runs.
-    if (e.button === 0 && e.detail >= 2 && sameSelectionPress(e)) return;
+    if (e.button === 0 && e.detail >= 2 && sameSelectionPress(e)) {
+      isPanning = true;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      panGestureMoved = false;
+      selectionPress = null;
+      return;
+    }
     selectionPress = null;
     canvasGestureActive = true;
     canvasPressPosition = { x: e.clientX, y: e.clientY };
+    leftPanCandidate = e.button === 0 && e.detail === 1 && currentTool === 'select';
     if (e.button === 0 && e.shiftKey && currentTool === 'select' && currentFloor && !spaceDown && !$panMode) {
       const rect = canvas.getBoundingClientRect();
       const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
@@ -2230,10 +2298,11 @@
         return;
       }
     }
-    if (e.button === 1 || (e.button === 0 && (spaceDown || $panMode || (e.shiftKey && currentTool === 'select')))) {
+    if (e.button === 1 || e.button === 2 || (e.button === 0 && (spaceDown || $panMode || (e.shiftKey && currentTool === 'select')))) {
       isPanning = true;
       panStartX = e.clientX;
       panStartY = e.clientY;
+      panGestureMoved = false;
       return;
     }
     if (e.button !== 0) return;
@@ -2260,14 +2329,12 @@
       return;
     }
 
-    // Text annotation tool: click to place text
+    // Text annotation tool: click to place text.
     if (textAnnotationMode) {
       const snapped = { x: snap(wp.x), y: snap(wp.y) };
-      // Check if clicking on an existing text annotation to edit it
       if (currentFloor) {
         const hitId = hitTestTextAnnotation(wp, currentFloor);
         if (hitId) {
-          // Edit existing text annotation
           const ta = currentFloor.textAnnotations?.find(t => t.id === hitId);
           if (ta) {
             const sp = worldToScreen(ta.x, ta.y);
@@ -2280,7 +2347,6 @@
           }
         }
       }
-      // Place new text annotation — show inline input
       const sp = worldToScreen(snapped.x, snapped.y);
       const id = addTextAnnotation(snapped.x, snapped.y, 'Text', 16, '#1e293b', 0);
       editingTextAnnotationId = id;
@@ -2660,6 +2726,11 @@
   }
 
   function onDblClick(e: MouseEvent) {
+    if (suppressNextDblClick) {
+      suppressNextDblClick = false;
+      return;
+    }
+    if (editingTextAnnotationId) return;
     const rect = canvas.getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
@@ -2680,22 +2751,22 @@
       return;
     }
 
-    // Double-click on a text annotation to edit it
+    // Double-click an existing text annotation reopens the inline editor.
     if (currentTool === 'select' && currentFloor) {
       const wp = selectionPoint;
       const textHitId = hitTestTextAnnotation(wp, currentFloor);
       if (textHitId) {
-        const ta = currentFloor.textAnnotations?.find(t => t.id === textHitId);
-        if (ta) {
-          const sp = worldToScreen(ta.x, ta.y);
-          editingTextAnnotationId = textHitId;
-          editingTextAnnotationPos = { x: sp.x, y: sp.y };
-          editingTextAnnotationValue = ta.text;
-          selectedTextAnnotationId = textHitId;
-          selectedElementId.set(textHitId);
-          return;
-        }
+        const text = currentFloor.textAnnotations?.find(item => item.id === textHitId);
+        if (!text) return;
+        const sp = worldToScreen(text.x, text.y);
+        editingTextAnnotationId = textHitId;
+        editingTextAnnotationPos = { x: sp.x, y: sp.y };
+        editingTextAnnotationValue = text.text;
+        selectedTextAnnotationId = textHitId;
+        selectedElementId.set(textHitId);
+        return;
       }
+
     }
 
     // Double-click on a room to edit its name inline
@@ -2746,6 +2817,34 @@
     const rect = canvas.getBoundingClientRect();
     mousePos = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
 
+    if (leftPanCandidate && (e.buttons & 1) !== 0 && Math.hypot(e.clientX - canvasPressPosition.x, e.clientY - canvasPressPosition.y) > 3) {
+      leftPanCandidate = false;
+      isPanning = true;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      panGestureMoved = true;
+    }
+
+    // Pan before any selection or marquee logic. Some browsers report a
+    // right-button drag through `buttons` even when the initial context-menu
+    // event interrupts the normal mousedown path.
+    if (isPanning || (e.buttons & 2) !== 0) {
+      if (!isPanning) {
+        isPanning = true;
+        panStartX = e.clientX;
+        panStartY = e.clientY;
+        panGestureMoved = false;
+      }
+      const deltaX = e.clientX - panStartX;
+      const deltaY = e.clientY - panStartY;
+      if (Math.hypot(deltaX, deltaY) > 2) panGestureMoved = true;
+      camX -= deltaX / zoom;
+      camY -= deltaY / zoom;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      return;
+    }
+
     if ((draggingFurnitureId || draggingHandle) && !furnitureGestureStarted) {
       // Treat small pointer movement during a click as selection, not a snapped move.
       if (Math.hypot(e.clientX - canvasPressPosition.x, e.clientY - canvasPressPosition.y) < 3) return;
@@ -2781,12 +2880,6 @@
         moveGuide(draggingGuideId, snap(newPos));
       }
       return;
-    }
-    if (isPanning) {
-      camX -= (e.clientX - panStartX) / zoom;
-      camY -= (e.clientY - panStartY) / zoom;
-      panStartX = e.clientX;
-      panStartY = e.clientY;
     }
     if (draggingWallEndpoint) {
       // Exclude the dragged wall and all connected walls from magnetic snap targets
@@ -3035,7 +3128,10 @@
   function onMouseUp(e: MouseEvent) {
     markDirty();
     canvasGestureActive = false;
+    leftPanCandidate = false;
+    if (isPanning && panGestureMoved) suppressNextDblClick = true;
     isPanning = false;
+    panGestureMoved = false;
     draggingGuideId = null;
 
     // Finalize only actual label movement, never a selection click.
@@ -3203,6 +3299,7 @@
   // compatibility mouse events (which would double-fire the handlers).
   let pinchState: { dist: number; cx: number; cy: number } | null = null;
   let singleTouchActive = false;
+  let singleFingerPanActive = false;
   let singleTouchOrigin: { clientX: number; clientY: number } | null = null;
   let singleTouchMoved = false;
   let lastTapTime = 0;
@@ -3223,10 +3320,21 @@
   function onTouchStart(e: TouchEvent) {
     e.preventDefault();
     if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const now = Date.now();
+      const isSecondTap = now - lastTapTime < 350 && Math.hypot(touch.clientX - lastTapX, touch.clientY - lastTapY) < 30;
       singleTouchActive = true;
-      singleTouchOrigin = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+      singleTouchOrigin = { clientX: touch.clientX, clientY: touch.clientY };
       singleTouchMoved = false;
-      dispatchMouse('mousedown', e.touches[0].clientX, e.touches[0].clientY);
+      singleFingerPanActive = isSecondTap;
+      if (isSecondTap) {
+        isPanning = true;
+        panStartX = touch.clientX;
+        panStartY = touch.clientY;
+        panGestureMoved = false;
+      } else {
+        dispatchMouse('mousedown', touch.clientX, touch.clientY);
+      }
     } else if (e.touches.length === 2) {
       lastTapTime = 0;
       singleTouchOrigin = null;
@@ -3268,7 +3376,15 @@
     } else if (singleTouchActive && e.touches.length === 1) {
       if (singleTouchOrigin && Math.hypot(e.touches[0].clientX - singleTouchOrigin.clientX,
           e.touches[0].clientY - singleTouchOrigin.clientY) > 10) singleTouchMoved = true;
-      dispatchMouse('mousemove', e.touches[0].clientX, e.touches[0].clientY);
+      if (singleFingerPanActive) {
+        camX -= (e.touches[0].clientX - panStartX) / zoom;
+        camY -= (e.touches[0].clientY - panStartY) / zoom;
+        panStartX = e.touches[0].clientX;
+        panStartY = e.touches[0].clientY;
+        markDirty();
+      } else {
+        dispatchMouse('mousemove', e.touches[0].clientX, e.touches[0].clientY);
+      }
     }
   }
 
@@ -3277,6 +3393,7 @@
     if (e.type === 'touchcancel') {
       pinchState = null;
       lastTapTime = 0;
+      singleFingerPanActive = false;
       if (singleTouchActive) {
         singleTouchActive = false;
         const touch = e.changedTouches[0] ?? singleTouchOrigin;
@@ -3293,6 +3410,16 @@
     if (singleTouchActive && e.touches.length === 0) {
       const t = e.changedTouches[0] ?? singleTouchOrigin;
       singleTouchActive = false;
+      if (singleFingerPanActive) {
+        const moved = singleTouchMoved;
+        singleFingerPanActive = false;
+        isPanning = false;
+        panGestureMoved = false;
+        lastTapTime = 0;
+        singleTouchOrigin = null;
+        if (!moved && t) dispatchMouse('dblclick', t.clientX, t.clientY);
+        return;
+      }
       if (t && singleTouchOrigin && Math.hypot(t.clientX - singleTouchOrigin.clientX,
           t.clientY - singleTouchOrigin.clientY) > 10) singleTouchMoved = true;
       singleTouchOrigin = null;
@@ -3693,6 +3820,10 @@
   }
 
   function onContextMenu(e: MouseEvent) {
+    if (isPanning) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
 
     // Keep right-click measurement available alongside clicks and taps.
@@ -3905,7 +4036,8 @@
   }
 
   let cursorStyle = $derived(
-    spaceDown || isPanning || $panMode || (shiftDown && currentTool === 'select') ? 'grab' :
+    isPanning ? 'grabbing' :
+    spaceDown || $panMode || (shiftDown && currentTool === 'select') ? 'grab' :
     pickingElevation ? 'crosshair' :
     draggingFurnitureId ? 'move' :
     draggingRoomId ? 'move' :
@@ -3942,6 +4074,7 @@
     onmousedown={onMouseDown}
     onmousemove={onMouseMove}
     onmouseup={onMouseUp}
+    onmouseleave={onCanvasMouseLeave}
     ondblclick={onDblClick}
     onwheel={onWheel}
     oncontextmenu={onContextMenu}
@@ -4006,11 +4139,11 @@
       />
     </div>
   {/if}
-  <!-- Inline text annotation editor -->
+  <!-- Original inline text annotation editor. -->
   {#if editingTextAnnotationId}
     <input
       type="text"
-      class="absolute bg-white border-2 border-blue-500 rounded px-2 py-1 text-sm text-center shadow-lg outline-none"
+      class="absolute rounded border-2 border-blue-500 bg-white px-2 py-1 text-center text-sm shadow-lg outline-none"
       style="left: {editingTextAnnotationPos.x}px; top: {editingTextAnnotationPos.y}px; transform: translate(-50%, -50%); z-index: 20; min-width: 120px;"
       aria-label={$t('canvasHints.annotation')}
       value={editingTextAnnotationValue}
@@ -4018,41 +4151,104 @@
       onkeydown={(e) => {
         e.stopPropagation();
         if (e.key === 'Enter') {
-          if (editingTextAnnotationValue.trim()) {
-            updateTextAnnotation(editingTextAnnotationId!, { text: editingTextAnnotationValue });
-          } else {
-            removeTextAnnotation(editingTextAnnotationId!);
-            selectedTextAnnotationId = null;
-            selectedElementId.set(null);
-          }
+          if (editingTextAnnotationValue.trim()) updateTextAnnotation(editingTextAnnotationId!, { text: editingTextAnnotationValue });
+          else removeTextAnnotation(editingTextAnnotationId!);
           editingTextAnnotationId = null;
         } else if (e.key === 'Escape') {
-          // If it was a new annotation with default text and user cancels, remove it
-          if (currentFloor?.textAnnotations) {
-            const ta = currentFloor.textAnnotations.find(t => t.id === editingTextAnnotationId);
-            if (ta && ta.text === 'Text' && !editingTextAnnotationValue.trim()) {
-              removeTextAnnotation(editingTextAnnotationId!);
-              selectedTextAnnotationId = null;
-              selectedElementId.set(null);
-            }
-          }
+          const note = currentFloor?.textAnnotations?.find(item => item.id === editingTextAnnotationId);
+          if (note?.text === 'Text' && !editingTextAnnotationValue.trim()) removeTextAnnotation(editingTextAnnotationId!);
           editingTextAnnotationId = null;
         }
       }}
       onblur={() => {
         if (editingTextAnnotationId) {
-          if (editingTextAnnotationValue.trim()) {
-            updateTextAnnotation(editingTextAnnotationId, { text: editingTextAnnotationValue });
-          } else {
-            removeTextAnnotation(editingTextAnnotationId);
-            selectedTextAnnotationId = null;
-            selectedElementId.set(null);
-          }
+          if (editingTextAnnotationValue.trim()) updateTextAnnotation(editingTextAnnotationId, { text: editingTextAnnotationValue });
+          else removeTextAnnotation(editingTextAnnotationId);
           editingTextAnnotationId = null;
         }
       }}
       use:focusInlineEditor
     />
+  {/if}
+  {#if false}
+    {@const editingText = currentFloor?.textAnnotations?.find((note) => note.id === editingTextAnnotationId)}
+    <div
+      class="absolute rounded-lg border border-blue-300 bg-white shadow-xl"
+      style="left: {editingTextAnnotationPos.x}px; top: {editingTextAnnotationPos.y}px; transform: translate(-50%, calc(-100% - 10px)); z-index: 20; width: min(420px, calc(100vw - 24px));"
+      onmousedown={(e) => e.stopPropagation()}
+    >
+      <div class="flex items-center gap-1 border-b border-gray-200 bg-gray-50 px-2 py-1.5">
+        <label class="flex items-center gap-1 text-[11px] text-gray-600" title="Font size">
+          <span aria-hidden="true">A</span>
+          <input
+            type="number"
+            min="8"
+            max="72"
+            value={editingText?.fontSize ?? 16}
+            class="w-14 rounded border border-gray-300 bg-white px-1.5 py-1 text-xs"
+            oninput={(e) => editingTextAnnotationId && updateTextAnnotation(editingTextAnnotationId, { fontSize: Math.max(8, Math.min(72, Number((e.target as HTMLInputElement).value) || 16)) })}
+          />
+        </label>
+        <label class="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-gray-300 bg-white" title="Text color">
+          <input
+            type="color"
+            value={editingText?.color ?? '#1e293b'}
+            class="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
+            aria-label="Text color"
+            oninput={(e) => editingTextAnnotationId && updateTextAnnotation(editingTextAnnotationId, { color: (e.target as HTMLInputElement).value })}
+          />
+        </label>
+        <label class="flex items-center gap-1 text-[11px] text-gray-600" title="Rotation">
+          <span aria-hidden="true">↻</span>
+          <input
+            type="number"
+            value={editingText?.rotation ?? 0}
+            class="w-14 rounded border border-gray-300 bg-white px-1.5 py-1 text-xs"
+            oninput={(e) => editingTextAnnotationId && updateTextAnnotation(editingTextAnnotationId, { rotation: Number((e.target as HTMLInputElement).value) || 0 })}
+          />
+        </label>
+        <button
+          type="button"
+          class="ml-auto rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+          title="Delete text"
+          aria-label="Delete text"
+          onclick={() => {
+            if (editingTextAnnotationId) removeTextAnnotation(editingTextAnnotationId);
+            editingTextAnnotationId = null;
+            selectedTextAnnotationId = null;
+            selectedElementId.set(null);
+          }}
+        >Delete</button>
+      </div>
+      <input
+        type="text"
+        class="block h-9 w-full rounded-b-lg px-3 text-sm outline-none"
+        aria-label={$t('canvasHints.annotation')}
+        value={editingTextAnnotationValue}
+        placeholder="Type your text..."
+        autofocus
+        oninput={(e) => {
+          editingTextAnnotationValue = (e.target as HTMLInputElement).value;
+          if (editingTextAnnotationId) updateTextAnnotation(editingTextAnnotationId, { text: editingTextAnnotationValue || 'Text' });
+        }}
+        onkeydown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            if (editingTextAnnotationId) {
+              const note = currentFloor?.textAnnotations?.find((item) => item.id === editingTextAnnotationId);
+              if (note?.text === 'Text' && !editingTextAnnotationValue.trim()) removeTextAnnotation(editingTextAnnotationId);
+            }
+            editingTextAnnotationId = null;
+          }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            editingTextAnnotationId = null;
+          }
+        }}
+        use:focusInlineEditor
+      />
+    </div>
   {/if}
   <!-- Empty state hint -->
   {#if currentFloor && !hasPlanContent(currentFloor) && !(layerVis.floorBelow && floorBelow && hasPlanContent(floorBelow))}
@@ -4154,7 +4350,7 @@
       const wall = f.walls.find(w => w.id === currentSelectedId);
       if (wall) {
         const s = worldToScreen((wall.start.x + wall.end.x) / 2, (wall.start.y + wall.end.y) / 2);
-        return { type: 'wall', pos: s };
+        return { type: 'wall', pos: s, wall };
       }
       const door = f.doors.find(d => d.id === currentSelectedId);
       if (door) {
@@ -4179,15 +4375,45 @@
       }
       const positioned = [...f.stairs ?? [], ...f.columns ?? [], ...f.entourage ?? []].find(item => item.id === currentSelectedId);
       if (positioned) return { type: 'object', pos: worldToScreen(positioned.position.x, positioned.position.y) };
+      const text = f.textAnnotations?.find(item => item.id === currentSelectedId);
+      if (text) return { type: 'text', pos: worldToScreen(text.x, text.y) };
       return null;
     })()}
     {#if el}
       <div
-        class="absolute z-40 flex items-center gap-0.5 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5"
-        style="left: {el.pos.x}px; top: {el.pos.y - 44}px; transform: translateX(-50%);"
+        class="absolute z-40 flex w-max max-w-[min(460px,calc(100vw-24px))] items-center gap-0.5 overflow-x-auto rounded-xl border border-gray-300 bg-white px-1.5 py-1 shadow-xl"
+        style="left: {el.pos.x}px; top: {el.pos.y - 58}px; transform: translateX(-50%);"
       >
+        <span class="px-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{el.type}</span>
+        <div class="h-5 w-px bg-gray-200"></div>
+        {#if el.type === 'wall' && el.wall}
+          {@const wallLength = Math.round(Math.hypot(el.wall.end.x - el.wall.start.x, el.wall.end.y - el.wall.start.y))}
+          {@const wallAngle = Math.round(Math.atan2(el.wall.end.y - el.wall.start.y, el.wall.end.x - el.wall.start.x) * 180 / Math.PI)}
+          <span class="rounded bg-gray-50 px-1.5 py-1 text-[11px] text-gray-600" title="Wall angle">{wallAngle}°</span>
+          <label class="flex items-center gap-1 text-[10px] text-gray-500" title="Wall length">
+            <span>Length</span>
+            <input type="number" min="1" value={wallLength} class="w-14 rounded border border-gray-200 px-1 py-1 text-[11px]" onchange={(e) => setSelectedWallLength(Number((e.target as HTMLInputElement).value))} />
+          </label>
+          <label class="flex items-center gap-1 text-[10px] text-gray-500" title="Wall thickness">
+            <span>Thick.</span>
+            <input type="number" min="1" value={el.wall.thickness} class="w-12 rounded border border-gray-200 px-1 py-1 text-[11px]" onchange={(e) => updateWall(el.wall!.id, { thickness: Math.max(1, Number((e.target as HTMLInputElement).value) || el.wall!.thickness) })} />
+          </label>
+          <div class="h-5 w-px bg-gray-200"></div>
+        {/if}
         <button
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+          class="rounded border border-gray-200 px-1.5 py-1 text-[11px] text-gray-600 hover:bg-gray-50"
+          title="Rotate 90 degrees counterclockwise"
+          aria-label="Rotate 90 degrees counterclockwise"
+          onclick={() => rotateContextSelection(-90)}
+        >-90°</button>
+        <button
+          class="rounded border border-gray-200 px-1.5 py-1 text-[11px] text-gray-600 hover:bg-gray-50"
+          title="Rotate 90 degrees clockwise"
+          aria-label="Rotate 90 degrees clockwise"
+          onclick={() => rotateContextSelection(90)}
+        >+90°</button>
+        <button
+          class="flex h-7 items-center justify-center rounded border border-gray-200 px-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
           title={$t('contextMenu.duplicate')}
           aria-label={$t('contextMenu.duplicate')}
           onclick={() => {
@@ -4204,7 +4430,7 @@
         </button>
         {#if el.type === 'door' && el.door}
           <button
-            class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            class="flex h-7 items-center justify-center rounded border border-gray-200 px-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
             title={$t('canvasActions.flipSwing')}
             aria-label={$t('canvasActions.flipSwing')}
             onclick={() => { if (el.door) updateDoor(el.door.id, { swingDirection: el.door.swingDirection === 'left' ? 'right' : 'left' }); }}
@@ -4214,7 +4440,7 @@
         {/if}
         {#if el.type === 'wall' && currentSelectedId && currentSelectedIds.size === 0}
           <button
-            class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            class="flex h-7 items-center justify-center rounded border border-gray-200 px-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
             title={$t('canvasActions.splitMidpoint')}
             aria-label={$t('canvasActions.splitMidpoint')}
             onclick={() => {
@@ -4227,25 +4453,23 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 12h4M16 12h4"/></svg>
           </button>
         {/if}
-        <div class="w-px h-5 bg-gray-200 mx-0.5"></div>
+        {#if el.type === 'furniture' || el.type === 'object'}
+          <button
+            class="flex h-7 items-center justify-center rounded border border-gray-200 px-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
+            title="Toggle lock"
+            aria-label="Toggle lock"
+            onclick={() => toggleSelectionLock(currentSelectedIds.size ? currentSelectedIds : new Set([currentSelectedId!]))}
+          >Lock</button>
+        {/if}
+        <div class="mx-0.5 h-5 w-px bg-gray-200"></div>
         <button
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
+          class="flex h-7 items-center justify-center rounded border border-red-200 px-1.5 text-[11px] font-medium text-red-600 hover:bg-red-50"
           title={$t('contextMenu.delete')}
           aria-label={$t('contextMenu.delete')}
-          onclick={() => {
-            if (currentSelectedIds.size > 0) {
-              beginUndoGroup();
-              for (const id of currentSelectedIds) removeElement(id);
-              endUndoGroup();
-              selectedElementIds.set(new Set());
-              selectedElementId.set(null);
-            } else if (currentSelectedId) {
-              removeElement(currentSelectedId);
-              selectedElementId.set(null);
-            }
-          }}
+          onclick={deleteContextSelection}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/></svg>
+          Delete
         </button>
       </div>
     {/if}
@@ -4263,11 +4487,6 @@
   {#if measuring}
     <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600 text-white px-3 py-1 rounded-full text-xs shadow">
       Click or tap two points to measure · M to exit · Esc to cancel
-    </div>
-  {/if}
-  {#if textAnnotationMode}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      Click to place text label · Esc to cancel
     </div>
   {/if}
   {#if annotating}

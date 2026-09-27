@@ -14,6 +14,7 @@
   import { autoSave, markClean, saveState } from '$lib/stores/saveStatus';
   import { createProjectFromRoomPlan, isRoomPlanJson } from '$lib/utils/roomplanImport';
   import TopBar from '$lib/components/toolbar/TopBar.svelte';
+  import EditorSideRail from '$lib/components/editor/EditorSideRail.svelte';
   import BuildPanel from '$lib/components/sidebar/BuildPanel.svelte';
   import PropertiesPanel from '$lib/components/sidebar/PropertiesPanel.svelte';
   import LayersPanel from '$lib/components/sidebar/LayersPanel.svelte';
@@ -30,6 +31,20 @@
 
   let commandPaletteOpen = $state(false);
   let printOpen = $state(false);
+  let railActive = $state<'project' | 'build' | 'info' | 'objects' | 'styleboards' | 'finishes' | 'exports' | 'help'>('build');
+  let buildPanelTab = $state<'draw' | 'rooms' | 'objects'>('draw');
+
+  function handleRailAction(action: typeof railActive) {
+    railActive = action;
+    if (action === 'project') window.location.href = `${base}/`;
+    if (action === 'build' || action === 'objects') {
+      buildPanelTab = action === 'objects' ? 'objects' : 'draw';
+      buildPanelOpen = true;
+    }
+    if (action === 'info') showLayers = !showLayers;
+    if (action === 'help') showHelp = true;
+    if (action === 'exports') commandPaletteOpen = true;
+  }
 
   // Lazy-load ThreeViewer to avoid loading Three.js (~1.4MB) until 3D mode is activated
   let ThreeViewer: any = $state(null);
@@ -223,23 +238,17 @@
 <svelte:window on:keydown={onEditorKeydown} />
 
 {#if ready}
-  <div class="h-screen flex flex-col overflow-hidden">
+  <div class="relative h-screen flex flex-col overflow-hidden">
     <TopBar onToggleLayers={() => showLayers = !showLayers} layersOpen={showLayers} onToggleHistory={toggleHistory} historyOpen={showUndoHistory} />
+    <EditorSideRail active={railActive} onAction={handleRailAction} />
+    {#if mode === '2d' && buildPanelOpen}
+      <div class="absolute inset-0 z-30 bg-slate-950/20 md:hidden" onclick={() => buildPanelOpen = false} aria-hidden="true"></div>
+      <div class="absolute bottom-4 left-20 top-16 z-40 w-64 max-w-[calc(100vw-6rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl md:left-[88px]">
+        <BuildPanel initialTab={buildPanelTab} />
+      </div>
+    {/if}
     <!-- Keep canvas/viewer controls beneath toolbar menus and project dialogs. -->
     <div class="flex flex-1 overflow-hidden isolate">
-      {#if mode === '2d'}
-        <!-- Build panel: inline sidebar on md+, off-canvas drawer on phones -->
-        {#if buildPanelOpen}
-          <div
-            class="md:hidden fixed inset-x-0 top-12 bottom-0 bg-black/40 z-40"
-            onclick={() => buildPanelOpen = false}
-            aria-hidden="true"
-          ></div>
-        {/if}
-        <div class="h-full max-md:fixed max-md:left-0 max-md:top-12 max-md:bottom-0 max-md:h-auto max-md:z-50 max-md:shadow-2xl max-md:transition-transform max-md:duration-200 {buildPanelOpen ? '' : 'max-md:-translate-x-full'}">
-          <BuildPanel />
-        </div>
-      {/if}
       <div class="flex-1 min-w-0 relative">
         {#if mode === '2d'}
           <FloorPlanCanvas />
