@@ -11,7 +11,7 @@
 	},
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "firebase emulators:exec --project demo-planora --only auth \"node scripts/seed-admin.mjs && vite dev\"",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -24,6 +24,8 @@
 		"benchmark:fixtures": "node tooling/render-fixtures.mjs",
 		"catalog:manifest": "node tooling/catalog-manifest.mjs",
 		"catalog:check": "node tooling/catalog-manifest.mjs --check",
+		"seed:admin": "node --env-file=.env scripts/seed-admin.mjs",
+		"seed:admin:local": "firebase emulators:exec --project demo-planora --only auth \"node scripts/seed-admin.mjs\"",
 		"build:render-lab": "vite build --config tooling/render-lab-site/vite.config.ts"
 	},
 	"devDependencies": {
@@ -36,6 +38,7 @@
 		"@types/three": "^0.182.0",
 		"fake-indexeddb": "^6.2.5",
 		"firebase": "^12.18.0",
+		"firebase-tools": "^15.32.1",
 		"svelte": "^5.57.0",
 		"svelte-check": "^4.3.6",
 		"tailwindcss": "^4.1.18",
@@ -47,6 +50,7 @@
 	"dependencies": {
 		"@lucide/svelte": "^1.48.0",
 		"dxf-writer": "^1.18.4",
+		"firebase-admin": "^14.5.0",
 		"google-auth-library": "11.0.2",
 		"jspdf": "^4.2.1",
 		"jszip": "^3.10.1",

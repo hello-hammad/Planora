@@ -85,15 +85,15 @@
 
 {#snippet chip(active: boolean, label: string, onclick: () => void, disabled = false, title = '')}
   <button type="button" {disabled} {title} aria-pressed={active} {onclick}
-    class="h-8 rounded-full border px-3 text-[11.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 {active ? 'border-walnut bg-walnut text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}">{label}</button>
+    class="h-9 rounded-full border px-3 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 {active ? 'border-walnut bg-walnut text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}">{label}</button>
 {/snippet}
 
 {#snippet heading(text: string)}
-  <h3 class="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{text}</h3>
+  <h3 class="ui-section-heading">{text}</h3>
 {/snippet}
 
 <div class="space-y-6">
-  {#if status}<p role="status" class="rounded-[10px] bg-sage-tint px-3 py-2 text-xs font-medium text-sage-ink">{status}</p>{/if}
+  {#if status}<p role="status" class="rounded-[10px] bg-sage-tint px-3 py-2 ui-helper-text font-medium text-sage-ink">{status}</p>{/if}
 
   <!-- Palettes -->
   <section>
@@ -108,11 +108,11 @@
             <span class="flex-1" style={swatchStyle('floor', palette.floor, undefined)}></span>
             <span class="w-3" style="background-color: {palette.trim.doors}"></span>
           </span>
-          <span class="text-xs font-bold text-charcoal">{palette.name}</span>
+          <span class="ui-card-title">{palette.name}</span>
         </button>
       {/each}
     </div>
-    <p class="mt-1.5 text-[11px] text-muted">Sets outside walls, inside walls, floors, doors, frames and ceilings at once. Undo reverts it.</p>
+    <p class="mt-1.5 ui-helper-text">Sets outside walls, inside walls, floors, doors, frames and ceilings at once. Undo reverts it.</p>
   </section>
 
   <!-- Walls -->
@@ -127,7 +127,7 @@
       <div class="mb-2 grid grid-cols-3 gap-0.5 rounded-lg border border-line bg-ivory p-0.5" role="group" aria-label="Side">
         {#each ([['both', 'Both sides'], ['exterior', 'Outside'], ['interior', 'Inside']] as const) as [side, label]}
           <button type="button" aria-pressed={wallSide === side} onclick={() => wallSide = side}
-            class="rounded-md py-1 text-[11px] font-semibold {wallSide === side ? 'bg-white text-charcoal shadow-sm' : 'text-muted hover:text-charcoal'}">{label}</button>
+            class="rounded-md py-1.5 ui-control-label {wallSide === side ? 'bg-white shadow-sm' : 'text-muted hover:text-charcoal'}">{label}</button>
         {/each}
       </div>
     {/if}
@@ -141,12 +141,12 @@
       {#each materials as m (m.id)}
         <button type="button" class="flex h-14 items-end overflow-hidden rounded-lg border border-line transition-colors hover:border-walnut" style={swatchStyle('wall', m.id, m.color)}
           title={m.name} onclick={() => paintWalls({ color: m.color, texture: m.id })}>
-          <span class="m-1 rounded bg-white/85 px-1 text-[10px] font-semibold text-charcoal">{m.name}</span>
+          <span class="m-1 rounded bg-white/85 px-1 ui-card-meta text-charcoal">{m.name}</span>
         </button>
       {/each}
     </div>
     {#if selectedWall && wallTarget !== 'selected'}
-      <button type="button" class="mt-2 w-full rounded-[10px] border border-dashed border-line py-2 text-xs font-semibold text-walnut hover:border-walnut"
+      <button type="button" class="mt-2 w-full rounded-[10px] border border-dashed border-line py-2 ui-control-label text-walnut hover:border-walnut"
         onclick={matchSelected}>Match the selected wall's finish</button>
     {/if}
   </section>
@@ -163,11 +163,11 @@
       {#each floorMaterials as m (m.id)}
         <button type="button" class="flex h-14 items-end overflow-hidden rounded-lg border border-line transition-colors hover:border-walnut" style={swatchStyle('floor', m.id === 'none' ? undefined : m.id, m.color)}
           title={m.name} onclick={() => paintFloors(m.id)}>
-          <span class="m-1 rounded bg-white/85 px-1 text-[10px] font-semibold text-charcoal">{m.name}</span>
+          <span class="m-1 rounded bg-white/85 px-1 ui-card-meta text-charcoal">{m.name}</span>
         </button>
       {/each}
     </div>
-    <p class="mt-1.5 text-[11px] text-muted">{floorCount} room{floorCount === 1 ? '' : 's'} will change. Select a room on the plan to target it.</p>
+    <p class="mt-1.5 ui-helper-text">{floorCount} room{floorCount === 1 ? '' : 's'} will change. Select a room on the plan to target it.</p>
   </section>
 
   <!-- Trim -->
@@ -176,7 +176,7 @@
     <div class="space-y-2.5">
       {#each trimRows as row (row.key)}
         <div class="flex items-center gap-2">
-          <span class="w-24 shrink-0 text-xs font-semibold text-charcoal">{row.label}</span>
+          <span class="w-24 shrink-0 ui-control-label">{row.label}</span>
           <div class="flex flex-1 flex-wrap gap-1">
             {#each row.presets as color}
               <button type="button" class="h-6 w-6 rounded-md border transition-transform hover:scale-110 {trim[row.key] === color ? 'border-walnut ring-2 ring-walnut/30' : 'border-line'}"

@@ -93,7 +93,7 @@
   <div class="flex items-center justify-between gap-2 {variant === 'studio' ? 'border-b border-line px-4 py-3' : 'pb-2'}">
     <div class="flex items-center gap-2">
       <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-terracotta-tint text-terracotta-ink" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 17l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" /></svg>
+        <AppIcon name="bot" size={16} />
       </span>
       <span class="text-sm font-bold">Design assistant</span>
     </div>

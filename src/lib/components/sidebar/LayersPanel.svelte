@@ -7,6 +7,7 @@
   import { currentProject, activeFloor, selectedElementId, selectedElementIds, selectedRoomId, detectedRoomsStore, layerVisibility } from '$lib/stores/project';
   import { getCatalogItem } from '$lib/utils/furnitureCatalog';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
+  import { projectSettings, formatLength } from '$lib/stores/settings';
   import type { Floor } from '$lib/models/types';
 
   let floor: Floor | null = $state(null);
@@ -109,7 +110,7 @@
         key: 'measurements', label: $t('layers.measurements'), icon: 'triangle-right',
         items: floor.measurements.map((m, i) => {
           const dist = Math.round(Math.hypot(m.x2 - m.x1, m.y2 - m.y1));
-          return { id: m.id, label: $t('layers.measurement', { number: i + 1, distance: dist }), icon: 'triangle-right' };
+          return { id: m.id, label: $t('layers.measurement', { number: i + 1, distance: formatLength(dist, $projectSettings.units) }), icon: 'triangle-right' };
         }),
       });
     }
@@ -119,7 +120,7 @@
         key: 'annotations', label: $t('layers.annotations'), icon: 'ruler',
         items: floor.annotations.map((a, i) => {
           const dist = Math.round(Math.hypot(a.x2 - a.x1, a.y2 - a.y1));
-          const label = a.label || `${dist} cm`;
+          const label = a.label || formatLength(dist, $projectSettings.units);
           return { id: a.id, label: $t('layers.annotation', { number: i + 1, label }), icon: 'ruler' };
         }),
       });
@@ -141,62 +142,62 @@
 </script>
 
 <!-- Keep the list above the 45vh phone properties sheet, with room for the 3rem toolbar. -->
-<div class="w-56 bg-white border-l border-gray-200 flex flex-col overflow-hidden text-xs select-none {(selId || $selectedRoomId || floor?.backgroundImage) ? 'max-md:max-h-[calc(55vh-3rem)]' : ''}">
-  <div class="shrink-0 px-3 py-2 border-b border-gray-100 font-semibold text-gray-700 text-sm flex items-center gap-1.5">
-    <AppIcon name="folders" size={16} /> {$t('layers.title')}
+<div class="w-56 bg-white border-l border-gray-200 flex flex-col overflow-hidden text-sm select-none {(selId || $selectedRoomId || floor?.backgroundImage) ? 'max-md:max-h-[calc(55vh-3rem)]' : ''}">
+  <div class="shrink-0 px-3 py-2.5 border-b border-gray-100 ui-panel-title flex items-center gap-2">
+    <AppIcon name="folders" size={18} /> {$t('layers.title')}
   </div>
   <div class="flex-1 min-h-0 overflow-y-auto">
     {#each categories as cat}
       <div class="border-b border-gray-50 relative">
         <!-- Category header -->
         <button
-          class="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-50 text-left"
+          class="w-full flex items-center gap-2 px-2 py-2 hover:bg-gray-50 text-left"
           onclick={() => toggle(cat.key)}
         >
-          <span class="w-3 text-gray-400"><AppIcon name={collapsed[cat.key] ? 'chevron-right' : 'chevron-down'} size={12} /></span>
-          <AppIcon name={cat.icon} size={14} class="text-muted" />
-          <span class="font-medium text-gray-700 flex-1">{cat.label}</span>
-          <span class="text-gray-400 mr-1">{cat.items.length}</span>
+          <span class="w-4 text-gray-500"><AppIcon name={collapsed[cat.key] ? 'chevron-right' : 'chevron-down'} size={14} /></span>
+          <AppIcon name={cat.icon} size={17} class="text-muted" />
+          <span class="flex-1 ui-control-label">{cat.label}</span>
+          <span class="text-gray-500 mr-1 text-sm">{cat.items.length}</span>
         </button>
         <!-- Visibility toggle (outside button to avoid nesting) -->
         <span
           role="button"
           tabindex="0"
-          class="inline-flex p-0.5 rounded hover:bg-gray-200 text-sm leading-none cursor-pointer absolute right-2 top-1.5"
+          class="inline-flex p-1 rounded hover:bg-gray-200 text-sm leading-none cursor-pointer absolute right-2 top-2"
           class:opacity-30={!vis[cat.key]}
           onclick={(e) => { e.stopPropagation(); toggleVisibility(cat.key); }}
           onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleVisibility(cat.key); } }}
           title={vis[cat.key] ? $t('layers.hide', { category: cat.label }) : $t('layers.show', { category: cat.label })}
-        ><AppIcon name={vis[cat.key] ? 'eye' : 'eye-off'} size={14} /></span>
+        ><AppIcon name={vis[cat.key] ? 'eye' : 'eye-off'} size={16} /></span>
         <!-- Items -->
         {#if !collapsed[cat.key]}
           {#each cat.items as item}
             <button
-              class="w-full flex items-center gap-1.5 pl-7 pr-2 py-1 hover:bg-blue-50 text-left transition-colors"
+              class="w-full flex items-center gap-2 pl-8 pr-2 py-1.5 hover:bg-blue-50 text-left transition-colors"
               class:bg-blue-100={selId === item.id}
               class:text-blue-700={selId === item.id}
               class:opacity-40={!vis[cat.key]}
               onclick={() => select(item.id, cat.key)}
             >
-              <AppIcon name={item.icon} size={12} class="text-muted" />
-              <span class="truncate flex-1">{item.label}</span>
+              <AppIcon name={item.icon} size={14} class="text-muted" />
+              <span class="truncate flex-1 ui-control-label">{item.label}</span>
             </button>
           {/each}
           {#if cat.items.length === 0}
-            <div class="pl-7 pr-2 py-1 text-gray-300 italic">{$t('layers.empty')}</div>
+            <div class="pl-8 pr-2 py-1.5 text-gray-500 italic">{$t('layers.empty')}</div>
           {/if}
         {/if}
       </div>
     {/each}
     {#if rooms.length}
       <div class="border-b border-gray-100">
-        <button onclick={() => toggle('rooms')} class="flex w-full items-center gap-1.5 px-2 py-1.5 text-left hover:bg-gray-50">
-          <span class="w-3 text-[10px] text-gray-400">{collapsed.rooms ? '▸' : '▾'}</span>
-          <span><AppIcon name="house" size={16} /></span><span class="flex-1 font-medium text-gray-700">{$t('layers.rooms')}</span><span class="text-gray-400">{rooms.length}</span>
+        <button onclick={() => toggle('rooms')} class="flex w-full items-center gap-2 px-2 py-2 text-left hover:bg-gray-50">
+          <span class="w-4 text-gray-500"><AppIcon name={collapsed.rooms ? 'chevron-right' : 'chevron-down'} size={14} /></span>
+          <span><AppIcon name="house" size={18} /></span><span class="flex-1 ui-control-label">{$t('layers.rooms')}</span><span class="text-gray-500">{rooms.length}</span>
         </button>
         {#if !collapsed.rooms}
           {#each rooms as room (room.id)}
-            <button aria-label={$t('layers.selectRoom', { name: room.name || $t('layers.unnamed') })} onclick={() => { selectedElementId.set(null); selectedElementIds.set(new Set()); selectedRoomId.set(room.id); }} class="w-full truncate py-1 pl-7 pr-2 text-left hover:bg-blue-50" class:bg-blue-100={$selectedRoomId === room.id}>{room.name || $t('layers.unnamed')}</button>
+            <button aria-label={$t('layers.selectRoom', { name: room.name || $t('layers.unnamed') })} onclick={() => { selectedElementId.set(null); selectedElementIds.set(new Set()); selectedRoomId.set(room.id); }} class="w-full truncate py-1.5 pl-8 pr-2 text-left ui-control-label hover:bg-blue-50" class:bg-blue-100={$selectedRoomId === room.id}>{room.name || $t('layers.unnamed')}</button>
           {/each}
         {/if}
       </div>

@@ -9,7 +9,7 @@
   import { openProject } from '$lib/services/projectOpening';
   import ImportError from '$lib/components/ImportError.svelte';
   import { onDestroy } from 'svelte';
-  import { activateMeasurementTool, selectedTool, placingFurnitureId, placingDoorType, placingWindowType, placingStair, addStair, placingColumn, placingColumnShape, activeFloor, setBackgroundImage, canvasCamX, canvasCamY, placingEntourageId, addCustomEntourage } from '$lib/stores/project';
+  import { activateMeasurementTool, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, detectedRoomsStore, placingFurnitureId, placingDoorType, placingWindowType, placingStair, addStair, placingColumn, placingColumnShape, activeFloor, setBackgroundImage, canvasCamX, canvasCamY, placingEntourageId, addCustomEntourage } from '$lib/stores/project';
   import type { Tool } from '$lib/stores/project';
   import type { Door, Window as Win, CustomEntourageDef } from '$lib/models/types';
   import { entourageCatalog, entourageCategories } from '$lib/utils/entourageCatalog';
@@ -24,6 +24,8 @@
   import AssistantChat from '$lib/components/ai/AssistantChat.svelte';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, roomPlanImportOptions, validateRoomPlan, ORTHO_VERSION } from '$lib/utils/roomplanImport';
   import { currentProject } from '$lib/stores/project';
+  import { projectSettings, formatLength, formatArea } from '$lib/stores/settings';
+  import { resolveRooms } from '$lib/utils/roomDetection';
 
   type PanelTab = 'draw' | 'rooms' | 'objects' | 'finishes' | 'boards' | 'assistant';
   let { initialTab = 'draw', onClose }: { initialTab?: PanelTab; onClose?: () => void } = $props();
@@ -46,11 +48,28 @@
   let optStraighten = $state(true);
   let optOrthogonal = $state(true);
   let optMergeDistance = $state(15);
+  let existingRooms = $derived($activeFloor ? resolveRooms($activeFloor, $detectedRoomsStore) : []);
+
+  function selectRoom(roomId: string) {
+    selectedElementId.set(null);
+    selectedElementIds.set(new Set());
+    selectedRoomId.set(roomId);
+  }
 
   function setTool(tool: Tool) {
+    const sameTool = currentTool === tool;
+    if (sameTool) {
+      selectedTool.set('select');
+      placingFurnitureId.set(null);
+      placingStair.set(false);
+      placingColumn.set(false);
+      return;
+    }
     if (tool === 'measure' || tool === 'annotate') activateMeasurementTool(tool);
     else selectedTool.set(tool);
     placingFurnitureId.set(null);
+    placingStair.set(false);
+    placingColumn.set(false);
   }
 
   let currentTool = $state<Tool>('select');
@@ -132,37 +151,53 @@
     })()
   );
 
-  const doorCatalog: { type: Door['type']; name: string; desc: string; icon: string }[] = $derived([
-    { type: 'single', name: $t('openingCatalog.single'), desc: $t('openingCatalog.singleDescription'), icon: 'M6 3h12v18H6z' },
-    { type: 'double', name: $t('openingCatalog.double'), desc: $t('openingCatalog.doubleDescription'), icon: 'M3 3h8v18H3zM13 3h8v18h-8z' },
-    { type: 'sliding', name: $t('openingCatalog.sliding'), desc: $t('openingCatalog.slidingDescription'), icon: 'M3 6h18v12H3z' },
-    { type: 'french', name: $t('openingCatalog.french'), desc: $t('openingCatalog.frenchDescription'), icon: 'M3 3h8v18H3zM13 3h8v18h-8z' },
-    { type: 'pocket', name: $t('openingCatalog.pocket'), desc: $t('openingCatalog.pocketDescription'), icon: 'M6 3h12v18H6z' },
-    { type: 'bifold', name: $t('openingCatalog.bifold'), desc: $t('openingCatalog.bifoldDescription'), icon: 'M3 3h5v18H3zM9 3h6v18H9zM16 3h5v18h-5z' },
-    { type: 'opening', name: $t('openingCatalog.doorway'), desc: $t('openingCatalog.doorwayDescription'), icon: 'M6 3h2v18H6zM16 3h2v18h-2z' },
-    { type: 'garage', name: $t('openingCatalog.garage'), desc: $t('openingCatalog.garageDescription'), icon: 'M3 5h18v14H3zM5 9h14M5 13h14M5 17h14' },
+  const doorCatalog: { type: Door['type']; name: string; desc: string }[] = $derived([
+    { type: 'single', name: $t('openingCatalog.single'), desc: formatOpeningDescription($t('openingCatalog.singleDescription')) },
+    { type: 'double', name: $t('openingCatalog.double'), desc: formatOpeningDescription($t('openingCatalog.doubleDescription')) },
+    { type: 'sliding', name: $t('openingCatalog.sliding'), desc: formatOpeningDescription($t('openingCatalog.slidingDescription')) },
+    { type: 'french', name: $t('openingCatalog.french'), desc: formatOpeningDescription($t('openingCatalog.frenchDescription')) },
+    { type: 'pocket', name: $t('openingCatalog.pocket'), desc: formatOpeningDescription($t('openingCatalog.pocketDescription')) },
+    { type: 'bifold', name: $t('openingCatalog.bifold'), desc: formatOpeningDescription($t('openingCatalog.bifoldDescription')) },
+    { type: 'opening', name: $t('openingCatalog.doorway'), desc: formatOpeningDescription($t('openingCatalog.doorwayDescription')) },
+    { type: 'garage', name: $t('openingCatalog.garage'), desc: formatOpeningDescription($t('openingCatalog.garageDescription')) },
   ]);
 
   const windowCatalog: { type: Win['type']; name: string; desc: string }[] = $derived([
-    { type: 'standard', name: $t('openingCatalog.standard'), desc: '120×120cm' },
-    { type: 'fixed', name: $t('openingCatalog.fixed'), desc: '100×100cm' },
-    { type: 'casement', name: $t('openingCatalog.casement'), desc: '80×130cm' },
-    { type: 'sliding', name: $t('openingCatalog.sliding'), desc: '180×120cm' },
-    { type: 'bay', name: $t('openingCatalog.bay'), desc: '200×150cm' },
+    { type: 'standard', name: $t('openingCatalog.standard'), desc: `${formatLength(120, $projectSettings.units)} × ${formatLength(120, $projectSettings.units)}` },
+    { type: 'fixed', name: $t('openingCatalog.fixed'), desc: `${formatLength(100, $projectSettings.units)} × ${formatLength(100, $projectSettings.units)}` },
+    { type: 'casement', name: $t('openingCatalog.casement'), desc: `${formatLength(80, $projectSettings.units)} × ${formatLength(130, $projectSettings.units)}` },
+    { type: 'sliding', name: $t('openingCatalog.sliding'), desc: `${formatLength(180, $projectSettings.units)} × ${formatLength(120, $projectSettings.units)}` },
+    { type: 'bay', name: $t('openingCatalog.bay'), desc: `${formatLength(200, $projectSettings.units)} × ${formatLength(150, $projectSettings.units)}` },
   ]);
+
+  function formatOpeningDescription(description: string): string {
+    return description.replace(/(\d+(?:[.,]\d+)?)\s*cm/gi, (_, value: string) => formatLength(Number(value.replace(',', '.')), $projectSettings.units));
+  }
 
   let selectedDoorType = $state<Door['type']>('single');
   let selectedWindowType = $state<Win['type']>('standard');
+  let doorPreviewMode = $state<'2d' | '3d'>('2d');
+  let windowPreviewMode = $state<'2d' | '3d'>('2d');
 
   function setDoorType(type: Door['type']) {
+    const togglingOff = currentTool === 'door' && selectedDoorType === type;
     selectedDoorType = type;
     placingDoorType.set(type);
+    if (togglingOff) {
+      selectedTool.set('select');
+      return;
+    }
     setTool('door');
   }
 
   function setWindowType(type: Win['type']) {
+    const togglingOff = currentTool === 'window' && selectedWindowType === type;
     selectedWindowType = type;
     placingWindowType.set(type);
+    if (togglingOff) {
+      selectedTool.set('select');
+      return;
+    }
     setTool('window');
   }
 
@@ -208,15 +243,21 @@
 
   let isPlacingColumn = $state(false);
   onDestroy(placingColumn.subscribe(v => { isPlacingColumn = v; }));
+  let placingColumnShapeValue = $state<'round' | 'square'>('round');
+  onDestroy(placingColumnShape.subscribe(v => { placingColumnShapeValue = v; }));
 
   function onPlaceStair() {
-    placingStair.set(true);
-    selectedTool.set('select');
+    const togglingOff = isPlacingStair;
+    placingColumn.set(false);
+    placingStair.set(!togglingOff);
+    selectedTool.set(togglingOff ? 'select' : 'select');
     placingFurnitureId.set(null);
   }
 
   function onPlaceColumn(shape: 'round' | 'square') {
-    placingColumn.set(true);
+    const togglingOff = isPlacingColumn && placingColumnShapeValue === shape;
+    placingStair.set(false);
+    placingColumn.set(!togglingOff);
     placingColumnShape.set(shape);
     selectedTool.set('select');
     placingFurnitureId.set(null);
@@ -362,26 +403,26 @@
 {#snippet tile(label: string, path: string, active: boolean, onclick: () => void, key?: string, help?: string)}
   <button
     type="button"
-    class="relative flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-[10px] border px-1 text-center text-[11.5px] leading-tight transition-colors {active ? 'border-walnut bg-walnut-tint font-bold text-walnut-dark shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white font-medium text-charcoal hover:border-[#B89A86] hover:bg-hover'}"
+    class="relative flex h-[82px] flex-col items-center justify-center gap-1.5 rounded-[10px] border px-1 text-center text-sm font-semibold leading-tight transition-colors {active ? 'border-walnut bg-walnut-tint font-bold text-walnut-dark shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white text-charcoal hover:border-[#B89A86] hover:bg-hover'}"
     aria-pressed={active}
     title={help ? `${label} — ${help}` : label}
     {onclick}
   >
     {#if key}<span class="absolute right-1.5 top-1.5 rounded bg-ivory px-1 text-[9.5px] font-semibold leading-4 text-muted" aria-hidden="true">{key}</span>{/if}
-    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={path} /></svg>
-    <span class="max-w-full truncate">{label}{#if key}<span class="sr-only"> {key}</span>{/if}</span>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={path} /></svg>
+    <span class="max-w-full truncate ui-control-label">{label}{#if key}<span class="sr-only"> {key}</span>{/if}</span>
     {#if help}<span class="sr-only">{help}</span>{/if}
   </button>
 {/snippet}
 
 {#snippet sectionTitle(text: string)}
-  <h3 class="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{text}</h3>
+  <h3 class="ui-section-heading">{text}</h3>
 {/snippet}
 
 <div bind:this={panelRoot} class="w-72 max-md:w-64 shrink-0 bg-cream flex flex-col h-full overflow-hidden text-charcoal">
   <!-- Header: the side rail picks the section; this names it -->
   <div class="flex items-center justify-between gap-2 px-4 pt-4 pb-3">
-    <h2 class="text-[17px] font-bold tracking-tight">
+    <h2 class="ui-panel-title">
       {activeTab === 'draw' ? $t('buildTools.build') : activeTab === 'rooms' ? $t('buildTools.rooms') : activeTab === 'objects' ? $t('buildTools.objects') : activeTab === 'finishes' ? 'Finishes' : activeTab === 'boards' ? 'Boards' : 'AI assistant'}
     </h2>
     {#if onClose}
@@ -390,6 +431,265 @@
       </button>
     {/if}
   </div>
+
+  {#snippet doorIllustration(type: Door['type'], mode: '2d' | '3d' = doorPreviewMode)}
+    {#if mode === '2d'}
+      {#if type === 'single'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="26" y="14" width="40" height="62" rx="5" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <path d="M46 14v62" stroke="#D7D1C7" stroke-width="2.5"/>
+          <path d="M26 32h40M26 56h40" stroke="#D6D0C9" stroke-width="2"/>
+          <path d="M28 68c5.8-4 11.8-6 18-6s12.2 2 18 6" stroke="#C4B8AB" stroke-width="2.4" stroke-linecap="round" opacity="0.9"/>
+        </svg>
+      {:else if type === 'double'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="16" y="14" width="22" height="62" rx="5" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <rect x="54" y="14" width="22" height="62" rx="5" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <path d="M46 14v62M47 30h15M47 58h15" stroke="#D7D1C7" stroke-width="2.2"/>
+        </svg>
+      {:else if type === 'sliding'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="18" y="18" width="56" height="52" rx="7" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <path d="M46 18v52" stroke="#D7D1C7" stroke-width="2.2"/>
+          <path d="M26 32h20M46 32h20M26 58h20M46 58h20" stroke="#D7D1C7" stroke-width="2"/>
+          <path d="M31 32v26M61 32v26" stroke="#C8B9AC" stroke-width="2" opacity="0.9"/>
+        </svg>
+      {:else if type === 'french'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="16" y="14" width="22" height="62" rx="5" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <rect x="54" y="14" width="22" height="62" rx="5" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <path d="M28 14v62M64 14v62" stroke="#D7D1C7" stroke-width="2.2"/>
+          <path d="M16 30h22M54 30h22M16 60h22M54 60h22" stroke="#D7D1C7" stroke-width="2" opacity="0.8"/>
+        </svg>
+      {:else if type === 'pocket'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="22" y="14" width="48" height="62" rx="6" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <path d="M46 14v62" stroke="#D7D1C7" stroke-width="2.2"/>
+          <path d="M22 36h48M22 58h48" stroke="#D7D1C7" stroke-width="2" opacity="0.8"/>
+          <path d="M29 14v62M63 14v62" stroke="#C9BEB2" stroke-width="2" opacity="0.8"/>
+        </svg>
+      {:else if type === 'bifold'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="18" y="14" width="15" height="62" rx="4" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <rect x="38" y="14" width="15" height="62" rx="4" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <rect x="58" y="14" width="15" height="62" rx="4" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <path d="M25 14v62M46 14v62M67 14v62" stroke="#D7D1C7" stroke-width="2.2"/>
+        </svg>
+      {:else if type === 'opening'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="22" y="14" width="16" height="62" rx="4" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="2.6"/>
+          <rect x="54" y="14" width="16" height="62" rx="4" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="2.6"/>
+          <rect x="38" y="14" width="16" height="62" rx="4" fill="#F0EFEA" stroke="#D2CFC7" stroke-width="2.2" opacity="0.8"/>
+        </svg>
+      {:else}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="20" y="16" width="52" height="60" rx="7" fill="#F7F5F2" stroke="#C9C7C2" stroke-width="3"/>
+          <path d="M26 34h40M26 58h40" stroke="#D7D1C7" stroke-width="2.2"/>
+          <path d="M38 16V8h16v8" stroke="#C9C7C2" stroke-width="2.4"/>
+        </svg>
+      {/if}
+    {:else}
+      {#if type === 'single'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="28,18 66,18 74,26 74,72 28,72" fill="#E7DED7" opacity="0.95"/>
+          <polygon points="28,18 66,18 66,72 28,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="66,18 74,26 74,72 66,72" fill="#D9CBBE"/>
+          <path d="M46 18v54" stroke="#D0BDAF" stroke-width="2.2"/>
+          <path d="M28 34h38M28 58h38" stroke="#D2C8BE" stroke-width="2"/>
+        </svg>
+      {:else if type === 'double'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="18,18 35,18 43,26 43,72 18,72" fill="#E7DED7"/>
+          <polygon points="18,18 35,18 35,72 18,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="35,18 43,26 43,72 35,72" fill="#D9CBBE"/>
+          <polygon points="49,18 66,18 74,26 74,72 49,72" fill="#E7DED7"/>
+          <polygon points="49,18 66,18 66,72 49,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="66,18 74,26 74,72 66,72" fill="#D9CBBE"/>
+          <path d="M43 18v54M47 32h17M47 58h17" stroke="#D0BDAF" stroke-width="2"/>
+        </svg>
+      {:else if type === 'sliding'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="18,22 74,22 78,28 78,72 18,72" fill="#E7DED7"/>
+          <polygon points="18,22 74,22 74,72 18,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="74,22 78,28 78,72 74,72" fill="#D9CBBE"/>
+          <path d="M46 22v50" stroke="#D0BDAF" stroke-width="2.1"/>
+          <path d="M24 34h22M46 34h22M24 58h22M46 58h22" stroke="#D2C8BE" stroke-width="2"/>
+        </svg>
+      {:else if type === 'french'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="18,18 35,18 43,26 43,72 18,72" fill="#E7DED7"/>
+          <polygon points="18,18 35,18 35,72 18,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="35,18 43,26 43,72 35,72" fill="#D9CBBE"/>
+          <polygon points="49,18 66,18 74,26 74,72 49,72" fill="#E7DED7"/>
+          <polygon points="49,18 66,18 66,72 49,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="66,18 74,26 74,72 66,72" fill="#D9CBBE"/>
+          <path d="M43 18v54M49 36h17M49 54h17" stroke="#D0BDAF" stroke-width="2.1"/>
+        </svg>
+      {:else if type === 'pocket'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="22,20 70,20 76,28 76,74 22,74" fill="#E7DED7"/>
+          <polygon points="22,20 70,20 70,74 22,74" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="70,20 76,28 76,74 70,74" fill="#D9CBBE"/>
+          <path d="M46 20v54" stroke="#D0BDAF" stroke-width="2.2"/>
+          <path d="M22 36h48M22 58h48" stroke="#D2C8BE" stroke-width="2"/>
+          <path d="M30 20v54M62 20v54" stroke="#C9BEB2" stroke-width="1.8" opacity="0.8"/>
+        </svg>
+      {:else if type === 'bifold'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="18,18 30,18 38,26 38,72 18,72" fill="#E7DED7"/>
+          <polygon points="18,18 30,18 30,72 18,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="30,18 38,26 38,72 30,72" fill="#D9CBBE"/>
+          <polygon points="42,18 54,18 62,26 62,72 42,72" fill="#E7DED7"/>
+          <polygon points="42,18 54,18 54,72 42,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="54,18 62,26 62,72 54,72" fill="#D9CBBE"/>
+          <polygon points="66,18 78,18 86,26 86,72 66,72" fill="#E7DED7"/>
+          <polygon points="66,18 78,18 78,72 66,72" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="78,18 86,26 86,72 78,72" fill="#D9CBBE"/>
+          <path d="M38 18v54M46 18v54M62 18v54" stroke="#D0BDAF" stroke-width="2"/>
+        </svg>
+      {:else}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="18,20 74,20 80,28 80,74 18,74" fill="#E7DED7"/>
+          <polygon points="18,20 74,20 74,74 18,74" fill="#F7F5F2" stroke="#BDAE9F" stroke-width="2.5"/>
+          <polygon points="74,20 80,28 80,74 74,74" fill="#D9CBBE"/>
+          <path d="M25 36h40M25 58h40" stroke="#D2C8BE" stroke-width="2"/>
+          <path d="M38 20V9h16v11" stroke="#C9BEB2" stroke-width="2"/>
+        </svg>
+      {/if}
+    {/if}
+  {/snippet}
+
+  {#snippet windowIllustration(type: Win['type'], mode: '2d' | '3d' = windowPreviewMode)}
+    {#if mode === '2d'}
+      {#if type === 'standard'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="16" y="20" width="60" height="52" rx="4" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <path d="M46 20v52M16 46h60" stroke="#65564B" stroke-width="2.5"/>
+        </svg>
+      {:else if type === 'fixed'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="16" y="20" width="60" height="52" rx="4" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <rect x="23" y="27" width="46" height="38" rx="1" stroke="#8a7869" stroke-width="2"/>
+        </svg>
+      {:else if type === 'casement'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="20" y="14" width="52" height="64" rx="4" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <path d="M46 14v64M25 20l21 26-21 26M67 20 46 46l21 26" stroke="#65564B" stroke-width="2.4" stroke-linejoin="round"/>
+        </svg>
+      {:else if type === 'sliding'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <rect x="14" y="22" width="64" height="48" rx="4" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <rect x="22" y="29" width="34" height="34" rx="2" stroke="#65564B" stroke-width="2.4"/>
+          <rect x="37" y="29" width="34" height="34" rx="2" stroke="#8a7869" stroke-width="2.4"/>
+        </svg>
+      {:else}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <path d="M13 30 27 20h38l14 10v40H13V30Z" fill="#F7F5F2" stroke="#65564B" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M27 20v50M65 20v50M27 45h38" stroke="#65564B" stroke-width="2.4"/>
+          <path d="m13 30 14 5h38l14-5" stroke="#8a7869" stroke-width="2"/>
+        </svg>
+      {/if}
+    {:else}
+      {#if type === 'standard'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="18,22 68,22 76,29 76,72 18,72" fill="#e0d5ca"/>
+          <polygon points="18,22 68,22 68,72 18,72" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <polygon points="68,22 76,29 76,72 68,72" fill="#d0c2b4" stroke="#65564B" stroke-width="2"/>
+          <path d="M43 22v50M18 47h50" stroke="#65564B" stroke-width="2.4"/>
+        </svg>
+      {:else if type === 'fixed'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="18,22 68,22 76,29 76,72 18,72" fill="#e0d5ca"/>
+          <polygon points="18,22 68,22 68,72 18,72" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <polygon points="68,22 76,29 76,72 68,72" fill="#d0c2b4" stroke="#65564B" stroke-width="2"/>
+          <rect x="25" y="29" width="36" height="36" stroke="#8a7869" stroke-width="2"/>
+        </svg>
+      {:else if type === 'casement'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="20,18 64,18 72,25 72,76 20,76" fill="#e0d5ca"/>
+          <polygon points="20,18 64,18 64,76 20,76" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <polygon points="64,18 72,25 72,76 64,76" fill="#d0c2b4" stroke="#65564B" stroke-width="2"/>
+          <path d="M42 18v58M24 24l18 25-18 21M60 24 42 49l18 21" stroke="#65564B" stroke-width="2.2" stroke-linejoin="round"/>
+        </svg>
+      {:else if type === 'sliding'}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="15,25 70,25 78,32 78,70 15,70" fill="#e0d5ca"/>
+          <polygon points="15,25 70,25 70,70 15,70" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <polygon points="70,25 78,32 78,70 70,70" fill="#d0c2b4" stroke="#65564B" stroke-width="2"/>
+          <rect x="22" y="32" width="31" height="31" stroke="#65564B" stroke-width="2.2"/>
+          <rect x="36" y="32" width="31" height="31" stroke="#8a7869" stroke-width="2.2"/>
+        </svg>
+      {:else}
+        <svg width="92" height="92" viewBox="0 0 92 92" fill="none" aria-hidden="true">
+          <polygon points="13,31 28,20 66,20 79,31 79,72 13,72" fill="#e0d5ca"/>
+          <polygon points="13,31 28,20 28,72 13,72" fill="#d0c2b4" stroke="#65564B" stroke-width="2.5"/>
+          <polygon points="28,20 66,20 66,72 28,72" fill="#F7F5F2" stroke="#65564B" stroke-width="3"/>
+          <polygon points="66,20 79,31 79,72 66,72" fill="#d0c2b4" stroke="#65564B" stroke-width="2.5"/>
+          <path d="M28 46h38M20 33l8 3M66 36l7-3" stroke="#65564B" stroke-width="2.2"/>
+        </svg>
+      {/if}
+    {/if}
+  {/snippet}
+
+  {#snippet roomTemplateIllustration(name: string)}
+    <svg viewBox="0 0 120 78" class="h-[76px] w-full" fill="none" aria-hidden="true">
+      <rect x="3" y="3" width="114" height="72" rx="8" fill="#DCD6CC" />
+      <rect x="9" y="9" width="102" height="60" rx="3" fill="#F7F3ED" stroke="#58695F" stroke-width="3" />
+      {#if name === 'Living Room'}
+        <rect x="34" y="13" width="52" height="18" rx="5" fill="#D6C4B1" stroke="#776657" stroke-width="1.5" />
+        <path d="M42 14v16M78 14v16M47 18h26M47 25h26" stroke="#9A8572" stroke-width="1.2" />
+        <rect x="45" y="38" width="30" height="14" rx="2" fill="#E6D9C9" stroke="#776657" stroke-width="1.5" />
+        <path d="M49 42h22M49 47h22" stroke="#B6A48F" stroke-width="1" />
+        <rect x="43" y="57" width="34" height="7" rx="2" fill="#9DA79A" stroke="#59695F" stroke-width="1.2" />
+        <rect x="49" y="58" width="22" height="4" rx="1" fill="#303B35" />
+      {:else if name === 'Bedroom'}
+        <rect x="35" y="17" width="50" height="43" rx="3" fill="#D6C4B1" stroke="#776657" stroke-width="1.5" />
+        <rect x="39" y="21" width="19" height="10" rx="3" fill="#F8F5EF" stroke="#B6A48F" stroke-width="1" />
+        <rect x="62" y="21" width="19" height="10" rx="3" fill="#F8F5EF" stroke="#B6A48F" stroke-width="1" />
+        <path d="M37 34h46" stroke="#9A8572" stroke-width="1" />
+        <rect x="15" y="20" width="14" height="14" rx="2" fill="#B9A58E" stroke="#776657" stroke-width="1.3" />
+        <rect x="91" y="20" width="14" height="14" rx="2" fill="#B9A58E" stroke="#776657" stroke-width="1.3" />
+        <rect x="40" y="61" width="40" height="5" rx="1.5" fill="#9DA79A" stroke="#59695F" stroke-width="1" />
+      {:else if name === 'Kitchen'}
+        <path d="M15 15h90v13H15zM15 28h16v34H15z" fill="#D6C4B1" stroke="#776657" stroke-width="1.5" stroke-linejoin="round" />
+        <path d="M31 15v13M48 15v13M65 15v13M82 15v13M15 44h16" stroke="#9A8572" stroke-width="1" />
+        <rect x="36" y="17" width="14" height="9" rx="1" fill="#E9E5DE" stroke="#776657" stroke-width="1" />
+        <path d="M40 19v5M46 19v5" stroke="#58695F" stroke-width="1" />
+        <rect x="56" y="17" width="19" height="9" rx="2" fill="#E9E5DE" stroke="#776657" stroke-width="1" />
+        <path d="M60 21h11M65 18v6" stroke="#849186" stroke-width="1" />
+        <rect x="86" y="37" width="18" height="25" rx="2" fill="#C1CAC4" stroke="#58695F" stroke-width="1.5" />
+        <path d="M89 43h12M98 39v3" stroke="#849186" stroke-width="1" />
+        <rect x="45" y="43" width="31" height="15" rx="2" fill="#E3D8C9" stroke="#776657" stroke-width="1.3" />
+        <path d="M51 47h19M51 52h19" stroke="#B6A48F" stroke-width="1" />
+      {:else if name === 'Bathroom'}
+        <rect x="15" y="15" width="31" height="46" rx="8" fill="#DCE8E7" stroke="#738987" stroke-width="1.5" />
+        <path d="M20 20h21v36H20z" stroke="#A3B8B5" stroke-width="1" />
+        <rect x="66" y="16" width="20" height="7" rx="1.5" fill="#D6C4B1" stroke="#776657" stroke-width="1.3" />
+        <path d="M69 29c0-4 3-6 7-6s7 2 7 6v9c0 5-3 8-7 8s-7-3-7-8v-9Z" fill="#F8F5EF" stroke="#738987" stroke-width="1.5" />
+        <ellipse cx="76" cy="34" rx="3" ry="5" stroke="#A3B8B5" stroke-width="1" />
+        <rect x="59" y="51" width="39" height="12" rx="2" fill="#D6C4B1" stroke="#776657" stroke-width="1.3" />
+        <ellipse cx="78.5" cy="57" rx="7" ry="3.5" fill="#F8F5EF" stroke="#738987" stroke-width="1.2" />
+      {:else if name === 'Office'}
+        <rect x="40" y="15" width="56" height="25" rx="2" fill="#D6C4B1" stroke="#776657" stroke-width="1.5" />
+        <rect x="55" y="18" width="26" height="15" rx="1.5" fill="#303B35" stroke="#58695F" stroke-width="1.2" />
+        <rect x="65" y="33" width="6" height="4" fill="#849186" />
+        <path d="M58 39h20" stroke="#776657" stroke-width="1.5" />
+        <circle cx="68" cy="52" r="8" fill="#BFC7BD" stroke="#58695F" stroke-width="1.5" />
+        <path d="M68 44v16M60 52h16" stroke="#849186" stroke-width="1" />
+        <rect x="15" y="17" width="16" height="43" rx="2" fill="#B9A58E" stroke="#776657" stroke-width="1.4" />
+        <path d="M18 28h10M18 39h10M18 50h10" stroke="#E9E1D6" stroke-width="1.2" />
+      {:else}
+        <rect x="39" y="23" width="42" height="32" rx="3" fill="#D6C4B1" stroke="#776657" stroke-width="1.5" />
+        <path d="M45 29h30M45 36h30M45 43h30M45 50h30" stroke="#B6A48F" stroke-width="1" />
+        <rect x="45" y="13" width="12" height="8" rx="2" fill="#BFC7BD" stroke="#58695F" stroke-width="1.2" />
+        <rect x="63" y="13" width="12" height="8" rx="2" fill="#BFC7BD" stroke="#58695F" stroke-width="1.2" />
+        <rect x="45" y="57" width="12" height="8" rx="2" fill="#BFC7BD" stroke="#58695F" stroke-width="1.2" />
+        <rect x="63" y="57" width="12" height="8" rx="2" fill="#BFC7BD" stroke="#58695F" stroke-width="1.2" />
+        <rect x="27" y="32" width="8" height="12" rx="2" fill="#BFC7BD" stroke="#58695F" stroke-width="1.2" />
+        <rect x="85" y="32" width="8" height="12" rx="2" fill="#BFC7BD" stroke="#58695F" stroke-width="1.2" />
+      {/if}
+    </svg>
+  {/snippet}
 
   {#if activeTab === 'assistant'}
     <div class="min-h-0 flex-1 px-4 pb-4"><AssistantChat /></div>
@@ -409,8 +709,8 @@
           {@render sectionTitle($t('buildTools.structure'))}
           <div class="grid grid-cols-3 gap-2">
             {@render tile($t('buildTools.stairs'), 'M4 20h4v-4h4v-4h4V8h4V4', isPlacingStair, onPlaceStair, undefined, $t('buildTools.stairsHelp'))}
-            {@render tile($t('buildTools.round'), 'M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM7.8 7.8l8.4 8.4M16.2 7.8l-8.4 8.4', isPlacingColumn, () => onPlaceColumn('round'))}
-            {@render tile($t('buildTools.square'), 'M6 6h12v12H6zM6 6l12 12M18 6L6 18', isPlacingColumn, () => onPlaceColumn('square'))}
+            {@render tile($t('buildTools.round'), 'M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM7.8 7.8l8.4 8.4M16.2 7.8l-8.4-8.4', isPlacingColumn && placingColumnShapeValue === 'round', () => onPlaceColumn('round'))}
+              {@render tile($t('buildTools.square'), 'M6 6h12v12H6zM6 6l12 12M18 6L6 18', isPlacingColumn && placingColumnShapeValue === 'square', () => onPlaceColumn('square'))}
           </div>
         </section>
 
@@ -432,7 +732,7 @@
               </span>
               <span class="min-w-0">
                 <span class="block font-semibold">{$t('buildTools.image')}</span>
-                <span class="block truncate text-xs text-muted">{$t('buildTools.imageHelp')}</span>
+                <span class="block truncate text-[13px] text-muted">{$t('buildTools.imageHelp')}</span>
               </span>
             </button>
             <button type="button" class="flex w-full items-center gap-3 rounded-[10px] border border-line bg-white px-3 py-2.5 text-left text-sm transition-colors hover:border-[#B89A86] hover:bg-hover" onclick={onImportRoomPlan}>
@@ -441,7 +741,7 @@
               </span>
               <span class="min-w-0">
                 <span class="block font-semibold">{$t('buildTools.roomplan')}</span>
-                <span class="block truncate text-xs text-muted">{$t('buildTools.roomplanHelp')}</span>
+                <span class="block truncate text-[13px] text-muted">{$t('buildTools.roomplanHelp')}</span>
               </span>
             </button>
           </div>
@@ -454,46 +754,56 @@
             aria-expanded={constructionOpen}
             onclick={() => constructionOpen = !constructionOpen}
           >
-            <h3 class="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{$t('layers.doors')}</h3>
+            <h3 class="text-[13px] font-extrabold uppercase tracking-[0.08em] text-[#f2eee8]">{$t('layers.doors')}</h3>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted transition-transform {constructionOpen ? '' : '-rotate-90'}" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
           </button>
 
           {#if constructionOpen}
-            <div class="mb-4 grid grid-cols-2 gap-2">
+            <div class="mb-3 flex rounded-xl border border-[#9f9286] bg-[#c8beb3] p-1">
+              <button type="button" class="flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors {doorPreviewMode === '2d' ? 'bg-[#6b5140] text-white shadow-sm' : 'text-[#44372e] hover:bg-[#b9ada1]'}" onclick={() => doorPreviewMode = '2d'}>2D</button>
+              <button type="button" class="flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors {doorPreviewMode === '3d' ? 'bg-[#6b5140] text-white shadow-sm' : 'text-[#44372e] hover:bg-[#b9ada1]'}" onclick={() => doorPreviewMode = '3d'}>3D</button>
+            </div>
+            <div class="mb-4 grid grid-cols-2 gap-2.5">
               {#each doorCatalog as dc}
                 {@const on = currentTool === 'door' && selectedDoorType === dc.type}
                 <button
-                  class="flex flex-col items-center gap-1 rounded-[10px] border p-2.5 transition-colors cursor-grab active:cursor-grabbing {on ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
+                  class="flex flex-col items-center gap-1.5 rounded-[12px] border p-2.5 text-center transition-all duration-150 cursor-grab active:cursor-grabbing {on ? 'border-[#8d644b] bg-[#ddc7b5] shadow-[inset_0_0_0_1px_#8d644b]' : 'border-[#a99e93] bg-[#c7beb4] hover:border-[#8d644b] hover:bg-[#beb3a8]'}"
                   onclick={() => setDoorType(dc.type)}
                   draggable="true"
                   ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'door'); e.dataTransfer?.setData('application/o3d-id', dc.type); }}
                 >
-                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-walnut-tint text-walnut">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{dc.icon}"/></svg>
+                  <div class="door-preview-art flex h-[86px] w-full items-center justify-center rounded-[10px] border border-[#a99e93] bg-[#d0c7bd] text-[#4d413b]">
+                    {@render doorIllustration(dc.type, doorPreviewMode)}
                   </div>
-                  <span class="text-xs font-semibold text-charcoal">{dc.name}</span>
-                  <span class="text-[10px] text-muted">{dc.desc}</span>
+                  <span class="text-[14px] font-bold leading-tight text-[#171717]">{dc.name}</span>
+                  <span class="text-xs font-semibold leading-tight text-[#282828]">{dc.desc}</span>
                 </button>
               {/each}
             </div>
 
-            {@render sectionTitle($t('layers.windows'))}
-            <div class="grid grid-cols-2 gap-2">
+            <div class="mt-4 border-t border-[#a99e93] pt-3">
+              <h3 class="mb-2 text-[13px] font-extrabold uppercase tracking-[0.08em] text-[#f2eee8]">{$t('layers.windows')}</h3>
+              <div class="mb-3 flex rounded-xl border border-[#9f9286] bg-[#c8beb3] p-1">
+                <button type="button" class="flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors {windowPreviewMode === '2d' ? 'bg-[#6b5140] text-white shadow-sm' : 'text-[#44372e] hover:bg-[#b9ada1]'}" onclick={() => windowPreviewMode = '2d'}>2D</button>
+                <button type="button" class="flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors {windowPreviewMode === '3d' ? 'bg-[#6b5140] text-white shadow-sm' : 'text-[#44372e] hover:bg-[#b9ada1]'}" onclick={() => windowPreviewMode = '3d'}>3D</button>
+              </div>
+              <div class="mb-4 grid grid-cols-2 gap-2.5">
               {#each windowCatalog as wc}
                 {@const on = currentTool === 'window' && selectedWindowType === wc.type}
                 <button
-                  class="flex flex-col items-center gap-1 rounded-[10px] border p-2.5 transition-colors cursor-grab active:cursor-grabbing {on ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
+                  class="flex flex-col items-center gap-1.5 rounded-[12px] border p-2.5 text-center transition-all duration-150 cursor-grab active:cursor-grabbing {on ? 'border-[#8d644b] bg-[#ddc7b5] shadow-[inset_0_0_0_1px_#8d644b]' : 'border-[#a99e93] bg-[#c7beb4] hover:border-[#8d644b] hover:bg-[#beb3a8]'}"
                   onclick={() => setWindowType(wc.type)}
                   draggable="true"
                   ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'window'); e.dataTransfer?.setData('application/o3d-id', wc.type); }}
                 >
-                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sage-tint text-sage-ink">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+                  <div class="door-preview-art flex h-[86px] w-full items-center justify-center rounded-[10px] border border-[#a99e93] bg-[#d0c7bd] text-[#4d413b]">
+                    {@render windowIllustration(wc.type, windowPreviewMode)}
                   </div>
-                  <span class="text-xs font-semibold text-charcoal">{wc.name}</span>
-                  <span class="text-[10px] text-muted">{wc.desc}</span>
+                  <span class="text-[14px] font-bold leading-tight text-[#171717]">{wc.name}</span>
+                  <span class="text-xs font-semibold leading-tight text-[#282828]">{wc.desc}</span>
                 </button>
               {/each}
+            </div>
             </div>
           {/if}
         </section>
@@ -501,8 +811,24 @@
 
     {:else if activeTab === 'rooms'}
       <div class="space-y-2">
+        {#if existingRooms.length}
+          <section>
+            {@render sectionTitle($t('roomChoices.existing'))}
+            <p class="mb-2 ui-helper-text">{$t('roomChoices.selectHelp')}</p>
+            <div class="max-h-36 space-y-1 overflow-y-auto">
+              {#each existingRooms as room (room.id)}
+                <button type="button" aria-pressed={$selectedRoomId === room.id} onclick={() => selectRoom(room.id)}
+                  class="flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors {$selectedRoomId === room.id ? 'border-walnut bg-walnut-tint text-walnut-dark' : 'border-line bg-white text-charcoal hover:border-walnut hover:bg-hover'}">
+                  <span class="truncate text-sm font-semibold">{room.name}</span>
+                  <span class="shrink-0 text-xs">{formatArea(room.area, $projectSettings.units)}</span>
+                </button>
+              {/each}
+            </div>
+          </section>
+          <hr class="my-3 border-line" />
+        {/if}
         {@render sectionTitle($t('roomChoices.presets'))}
-        <p class="mb-3 text-xs text-muted">{$t('roomChoices.presetsHelp')}</p>
+        <p class="mb-3 ui-helper-text">{$t('roomChoices.presetsHelp')}</p>
         <div class="grid grid-cols-2 gap-2">
           {#each roomPresets as preset}
             <button
@@ -511,8 +837,24 @@
               draggable="true"
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room'); e.dataTransfer?.setData('application/o3d-id', preset.id); }}
             >
-              <div class="flex h-12 w-12 items-center justify-center rounded-lg border-[1.5px] border-charcoal/80 bg-[#F2E6D8] font-mono text-2xl text-charcoal">{preset.icon}</div>
-              <span class="text-xs font-semibold text-charcoal">{roomPresetLabels[preset.id] ? $t(roomPresetLabels[preset.id]) : preset.name}</span>
+              <svg class="h-[72px] w-full max-w-[108px] shrink-0" viewBox="0 0 112 76" fill="none" aria-hidden="true">
+                <rect x="2" y="2" width="108" height="72" rx="7" fill="#E8E5DC" stroke="#D0D6CE" />
+                <path
+                  d={preset.id === 'rectangle' ? 'M18 12H94V64H18Z' : preset.id === 'l-shape' ? 'M18 12H94V38H56V64H18Z' : preset.id === 't-shape' ? 'M18 12H94V38H75V64H37V38H18Z' : 'M18 12H38V38H74V12H94V64H18Z'}
+                  fill="#485A4F"
+                  stroke="#34453A"
+                  stroke-width="1.5"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d={preset.id === 'rectangle' ? 'M23 17H89V59H23Z' : preset.id === 'l-shape' ? 'M23 17H89V33H51V59H23Z' : preset.id === 't-shape' ? 'M23 17H89V33H70V59H42V33H23Z' : 'M23 17H33V33H79V17H89V59H23Z'}
+                  fill="#F8F5EF"
+                  stroke="#D6D1C8"
+                  stroke-width="0.8"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span class="ui-card-title">{roomPresetLabels[preset.id] ? $t(roomPresetLabels[preset.id]) : preset.name}</span>
             </button>
           {/each}
         </div>
@@ -520,7 +862,7 @@
         <hr class="my-4 border-line" />
 
         {@render sectionTitle($t('roomChoices.templates'))}
-        <p class="mb-3 text-xs text-muted">{$t('roomChoices.templatesHelp')}</p>
+        <p class="mb-3 ui-helper-text">{$t('roomChoices.templatesHelp')}</p>
         <div class="grid grid-cols-2 gap-2">
           {#each roomTemplates as tmpl}
             <button
@@ -529,18 +871,11 @@
               draggable="true"
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room-template'); e.dataTransfer?.setData('application/o3d-id', tmpl.name); }}
             >
-              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-sage-tint text-lg">
-                {#if tmpl.name === 'Living Room'}<AppIcon name="sofa" size={16} />
-                {:else if tmpl.name === 'Bedroom'}<AppIcon name="bed-double" size={16} />
-                {:else if tmpl.name === 'Kitchen'}<AppIcon name="cooking-pot" size={16} />
-                {:else if tmpl.name === 'Bathroom'}<AppIcon name="bath" size={16} />
-                {:else if tmpl.name === 'Office'}<AppIcon name="monitor" size={16} />
-                {:else if tmpl.name === 'Dining Room'}<AppIcon name="utensils" size={16} />
-                {:else}<AppIcon name="house" size={16} />
-                {/if}
+              <div class="flex w-full items-center justify-center overflow-hidden rounded-lg border border-[#bdb7ab] bg-[#d8d1c7] px-1.5 py-1">
+                {@render roomTemplateIllustration(tmpl.name)}
               </div>
-              <span class="text-xs font-semibold text-charcoal">{roomTemplateLabels[tmpl.name] ? $t(roomTemplateLabels[tmpl.name]) : tmpl.name}</span>
-              <span class="text-[10px] text-muted">{$t(tmpl.furniture.length === 1 ? 'roomChoices.item' : 'roomChoices.items', { count: tmpl.furniture.length })}</span>
+              <span class="ui-card-title">{roomTemplateLabels[tmpl.name] ? $t(roomTemplateLabels[tmpl.name]) : tmpl.name}</span>
+              <span class="ui-control-label">{$t(tmpl.furniture.length === 1 ? 'roomChoices.item' : 'roomChoices.items', { count: tmpl.furniture.length })}</span>
             </button>
           {/each}
         </div>
@@ -575,21 +910,21 @@
           {/if}
         </div>
         {#if search}
-          <div class="px-1 text-[11px] text-muted">{$t(filtered.length === 1 ? 'objectControls.result' : 'objectControls.results', { count: filtered.length, query: search })}</div>
+          <div class="px-1 text-xs text-muted">{$t(filtered.length === 1 ? 'objectControls.result' : 'objectControls.results', { count: filtered.length, query: search })}</div>
         {/if}
         <!-- Category filter -->
         <div class="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
           <button
-            class="h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors {selectedCategory === 'All' ? 'border-walnut bg-walnut text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
+            class="h-8 rounded-full border px-2.5 text-xs font-semibold transition-colors {selectedCategory === 'All' ? 'border-walnut bg-walnut text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
             onclick={() => selectedCategory = 'All'}
           >{$t('objectControls.all')}</button>
           <button
-            class="h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors {selectedCategory === 'Favorites' ? 'border-terracotta-ink bg-terracotta-ink text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
+            class="h-8 rounded-full border px-2.5 text-xs font-semibold transition-colors {selectedCategory === 'Favorites' ? 'border-terracotta-ink bg-terracotta-ink text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
             onclick={() => selectedCategory = 'Favorites'}
           ><AppIcon name="heart" size={16} /> {$t('objectControls.favorites')}{favoriteIds.length ? ` (${favoriteIds.length})` : ''}</button>
           {#each furnitureCategories as cat}
             <button
-              class="h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors {selectedCategory === cat ? 'border-walnut bg-walnut text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
+              class="h-8 rounded-full border px-2.5 text-xs font-semibold transition-colors {selectedCategory === cat ? 'border-walnut bg-walnut text-white' : 'border-line bg-white text-charcoal hover:bg-hover'}"
               onclick={() => selectedCategory = cat}
             >{catalogCategoryLabels[cat] ? $t(catalogCategoryLabels[cat]) : cat}</button>
           {/each}
@@ -612,7 +947,7 @@
                     onmouseleave={onItemMouseLeave}
                   >
                     <div class="h-10 w-10"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
-                    <span class="text-center text-[10.5px] font-semibold leading-tight text-charcoal">{furnitureName(item.id, $locale)}</span>
+                    <span class="text-center text-xs font-semibold leading-tight text-charcoal">{furnitureName(item.id, $locale)}</span>
                   </button>
                   <button
                     class="absolute right-1.5 top-1 cursor-pointer text-[13px] leading-none {favoriteIds.includes(item.id) ? 'text-terracotta-ink' : 'text-line hover:text-terracotta'}"
@@ -645,11 +980,11 @@
                 <div class="h-12 w-12"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
                 {#if s && furnitureName(item.id, $locale).toLowerCase().includes(s)}
                   {@const idx = furnitureName(item.id, $locale).toLowerCase().indexOf(s)}
-                  <span class="text-xs font-semibold text-charcoal">{furnitureName(item.id, $locale).slice(0, idx)}<mark class="rounded-sm bg-wood px-0.5 text-charcoal">{furnitureName(item.id, $locale).slice(idx, idx + s.length)}</mark>{furnitureName(item.id, $locale).slice(idx + s.length)}</span>
+                  <span class="text-[13px] font-semibold text-charcoal">{furnitureName(item.id, $locale).slice(0, idx)}<mark class="rounded-sm bg-wood px-0.5 text-charcoal">{furnitureName(item.id, $locale).slice(idx, idx + s.length)}</mark>{furnitureName(item.id, $locale).slice(idx + s.length)}</span>
                 {:else}
-                  <span class="text-xs font-semibold text-charcoal">{furnitureName(item.id, $locale)}</span>
+                  <span class="text-[13px] font-semibold text-charcoal">{furnitureName(item.id, $locale)}</span>
                 {/if}
-                <span class="text-[10px] text-muted">{item.width}×{item.depth}cm</span>
+                <span class="text-[11px] text-muted">{formatLength(item.width, $projectSettings.units)} × {formatLength(item.depth, $projectSettings.units)}</span>
               </button>
               <button
                 class="absolute right-1.5 top-1 cursor-pointer text-[13px] leading-none {favoriteIds.includes(item.id) ? 'text-terracotta-ink' : 'text-line hover:text-terracotta'}"
@@ -736,12 +1071,20 @@
           >{catalogCategoryLabels[item.category] ? $t(catalogCategoryLabels[item.category]) : item.category}</span>
         </div>
         <div class="text-xs text-muted">
-          {item.width} × {item.depth} × {item.height} cm
+          {formatLength(item.width, $projectSettings.units)} × {formatLength(item.depth, $projectSettings.units)} × {formatLength(item.height, $projectSettings.units)}
         </div>
       </div>
     </div>
   </div>
 {/if}
+
+<style>
+  :global(.door-preview-art rect),
+  :global(.door-preview-art path),
+  :global(.door-preview-art polygon) {
+    stroke: #65564b;
+  }
+</style>
 
 <!-- RoomPlan Import Options Dialog -->
 {#if showImportDialog}

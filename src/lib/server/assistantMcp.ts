@@ -5,9 +5,9 @@ import { handoffScope, loadPackage, reviewPhotos, summarizePackage, SkillPackage
 
 /** Minimal Model Context Protocol server over streamable HTTP, stateless, read-only. */
 export const MCP_PROTOCOL_VERSION = '2025-06-18';
-export const MCP_SERVER_INFO = { name: 'openplan3d-shares', version: '0.1.0' };
+export const MCP_SERVER_INFO = { name: 'planora-shares', version: '0.1.0' };
 export const MCP_INSTRUCTIONS =
-  'OpenPlan3D floor plan data shared by its owner. Every tool needs the eight-character share code and the secret the person was shown ' +
+  'Planora floor plan data shared by its owner. Every tool needs the eight-character share code and the secret the person was shown ' +
   'when they chose Share with Assistant; ask for both. Lengths are metres. Tools are read-only. Room areas come from the app; never invent them.';
 const CODE_KEYS = ['floorArea', 'ceilingArea', 'wallAreaNetRoom', 'wallRunRoom', 'livingAreaLevel', 'wallAreaNetLevel', 'wallAreaGrossLevel', 'wallRunLevel', 'doors', 'windows'];
 
@@ -34,7 +34,7 @@ const shareArguments = {
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 export function mcpTools() {
   return [
-    { name: 'summarize_share', annotations: READ_ONLY, description: 'Summarize a shared OpenPlan3D project: floors, rooms with areas, openings, furniture, notes, attachments and documentation gaps.', inputSchema: { type: 'object', properties: shareArguments, required: ['code', 'secret'] } },
+    { name: 'summarize_share', annotations: READ_ONLY, description: 'Summarize a shared Planora project: floors, rooms with areas, openings, furniture, notes, attachments and documentation gaps.', inputSchema: { type: 'object', properties: shareArguments, required: ['code', 'secret'] } },
     { name: 'review_share_photos', annotations: READ_ONLY, description: 'Review photo coverage of a shared project: photos per room and item, missing, unreferenced, shared and low-resolution files, and photos still to take.', inputSchema: { type: 'object', properties: shareArguments, required: ['code', 'secret'] } },
     { name: 'handoff_share', annotations: READ_ONLY, description: 'Build a contractor or adjuster handoff from a shared project: per-floor and per-room areas, wall runs and surfaces, openings schedule, furniture inventory, notes, evidence and a quantities table. Quantities only, no pricing. Optional codes map quantity keys to your line-item codes.', inputSchema: { type: 'object', properties: { ...shareArguments, codes: { type: 'object', additionalProperties: { type: 'string' }, description: `Optional map of quantity keys (${CODE_KEYS.join(', ')}) to your codes` } }, required: ['code', 'secret'] } },
     { name: 'list_share_files', annotations: READ_ONLY, description: 'List the files inside a shared project package with sizes, plus the share title, expiry and whether photos were included. Photo bytes are not returned.', inputSchema: { type: 'object', properties: shareArguments, required: ['code', 'secret'] } },

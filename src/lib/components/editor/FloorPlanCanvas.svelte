@@ -77,6 +77,14 @@
   let editingRoomId: string | null = $state(null);
   let editingRoomPos: { x: number; y: number } = $state({ x: 0, y: 0 });
   let editingRoomName: string = $state('');
+  let editingFurnitureId: string | null = $state(null);
+  let editingFurniturePos: { x: number; y: number } = $state({ x: 0, y: 0 });
+  let editingFurnitureName = $state('');
+
+  function furnitureEditorPosition(id: string | null) {
+    const item = id ? currentFloor?.furniture.find(furniture => furniture.id === id) : null;
+    return item ? worldToScreen(item.position.x, item.position.y) : editingFurniturePos;
+  }
 
   // Pan state
   let isPanning = $state(false);
@@ -89,6 +97,7 @@
 
   // Furniture drag state
   let draggingFurnitureId: string | null = $state(null);
+  let overlappingFurnitureId: string | null = $state(null);
   let draggingEntourageId: string | null = $state(null);
   let resizingEntourageId: string | null = $state(null);
   let currentEntourageDefId: string | null = $state(null);
@@ -317,6 +326,13 @@
   let marqueeStart: Point | null = $state(null);
   let marqueeEnd: Point | null = $state(null);
   let currentSelectedIds: Set<string> = $state(new Set());
+  let selectionLocked = $derived.by(() => {
+    if (!currentFloor) return false;
+    const ids = currentSelectedIds.size ? currentSelectedIds : currentSelectedId ? new Set([currentSelectedId]) : new Set<string>();
+    const items = [...currentFloor.furniture, ...currentFloor.entourage ?? [], ...currentFloor.stairs ?? [], ...currentFloor.columns ?? []]
+      .filter(item => ids.has(item.id));
+    return items.length > 0 && items.every(item => item.locked === true);
+  });
 
   // Multi-select drag state
   let draggingMultiSelect: { startMousePos: Point; origPositions: Map<string, { start?: Point; end?: Point; curvePoint?: Point; position?: Point; opening?: { wallId: string; position: number; kind: 'door' | 'window' } }> } | null = $state(null);
@@ -356,8 +372,8 @@
           if (dimension) { origPositions.set(id, { start: { x: dimension.x1, y: dimension.y1 }, end: { x: dimension.x2, y: dimension.y2 } }); continue; }
           const fi = currentFloor.furniture.find(f => f.id === id);
           if (fi) { if (!fi.locked) origPositions.set(id, { position: { ...fi.position } }); continue; }
-          if (currentFloor.stairs) { const st = currentFloor.stairs.find(s => s.id === id); if (st) { origPositions.set(id, { position: { ...st.position } }); continue; } }
-          if (currentFloor.columns) { const col = currentFloor.columns.find(c => c.id === id); if (col) { origPositions.set(id, { position: { ...col.position } }); continue; } }
+          if (currentFloor.stairs) { const st = currentFloor.stairs.find(s => s.id === id); if (st) { if (!st.locked) origPositions.set(id, { position: { ...st.position } }); continue; } }
+          if (currentFloor.columns) { const col = currentFloor.columns.find(c => c.id === id); if (col) { if (!col.locked) origPositions.set(id, { position: { ...col.position } }); continue; } }
         }
         for (const item of currentFloor.entourage ?? []) {
           if (currentSelectedIds.has(item.id) && !item.locked) origPositions.set(item.id, { position: { ...item.position } });
@@ -587,7 +603,7 @@
   }
 
   function drawWall(w: Wall, selected: boolean) {
-    _drawWall(getCS(), w, selected, showDimensions, dimSettings, currentFloor?.walls);
+    _drawWall(getCS(), w, selected, showDimensions, dimSettings, currentFloor?.walls, [...roomPolygons.values()]);
   }
 
   function drawDoorOnWall(wall: Wall, door: Door) {
@@ -599,7 +615,37 @@
   }
 
   function drawFurniture(item: FurnitureItem, selected: boolean) {
-    drawFurnitureItem(getCS(), item, selected, customModelName(item, get(currentProject)) ?? (getCatalogItem(item.catalogId) ? furnitureName(item.catalogId, get(locale)) : undefined));
+    drawFurnitureItem(getCS(), item, selected, customModelName(item, get(currentProject)) ?? (getCatalogItem(item.catalogId) ? furnitureName(item.catalogId, get(locale)) : undefined), overlappingFurnitureId === item.id);
+  }
+
+  function furnitureBounds(item: FurnitureItem, position = item.position) {
+    const size = getFurnitureSize(item);
+    const angle = Math.abs(item.rotation * Math.PI / 180);
+    const width = Math.abs(size.width * Math.cos(angle)) + Math.abs(size.depth * Math.sin(angle));
+    const depth = Math.abs(size.width * Math.sin(angle)) + Math.abs(size.depth * Math.cos(angle));
+    return { left: position.x - width / 2, right: position.x + width / 2, top: position.y - depth / 2, bottom: position.y + depth / 2 };
+  }
+
+  function furnitureOverlaps(item: FurnitureItem, position: Point) {
+    const a = furnitureBounds(item, position);
+    return currentFloor?.furniture.some(other => {
+      if (other.id === item.id) return false;
+      const b = furnitureBounds(other);
+      return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    }) ?? false;
+  }
+
+  function nearestFreeFurniturePosition(item: FurnitureItem): Point {
+    if (!furnitureOverlaps(item, item.position)) return item.position;
+    const step = Math.max(getFurnitureSize(item).width, getFurnitureSize(item).depth) + 20;
+    for (let radius = 1; radius <= 12; radius++) {
+      for (let index = 0; index < 8; index++) {
+        const angle = index * Math.PI / 4;
+        const candidate = { x: snap(item.position.x + Math.cos(angle) * step * radius), y: snap(item.position.y + Math.sin(angle) * step * radius) };
+        if (!furnitureOverlaps(item, candidate)) return candidate;
+      }
+    }
+    return item.position;
   }
 
   // Track wall snap during placement preview
@@ -1489,7 +1535,7 @@
     if (isPlacingStair) {
       ctx.save();
       ctx.globalAlpha = 0.5;
-      const preview: Stair = { id: 'preview', position: mousePos, rotation: 0, width: 100, depth: 300, riserCount: 14, direction: 'up', stairType: 'straight' };
+      const preview: Stair = { id: 'preview', position: mousePos, rotation: 0, width: 50, depth: 120, riserCount: 14, direction: 'up', stairType: 'straight' };
       drawStair(preview, false);
       ctx.restore();
     }
@@ -1574,7 +1620,7 @@
       const dimMidY = (s.y + e.y) / 2;
       const typedActive = typedWallLengthCm() !== null;
       const dimText = typedActive
-        ? `${formatLength(plen, dimSettings.units)} ⏎`
+        ? `${formatLength(plen, dimSettings.units)} Enter`
         : formatLength(plen, dimSettings.units);
       const angleText = shiftDown ? `${Math.round(displayAngle)}° ⇧` : `${Math.round(displayAngle)}°`;
 
@@ -2596,7 +2642,7 @@
       const col = findColumnAt(wp);
       if (col) {
         if (selectElement(col.id, e.shiftKey)) return;
-        if (!e.shiftKey) {
+        if (!e.shiftKey && !col.locked) {
           draggingColumnId = col.id;
           columnDragOffset = { x: wp.x - col.position.x, y: wp.y - col.position.y };
         }
@@ -2606,7 +2652,7 @@
       const stair = findStairAt(wp);
       if (stair) {
         if (selectElement(stair.id, e.shiftKey)) return;
-        if (!e.shiftKey) {
+        if (!e.shiftKey && !stair.locked) {
           draggingStairId = stair.id;
           stairDragOffset = { x: wp.x - stair.position.x, y: wp.y - stair.position.y };
         }
@@ -2754,6 +2800,15 @@
     // Double-click on a room to edit its name inline
     if (currentTool === 'select') {
       const wp = selectionPoint;
+      const furniture = findFurnitureAt(wp);
+      if (furniture) {
+        const screen = worldToScreen(furniture.position.x, furniture.position.y);
+        editingFurnitureId = furniture.id;
+        editingFurnitureName = furniture.label ?? getCatalogItem(furniture.catalogId)?.name ?? '';
+        editingFurniturePos = { x: screen.x, y: screen.y };
+        selectedElementId.set(furniture.id);
+        return;
+      }
       const room = findRoomLabelAt(wp) ?? findRoomAt(wp);
       if (room) {
         const poly = (roomPolygons.get(room.id) ?? []);
@@ -3033,6 +3088,7 @@
         const wallSnap = snapFurnitureToWall(basePos, fi);
         if (wallSnap) {
           transformFurnitureDuringDrag(draggingFurnitureId, { position: wallSnap.position, rotation: wallSnap.rotation });
+          overlappingFurnitureId = furnitureOverlaps(fi, wallSnap.position) ? fi.id : null;
           dragWasWallSnapped = true;
           wallSnapInfo = { wallId: wallSnap.wallId, side: wallSnap.side, wallAngle: wallSnap.wallAngle };
         } else {
@@ -3053,6 +3109,7 @@
             position: snapped,
             ...(dragWasWallSnapped ? { rotation: dragStartRotation } : {}),
           });
+          overlappingFurnitureId = furnitureOverlaps(fi, snapped) ? fi.id : null;
           dragWasWallSnapped = false;
           wallSnapInfo = null;
         }
@@ -3198,6 +3255,10 @@
     }
 
     if (furnitureGestureStarted) {
+      if (draggingFurnitureId && overlappingFurnitureId && currentFloor) {
+        const item = currentFloor.furniture.find(furniture => furniture.id === draggingFurnitureId);
+        if (item) transformFurnitureDuringDrag(item.id, { position: nearestFreeFurniturePosition(item) });
+      }
       endUndoGroup(draggingHandle === 'rotate' ? 'Rotated furniture' : draggingHandle ? 'Resized furniture' : 'Moved furniture');
       furnitureGestureStarted = false;
     }
@@ -3212,6 +3273,7 @@
     draggingWallParallel = null;
     draggingCurveHandle = null;
     draggingFurnitureId = null;
+    overlappingFurnitureId = null;
     draggingEntourageId = null;
     resizingEntourageId = null;
     draggingStairId = null;
@@ -4058,7 +4120,7 @@
   ></canvas>
   <!-- Elevation pick mode hint chip -->
   {#if pickingElevation}
-    <div class="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-slate-800/90 text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow-lg pointer-events-none flex items-center gap-1.5">
+    <div class="absolute top-2 left-1/2 -translate-x-1/2 z-30 rounded-full border border-[#6a7d74] bg-[#24332f] px-4 py-2 text-[13px] font-medium text-[#f5f1eb] shadow-lg pointer-events-none flex items-center gap-1.5">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9H3z"/><rect x="10" y="14" width="4" height="6"/><rect x="5.5" y="13" width="3" height="3"/></svg>
       <span class="max-md:hidden">{$t('canvasHints.pick')}</span>
       <span class="md:hidden">{$t('canvasHints.pickTouch')}</span>
@@ -4092,6 +4154,35 @@
           detectedRoomsStore.update(rooms => rooms.map(r => r.id === editingRoomId ? { ...r, name: editingRoomName } : r));
           editingRoomId = null;
         }
+      }}
+      use:focusInlineEditor
+    />
+  {/if}
+  {#if editingFurnitureId}
+    <input
+      type="text"
+      class="absolute rounded border-2 border-blue-500 bg-white px-2 py-1 text-center text-sm shadow-lg outline-none"
+      style="left: {furnitureEditorPosition(editingFurnitureId).x}px; top: {furnitureEditorPosition(editingFurnitureId).y}px; transform: translate(-50%, -50%); z-index: 20; min-width: 120px;"
+      aria-label="Furniture name"
+      bind:value={editingFurnitureName}
+      onkeydown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const id = editingFurnitureId;
+          editingFurnitureId = null;
+          if (id) updateFurniture(id, { label: editingFurnitureName.trim() || undefined });
+          canvas.focus();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          editingFurnitureId = null;
+          canvas.focus();
+        }
+      }}
+      onblur={() => {
+        const id = editingFurnitureId;
+        editingFurnitureId = null;
+        if (id) updateFurniture(id, { label: editingFurnitureName.trim() || undefined });
       }}
       use:focusInlineEditor
     />
@@ -4143,86 +4234,6 @@
       }}
       use:focusInlineEditor
     />
-  {/if}
-  {#if false}
-    {@const editingText = currentFloor?.textAnnotations?.find((note) => note.id === editingTextAnnotationId)}
-    <div
-      class="absolute rounded-lg border border-blue-300 bg-white shadow-xl"
-      style="left: {editingTextAnnotationPos.x}px; top: {editingTextAnnotationPos.y}px; transform: translate(-50%, calc(-100% - 10px)); z-index: 20; width: min(420px, calc(100vw - 24px));"
-      onmousedown={(e) => e.stopPropagation()}
-    >
-      <div class="flex items-center gap-1 border-b border-gray-200 bg-gray-50 px-2 py-1.5">
-        <label class="flex items-center gap-1 text-[11px] text-gray-600" title="Font size">
-          <span aria-hidden="true">A</span>
-          <input
-            type="number"
-            min="8"
-            max="72"
-            value={editingText?.fontSize ?? 16}
-            class="w-14 rounded border border-gray-300 bg-white px-1.5 py-1 text-xs"
-            oninput={(e) => editingTextAnnotationId && updateTextAnnotation(editingTextAnnotationId, { fontSize: Math.max(8, Math.min(72, Number((e.target as HTMLInputElement).value) || 16)) })}
-          />
-        </label>
-        <label class="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-gray-300 bg-white" title="Text color">
-          <input
-            type="color"
-            value={editingText?.color ?? '#1e293b'}
-            class="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
-            aria-label="Text color"
-            oninput={(e) => editingTextAnnotationId && updateTextAnnotation(editingTextAnnotationId, { color: (e.target as HTMLInputElement).value })}
-          />
-        </label>
-        <label class="flex items-center gap-1 text-[11px] text-gray-600" title="Rotation">
-          <span aria-hidden="true">↻</span>
-          <input
-            type="number"
-            value={editingText?.rotation ?? 0}
-            class="w-14 rounded border border-gray-300 bg-white px-1.5 py-1 text-xs"
-            oninput={(e) => editingTextAnnotationId && updateTextAnnotation(editingTextAnnotationId, { rotation: Number((e.target as HTMLInputElement).value) || 0 })}
-          />
-        </label>
-        <button
-          type="button"
-          class="ml-auto rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-          title="Delete text"
-          aria-label="Delete text"
-          onclick={() => {
-            if (editingTextAnnotationId) removeTextAnnotation(editingTextAnnotationId);
-            editingTextAnnotationId = null;
-            selectedTextAnnotationId = null;
-            selectedElementId.set(null);
-          }}
-        >Delete</button>
-      </div>
-      <input
-        type="text"
-        class="block h-9 w-full rounded-b-lg px-3 text-sm outline-none"
-        aria-label={$t('canvasHints.annotation')}
-        value={editingTextAnnotationValue}
-        placeholder="Type your text..."
-        autofocus
-        oninput={(e) => {
-          editingTextAnnotationValue = (e.target as HTMLInputElement).value;
-          if (editingTextAnnotationId) updateTextAnnotation(editingTextAnnotationId, { text: editingTextAnnotationValue || 'Text' });
-        }}
-        onkeydown={(e) => {
-          e.stopPropagation();
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            if (editingTextAnnotationId) {
-              const note = currentFloor?.textAnnotations?.find((item) => item.id === editingTextAnnotationId);
-              if (note?.text === 'Text' && !editingTextAnnotationValue.trim()) removeTextAnnotation(editingTextAnnotationId);
-            }
-            editingTextAnnotationId = null;
-          }
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            editingTextAnnotationId = null;
-          }
-        }}
-        use:focusInlineEditor
-      />
-    </div>
   {/if}
   <!-- Empty state hint -->
   {#if currentFloor && !hasPlanContent(currentFloor) && !(layerVis.floorBelow && floorBelow && hasPlanContent(floorBelow))}
@@ -4412,7 +4423,7 @@
     })()}
     {#if el}
       <div
-        class="absolute z-40 flex w-max max-w-[min(460px,calc(100vw-24px))] items-center gap-0.5 overflow-x-auto rounded-xl border border-line bg-cream/95 px-1.5 py-1 shadow-[0_8px_30px_rgba(50,40,30,0.12)] backdrop-blur-md"
+        class="absolute z-40 flex w-max max-w-[min(360px,calc(100vw-16px))] items-center gap-0 overflow-x-auto rounded-lg border border-line bg-cream/95 px-1 py-0.5 shadow-[0_8px_30px_rgba(50,40,30,0.12)] backdrop-blur-md"
         style="left: {el.pos.x}px; top: {el.pos.y - 58}px; transform: translateX(-50%);"
       >
         <span class="px-1 text-[10px] font-bold uppercase tracking-[0.08em] text-muted">{el.type}</span>
@@ -4432,19 +4443,19 @@
           <div class="h-5 w-px bg-line"></div>
         {/if}
         <button
-          class="rounded border border-gray-200 px-1.5 py-1 text-[11px] text-gray-600 hover:bg-gray-50"
+          class="rounded border border-gray-200 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-50"
           title="Rotate 90 degrees counterclockwise"
           aria-label="Rotate 90 degrees counterclockwise"
           onclick={() => rotateContextSelection(-90)}
         >-90°</button>
         <button
-          class="rounded border border-gray-200 px-1.5 py-1 text-[11px] text-gray-600 hover:bg-gray-50"
+          class="rounded border border-gray-200 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-50"
           title="Rotate 90 degrees clockwise"
           aria-label="Rotate 90 degrees clockwise"
           onclick={() => rotateContextSelection(90)}
         >+90°</button>
         <button
-          class="flex h-7 items-center justify-center rounded border border-gray-200 px-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
+          class="flex h-6 items-center justify-center rounded border border-gray-200 px-1 text-[10px] text-gray-600 hover:bg-gray-50"
           title={$t('contextMenu.duplicate')}
           aria-label={$t('contextMenu.duplicate')}
           onclick={() => {
@@ -4461,7 +4472,7 @@
         </button>
         {#if el.type === 'door' && el.door}
           <button
-            class="flex h-7 items-center justify-center rounded border border-gray-200 px-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
+            class="flex h-6 items-center justify-center rounded border border-gray-200 px-1 text-[10px] text-gray-600 hover:bg-gray-50"
             title={$t('canvasActions.flipSwing')}
             aria-label={$t('canvasActions.flipSwing')}
             onclick={() => { if (el.door) updateDoor(el.door.id, { swingDirection: el.door.swingDirection === 'left' ? 'right' : 'left' }); }}
@@ -4471,7 +4482,7 @@
         {/if}
         {#if el.type === 'wall' && currentSelectedId && currentSelectedIds.size === 0}
           <button
-            class="flex h-7 items-center justify-center rounded border border-gray-200 px-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
+            class="flex h-6 items-center justify-center rounded border border-gray-200 px-1 text-[10px] text-gray-600 hover:bg-gray-50"
             title={$t('canvasActions.splitMidpoint')}
             aria-label={$t('canvasActions.splitMidpoint')}
             onclick={() => {
@@ -4486,21 +4497,27 @@
         {/if}
         {#if el.type === 'furniture' || el.type === 'object'}
           <button
-            class="flex h-7 items-center justify-center rounded border border-gray-200 px-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
-            title="Toggle lock"
-            aria-label="Toggle lock"
+            class="flex h-6 items-center justify-center gap-1 rounded border px-1 text-[10px] transition-colors {selectionLocked ? 'border-walnut bg-walnut-tint text-walnut-dark' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}"
+            title={selectionLocked ? 'Unlock selection' : 'Lock selection'}
+            aria-label={selectionLocked ? 'Unlock selection' : 'Lock selection'}
+            aria-pressed={selectionLocked}
             onclick={() => toggleSelectionLock(currentSelectedIds.size ? currentSelectedIds : new Set([currentSelectedId!]))}
-          >Lock</button>
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              {#if selectionLocked}<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>
+              {:else}<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7-2"/>{/if}
+            </svg>
+            Lock
+          </button>
         {/if}
         <div class="mx-0.5 h-5 w-px bg-gray-200"></div>
         <button
-          class="flex h-7 items-center justify-center rounded border border-red-200 px-1.5 text-[11px] font-medium text-red-600 hover:bg-red-50"
+          class="flex h-6 items-center justify-center rounded border border-gray-200 px-1.5 text-red-600 transition-colors hover:text-red-700"
           title={$t('contextMenu.delete')}
           aria-label={$t('contextMenu.delete')}
           onclick={deleteContextSelection}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/></svg>
-          Delete
         </button>
       </div>
     {/if}
@@ -4516,12 +4533,12 @@
     </div>
   {/if}
   {#if measuring}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600 text-white px-3 py-1 rounded-full text-xs shadow">
+    <div class="absolute top-2 left-1/2 -translate-x-1/2 rounded-full border border-[#6a7d74] bg-[#24332f] px-4 py-2 text-[13px] font-medium text-[#f5f1eb] shadow-lg">
       Click or tap two points to measure · M to exit · Esc to cancel
     </div>
   {/if}
   {#if annotating}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-1 rounded-full text-xs shadow">
+    <div class="absolute top-2 left-1/2 -translate-x-1/2 rounded-full border border-[#6a7d74] bg-[#24332f] px-4 py-2 text-[13px] font-medium text-[#f5f1eb] shadow-lg">
       {annotationStart ? 'Click second point to create annotation' : 'Click first point'} · N to exit · Esc to cancel
     </div>
   {/if}

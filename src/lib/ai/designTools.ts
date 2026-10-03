@@ -209,7 +209,7 @@ function designHouse(args: Record<string, any>): ToolOutcome {
         return cx > Math.min(...xs) && cx < Math.max(...xs) && cy > Math.min(...ys) && cy < Math.max(...ys);
       });
       if (!hit) continue;
-      saved.push({ ...hit.room, name: placed.name, floorTexture: FLOOR_FOR[placed.type], roomType: placed.type === 'garage' ? 'garage' : placed.type === 'store' || placed.type === 'laundry' ? 'utility' : 'indoor' });
+      saved.push({ ...hit.room, name: placed.name, floorTexture: FLOOR_FOR[placed.type], roomType: placed.type === 'garage' ? 'garage' : 'indoor' });
       if (args.furnish !== false) floor.furniture.push(...furnitureFor(placed.type, { minX: placed.x, maxX: placed.x + placed.w, minY: placed.y, maxY: placed.y + placed.d }));
     }
     floor.rooms = saved;

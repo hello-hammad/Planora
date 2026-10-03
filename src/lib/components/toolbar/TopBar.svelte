@@ -26,6 +26,7 @@
   import { saveState, saveError, lastSavedAt, manualSave, autoSave, initAutoSave } from '$lib/stores/saveStatus';
   import { initVersionHistory, stopVersionHistory, snapshotOnAction } from '$lib/stores/versionHistory';
   import VersionHistoryPanel from './VersionHistoryPanel.svelte';
+  import { projectSettings } from '$lib/stores/settings';
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -305,9 +306,9 @@
   }
 </script>
 
-<div class="relative z-40 h-14 shrink-0 border-b border-line bg-cream text-charcoal flex items-center gap-3 px-3 max-xl:gap-1.5 max-xl:px-2">
+<div class="editor-topbar relative z-40 h-14 shrink-0 border-b border-line bg-cream text-charcoal flex items-center gap-3 px-3 max-2xl:gap-1.5 max-2xl:px-2">
   <!-- ── Left: brand, breadcrumb, project name, save status ── -->
-  <div class="flex min-w-0 flex-1 items-center gap-1.5">
+  <div class="flex min-w-0 flex-1 items-center gap-1 max-2xl:gap-0.5">
     <span class="mr-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-walnut sm:flex" aria-hidden="true" title="Planora">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V5h7a4.5 4.5 0 0 1 0 9H7" /><circle cx="17.5" cy="19" r="1.6" fill="#E7A37F" stroke="none" /></svg>
     </span>
@@ -331,11 +332,11 @@
         bind:value={projectName}
         onblur={onNameBlur}
         onkeydown={onNameKeydown}
-        class="h-8 w-44 rounded-lg border border-walnut bg-white px-2 text-sm font-semibold text-charcoal outline-none ring-2 ring-walnut/15"
+        class="h-8 w-44 shrink-0 rounded-lg border border-walnut bg-white px-2 text-sm font-semibold text-charcoal outline-none ring-2 ring-walnut/15"
       />
     {:else}
       <button
-        class="min-w-0 max-w-[12rem] truncate rounded-lg px-2 py-1 text-sm font-semibold text-charcoal transition-colors hover:bg-hover max-xl:max-w-[5rem]"
+        class="min-w-[6rem] max-w-[10rem] flex-1 truncate rounded-lg px-1.5 py-1 text-sm font-semibold text-charcoal transition-colors hover:bg-hover max-xl:min-w-[4.5rem] max-xl:max-w-[7rem]"
         onclick={() => editingName = true}
         title={$t('projectToolbar.rename')}
       >{projectName}</button>
@@ -343,37 +344,44 @@
 
     <!-- Reserve the widest translated status so autosave cannot move toolbar targets. -->
     <span
-      class="ml-1 inline-grid shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-colors duration-300 max-xl:hidden {$saveState === 'saved' ? 'bg-sage-tint text-sage-ink' : $saveState === 'saving' ? 'bg-terracotta-tint text-terracotta-ink' : 'bg-ivory text-muted'}"
+      class="ml-1 inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-1 text-[10px] font-medium transition-colors duration-300 max-xl:hidden {$saveState === 'saved' ? 'bg-sage-tint text-sage-ink' : $saveState === 'saving' ? 'bg-terracotta-tint text-terracotta-ink' : 'bg-ivory text-muted'}"
       title={lastSavedText}
+      aria-label={lastSavedText}
     >
-      {#each (['saveControls.saving', 'saveControls.saved', 'saveControls.unsaved'] as const) as key}
-        <span aria-hidden="true" data-save-label={$t(key)} class="invisible col-start-1 row-start-1 whitespace-nowrap pl-3.5 before:content-[attr(data-save-label)]"></span>
-      {/each}
-      <span class="col-start-1 row-start-1 flex items-center gap-1.5 whitespace-nowrap {$saveState === 'saving' ? 'animate-pulse' : ''}">
+      <span class="flex items-center gap-1 whitespace-nowrap {$saveState === 'saving' ? 'animate-pulse' : ''}">
         <span class="h-[7px] w-[7px] shrink-0 rounded-full {$saveState === 'saved' ? 'bg-[#6F8267]' : $saveState === 'saving' ? 'bg-terracotta' : 'bg-muted/60'}" aria-hidden="true"></span>
-        {#if $saveState === 'saving'}
-          {$t('saveControls.saving')}
-        {:else if $saveState === 'saved'}
-          {$t('saveControls.saved')}
-        {:else}
-          {$t('saveControls.unsaved')}
-        {/if}
+        <span>{#if $saveState === 'saving'}
+            {$t('saveControls.saving')}
+          {:else if $saveState === 'saved'}
+            {$t('saveControls.saved')}
+          {:else}
+            {$t('saveControls.unsaved')}
+          {/if}</span>
       </span>
     </span>
   </div>
 
   <!-- ── Centre: view switches and floors ── -->
-  <div class="flex shrink-0 items-center gap-2">
+  <div class="flex shrink-0 items-center gap-2 max-2xl:gap-1">
     <!-- 2D/3D switch -->
-    <div class="flex gap-0.5 rounded-xl border border-line bg-ivory p-[3px]">
+    <div class="flex gap-0.5 rounded-xl border border-line bg-ivory p-[3px] max-2xl:gap-0 max-2xl:p-0.5">
       <button
         onclick={() => setMode('2d')}
-        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-xl:px-2.5 {mode === '2d' ? 'bg-walnut text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
+        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-2xl:px-2 max-2xl:text-xs {mode === '2d' ? 'bg-walnut text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
       >2D</button>
       <button
         onclick={() => setMode('3d')}
-        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-xl:px-2.5 {mode === '3d' ? 'bg-walnut text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
+        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-2xl:px-2 max-2xl:text-xs {mode === '3d' ? 'bg-walnut text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
       >3D</button>
+    </div>
+
+    <div class="hidden items-center gap-0.5 rounded-xl border border-line bg-ivory p-[3px] md:flex max-2xl:gap-0 max-2xl:p-0.5" role="group" aria-label={$t('settings.metricsUnit')}>
+      <button type="button" aria-pressed={$projectSettings.units === 'metric'} title={$t('settings.metric')}
+        onclick={() => projectSettings.update(current => ({ ...current, units: 'metric' }))}
+        class="h-8 rounded-[9px] px-2 text-[11px] font-semibold transition-colors max-2xl:px-1.5 max-2xl:text-[10px] {$projectSettings.units === 'metric' ? 'bg-walnut text-white shadow-sm' : 'text-muted hover:text-charcoal'}">{$t('settings.metric')}</button>
+      <button type="button" aria-pressed={$projectSettings.units === 'imperial'} title={$t('settings.imperial')}
+        onclick={() => projectSettings.update(current => ({ ...current, units: 'imperial' }))}
+        class="h-8 rounded-[9px] px-2 text-[11px] font-semibold transition-colors max-2xl:px-1.5 max-2xl:text-[10px] {$projectSettings.units === 'imperial' ? 'bg-walnut text-white shadow-sm' : 'text-muted hover:text-charcoal'}">{$t('settings.imperial')}</button>
     </div>
 
     <!-- Plan / Elevation sub-switch (2D only); mobile uses the overflow menu instead -->
@@ -381,7 +389,7 @@
       <div class="flex gap-0.5 rounded-xl border border-line bg-ivory p-[3px] max-xl:hidden">
         <button
           onclick={exitElevation}
-          class="flex h-8 items-center gap-1.5 rounded-[9px] px-2.5 text-[13px] font-semibold transition-colors {!$elevationWallId ? 'bg-white text-charcoal shadow-[0_1px_2px_rgba(50,40,30,0.15)]' : 'text-muted hover:text-charcoal'}"
+          class="flex h-8 items-center gap-1 rounded-[9px] px-2.5 text-[13px] font-semibold transition-colors max-2xl:px-1.5 max-2xl:text-xs {!$elevationWallId ? 'bg-white text-charcoal shadow-[0_1px_2px_rgba(50,40,30,0.15)]' : 'text-muted hover:text-charcoal'}"
           title={$t('toolbarView.planHint')}
           aria-label={$t('toolbarView.plan')}
           aria-pressed={!$elevationWallId}
@@ -391,7 +399,7 @@
         </button>
         <button
           onclick={enterElevation}
-          class="flex h-8 items-center gap-1.5 rounded-[9px] px-2.5 text-[13px] font-semibold transition-colors {$elevationWallId ? 'bg-white text-charcoal shadow-[0_1px_2px_rgba(50,40,30,0.15)]' : $elevationPickMode ? 'bg-terracotta-tint text-terracotta-ink ring-1 ring-terracotta/40' : 'text-muted hover:text-charcoal'}"
+          class="flex h-8 items-center gap-1 rounded-[9px] px-2.5 text-[13px] font-semibold transition-colors max-2xl:px-1.5 max-2xl:text-xs {$elevationWallId ? 'bg-white text-charcoal shadow-[0_1px_2px_rgba(50,40,30,0.15)]' : $elevationPickMode ? 'bg-walnut-tint text-walnut-dark shadow-[0_1px_2px_rgba(50,40,30,0.12)]' : 'text-muted hover:text-charcoal'}"
           title={$elevationPickMode ? $t('toolbarView.pickHint') : $t('toolbarView.elevationHint')}
           aria-label={$t('toolbarView.elevation')}
           aria-pressed={!!$elevationWallId || $elevationPickMode}
@@ -403,19 +411,19 @@
     {/if}
 
     <!-- Floor selector (in overflow menu on mobile) -->
-    <div class="flex h-[38px] items-center rounded-[10px] border border-line bg-white max-xl:hidden">
+    <div class="flex h-[38px] items-center rounded-[10px] border border-line bg-white max-2xl:h-8 max-xl:hidden">
       <span class="pl-2.5 text-walnut" aria-hidden="true">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" /></svg>
       </span>
       <select aria-label={$t('floorControls.current')} value={activeFloorId} onchange={(e) => setActiveFloor(e.currentTarget.value)}
-        class="h-full w-28 cursor-pointer bg-transparent pl-1.5 pr-1 text-[13px] font-semibold text-charcoal outline-none" title={$t('floorControls.switch')}>
+        class="h-full w-28 cursor-pointer bg-transparent pl-1.5 pr-1 text-[13px] font-semibold text-charcoal outline-none max-2xl:w-20 max-2xl:pl-1 max-2xl:text-[11px]" title={$t('floorControls.switch')}>
         {#each floors as fl}<option value={fl.id}>{fl.name}</option>{/each}
       </select>
-      <span class="pr-1 text-[11px] font-medium text-muted">{floors.length}F</span>
+      <span class="pr-1 text-[11px] font-medium text-muted max-2xl:text-[10px]">{floors.length}F</span>
       <div class="relative h-full border-l border-line" bind:this={floorMenuRef}>
         <button
           onclick={() => floorMenuOpen = !floorMenuOpen}
-          class="flex h-full w-8 items-center justify-center rounded-r-[10px] text-base text-charcoal transition-colors hover:bg-hover"
+          class="flex h-full w-8 items-center justify-center rounded-r-[10px] text-base text-charcoal transition-colors hover:bg-hover max-2xl:w-7"
           title={$t('floorControls.add')}
           aria-label={$t('floorControls.add')}
           aria-expanded={floorMenuOpen}
@@ -442,13 +450,13 @@
   </div>
 
   <!-- ── Right: history, view toggles, panels, export, save ── -->
-  <div class="flex shrink-0 items-center justify-end gap-1.5 xl:flex-1 max-xl:gap-1">
-    <div class="flex h-[38px] items-stretch overflow-hidden rounded-[10px] border border-line bg-white">
-      <button onclick={undo} class="flex w-9 items-center justify-center text-charcoal transition-colors hover:bg-hover" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
+  <div class="flex shrink-0 items-center justify-end gap-1.5 xl:flex-1 max-xl:gap-1 max-2xl:gap-0.5">
+    <div class="flex h-[38px] items-stretch overflow-hidden rounded-[10px] border border-line bg-white max-2xl:h-8">
+      <button onclick={undo} class="flex w-9 items-center justify-center text-charcoal transition-colors hover:bg-hover max-2xl:w-8" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
       </button>
       <span class="w-px bg-line" aria-hidden="true"></span>
-      <button onclick={redo} class="flex w-9 items-center justify-center text-charcoal transition-colors hover:bg-hover" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
+      <button onclick={redo} class="flex w-9 items-center justify-center text-charcoal transition-colors hover:bg-hover max-2xl:w-8" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3"/></svg>
       </button>
       {#if onToggleHistory}
@@ -456,7 +464,7 @@
         <span class="w-px bg-line max-md:hidden" aria-hidden="true"></span>
         <button
           onclick={(e) => onToggleHistory?.(e.currentTarget)}
-          class="flex w-9 items-center justify-center transition-colors max-md:hidden {historyOpen ? 'bg-walnut-tint text-walnut-dark' : 'text-charcoal hover:bg-hover'}"
+          class="flex w-9 items-center justify-center transition-colors max-md:hidden max-2xl:w-8 {historyOpen ? 'bg-walnut-tint text-walnut-dark' : 'text-charcoal hover:bg-hover'}"
           title={$t('undoHistory.title')}
           aria-label={$t('editorPanels.history')}
           aria-expanded={historyOpen}
@@ -471,7 +479,7 @@
     <!-- Snap to grid toggle -->
     <button
       onclick={() => { snapEnabled.update(v => !v); snapOn = !snapOn; }}
-      class="icon-btn max-xl:hidden {snapOn ? 'icon-btn-on' : ''}"
+      class="icon-btn max-2xl:!h-8 max-2xl:!w-8 max-xl:hidden {snapOn ? 'icon-btn-on' : ''}"
       title={`${$t('toolbarView.snap')} (${snapOn ? $t('toolbarView.on') : $t('toolbarView.off')})`}
       aria-label={$t('toolbarView.snap')}
     >
@@ -484,7 +492,7 @@
     {#if mode === '2d'}
       <button
         onclick={() => panMode.set(false)}
-        class="icon-btn max-xl:hidden {!$panMode ? 'icon-btn-on' : ''}"
+        class="icon-btn max-2xl:!h-8 max-2xl:!w-8 max-xl:hidden {!$panMode ? 'icon-btn-on' : ''}"
         title={$t('toolbarView.selectHint')}
         aria-label={$t('toolbarView.selectLabel')}
       >
@@ -495,7 +503,7 @@
     <!-- Furniture visibility toggle -->
     <button
       onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))}
-      class="icon-btn max-xl:hidden {$showFurnitureStore ? 'icon-btn-on' : ''}"
+      class="icon-btn max-2xl:!h-8 max-2xl:!w-8 max-xl:hidden {$showFurnitureStore ? 'icon-btn-on' : ''}"
       title={`${$t('toolbarView.toggleFurniture')} (${$showFurnitureStore ? $t('toolbarView.visible') : $t('toolbarView.hidden')})`}
       aria-label={$t('toolbarView.toggleFurniture')}
     >
@@ -509,7 +517,7 @@
     <!-- Version History button -->
     <button
       onclick={() => versionHistoryOpen = true}
-      class="icon-btn max-xl:hidden"
+      class="icon-btn max-2xl:!h-8 max-2xl:!w-8 max-xl:hidden"
       title={$t('versions.title')}
       aria-label={$t('versions.title')}
     >
@@ -519,7 +527,7 @@
     <!-- Area summary button -->
     <button
       onclick={() => areaOpen = true}
-      class="icon-btn max-xl:hidden"
+      class="icon-btn max-2xl:!h-8 max-2xl:!w-8 max-xl:hidden"
       title={$t('areaSummary.title')}
       aria-label={$t('areaSummary.title')}
     >
@@ -529,7 +537,7 @@
     <!-- Settings button -->
     <button
       onclick={() => settingsOpen = true}
-      class="icon-btn max-xl:hidden"
+      class="icon-btn max-2xl:!h-8 max-2xl:!w-8 max-xl:hidden"
       title={$t('settings.title')}
       aria-label={$t('settings.title')}
     >
@@ -541,7 +549,7 @@
       <button
         bind:this={moreButton}
         onclick={() => moreOpen = !moreOpen}
-        class="icon-btn {moreOpen ? 'icon-btn-on' : ''}"
+        class="icon-btn max-2xl:!h-8 max-2xl:!w-8 {moreOpen ? 'icon-btn-on' : ''}"
         title={$t('toolbarView.more')}
         aria-label={$t('toolbarView.moreActions')}
       >
@@ -576,6 +584,14 @@
             {/if}
             <div class="my-1 h-px bg-line"></div>
           {/if}
+          <div class="menu-label">{$t('settings.metricsUnit')}</div>
+          <button class="menu-item" aria-pressed={$projectSettings.units === 'metric'} onclick={() => projectSettings.update(current => ({ ...current, units: 'metric' }))}>
+            <span class="w-4">{#if $projectSettings.units === 'metric'}<AppIcon name="check" size={14} />{/if}</span>{$t('settings.metric')}
+          </button>
+          <button class="menu-item" aria-pressed={$projectSettings.units === 'imperial'} onclick={() => projectSettings.update(current => ({ ...current, units: 'imperial' }))}>
+            <span class="w-4">{#if $projectSettings.units === 'imperial'}<AppIcon name="check" size={14} />{/if}</span>{$t('settings.imperial')}
+          </button>
+          <div class="my-1 h-px bg-line"></div>
           <button class="menu-item" onclick={toggleElevationView}><span class="w-4">{#if $elevationWallId}<AppIcon name="check" size={14} />{/if}</span>{$t('toolbarView.elevationView')}</button>
           {#if onToggleHistory}
             <button class="menu-item md:hidden" aria-expanded={historyOpen} aria-label={$t('editorPanels.history')} onclick={() => { onToggleHistory?.(moreButton); moreOpen = false; }}>{$t('undoHistory.title')}</button>
@@ -593,7 +609,7 @@
     <div class="relative" bind:this={exportRef}>
       <button
         onclick={() => { exportOpen = !exportOpen; if (exportOpen) triggerTip('first-export', 300, 60); }}
-        class="flex h-[38px] items-center gap-1.5 rounded-[10px] border border-line bg-cream px-3 text-[13px] font-semibold text-charcoal transition-colors hover:bg-hover max-xl:px-2.5 {exportOpen ? 'bg-hover' : ''}"
+        class="flex h-[38px] items-center gap-1.5 rounded-[10px] border border-line bg-cream px-3 text-[13px] font-semibold text-charcoal transition-colors hover:bg-hover max-xl:px-2.5 max-2xl:h-8 max-2xl:gap-1 max-2xl:px-2 max-2xl:text-xs {exportOpen ? 'bg-hover' : ''}"
         title={$t('exportMenu.title')}
         aria-label={$t('exportMenu.title')}
       >
@@ -651,7 +667,7 @@
       {/if}
     </div>
 
-    <button onclick={save} class="h-[38px] rounded-[10px] bg-walnut px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)] transition-colors hover:bg-walnut-dark max-xl:px-3">
+    <button onclick={save} class="h-[38px] rounded-[10px] bg-walnut px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)] transition-colors hover:bg-walnut-dark max-xl:px-3 max-2xl:h-8 max-2xl:px-2.5 max-2xl:text-xs">
       {$t('saveControls.save')}
     </button>
   </div>

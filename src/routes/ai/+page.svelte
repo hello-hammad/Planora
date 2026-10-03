@@ -10,6 +10,7 @@
   import FloorPlanCanvas from '$lib/components/editor/FloorPlanCanvas.svelte';
   import AssistantChat from '$lib/components/ai/AssistantChat.svelte';
   import PlanoraLoader from '$lib/components/PlanoraLoader.svelte';
+  import AppIcon from '$lib/components/AppIcon.svelte';
   import { activeFloor, createDefaultProject, currentProject, loadProject, viewMode } from '$lib/stores/project';
   import { autoSave, markClean } from '$lib/stores/saveStatus';
   import { localStore, storageErrorMessage } from '$lib/services/datastore';
@@ -17,6 +18,7 @@
   import { resolveRoomGeometry } from '$lib/utils/roomDetection';
   import { assistantReady, assistantSettings, PROVIDERS } from '$lib/ai/assistant';
   import AssistantSettingsForm from '$lib/components/ai/AssistantSettingsForm.svelte';
+  import { projectSettings, formatArea } from '$lib/stores/settings';
 
   /**
    * Design through AI. Starts as a full-screen prompt; after the first message the
@@ -48,8 +50,20 @@
   });
 
   onMount(() => {
-    const id = new URL(window.location.href).searchParams.get('id');
-    if (!id) { phase = 'intro'; return; }
+    const params = new URL(window.location.href).searchParams;
+    const id = params.get('id');
+    if (!id) {
+      phase = 'intro';
+      if (params.get('continue') === '1') {
+        const pendingPrompt = window.sessionStorage.getItem('planora-pending-prompt');
+        if (pendingPrompt) {
+          window.sessionStorage.removeItem('planora-pending-prompt');
+          prompt = pendingPrompt;
+          void start(pendingPrompt);
+        }
+      }
+      return;
+    }
     void (async () => {
       try {
         const project = await localStore.load(id);
@@ -107,7 +121,7 @@
 
     <main class="plan-paper flex flex-1 flex-col items-center justify-center px-6 pb-20">
       <span class="mb-5 inline-flex items-center gap-2 rounded-full bg-terracotta-tint px-3 py-1 text-xs font-semibold text-terracotta-ink">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg>
+        <AppIcon name="bot" size={14} />
         Design through AI
       </span>
       <h1 class="max-w-2xl text-center text-[44px] font-bold leading-[1.1] tracking-tight max-sm:text-[32px]">Describe the home you imagine.</h1>
@@ -167,7 +181,7 @@
     <footer class="flex h-12 shrink-0 items-center gap-3 border-t border-line bg-cream px-4 text-[12px] font-medium text-muted">
       <span>{stats.rooms} room{stats.rooms === 1 ? '' : 's'}</span>
       <span class="h-4 w-px bg-line" aria-hidden="true"></span>
-      <span>{stats.area.toFixed(1)} m²</span>
+      <span>{formatArea(stats.area, $projectSettings.units)}</span>
       <span class="flex-1"></span>
       {#if $viewMode === '3d'}
         <button type="button" aria-pressed={spin} onclick={() => spin = !spin}

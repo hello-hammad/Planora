@@ -3,7 +3,7 @@ import { projectPackageBytes } from './projectPackage';
 
 /** Share with Assistant from the web editor: upload the project package and show the code and secret once. */
 export const ASSISTANT_SHARE_ENDPOINT = '/api/assistant-shares';
-export const ASSISTANT_CONNECTOR_URL = 'https://app.openplan3d.com/mcp';
+export const ASSISTANT_CONNECTOR_URL = 'https://app.planora.com/mcp';
 export const ASSISTANT_SHARE_MAX_BYTES = 64 * 1024 * 1024;
 
 export interface AssistantShare { code: string; secret: string; expiresAt: string; title: string }

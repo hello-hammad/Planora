@@ -5,6 +5,9 @@ import { renderLabAsset } from './tooling/render-lab-asset';
 import { catalogAssets } from './tooling/catalog-assets.mjs';
 
 export default defineConfig({
+  optimizeDeps: {
+    include: ['firebase/app', 'firebase/auth', 'firebase/analytics', '@lucide/svelte/icons/**'],
+  },
 	plugins: [
     {
       name: 'require-production-build',

@@ -13,7 +13,7 @@
   import type { DetailTarget } from '$lib/models/types';
   import { catalogAssetUrl } from '$lib/utils/catalogAssetUrl';
 
-  import { currentProject, activeFloor, selectedElementId, selectedRoomId, updateWall, resizeWallLength, reverseWall, updateDoor, updateWindow, updateRoom, updateFurniture, detectedRoomsStore, updateStair, updateColumn, updateBackgroundImage, setBackgroundImage, calibrationMode, calibrationPoints, updateTextAnnotation, toggleFurnitureLock, updateEntourageItem, removeElement, elevationWallId } from '$lib/stores/project';
+  import { currentProject, activeFloor, selectedElementId, selectedRoomId, updateWall, resizeWallLength, reverseWall, updateDoor, updateWindow, updateRoom, updateFurniture, detectedRoomsStore, updateStair, updateColumn, updateBackgroundImage, setBackgroundImage, calibrationMode, calibrationPoints, updateTextAnnotation, toggleFurnitureLock, updateEntourageItem, removeElement, removeRoom, elevationWallId } from '$lib/stores/project';
   import { wallLength as calcWallLength, MIN_WALL_LENGTH, type WallEndpoint } from '$lib/utils/wallEditing';
   import { openingOnWall } from '$lib/utils/wallProfiles';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
@@ -96,6 +96,7 @@
   let fixedEndpoint = $state<WallEndpoint>('start');
   let wallLengthError = $state<string | null>(null);
   let invalidWallLength = $state(false);
+  let confirmDeleteRoom = $state(false);
   $effect(() => { void selId; fixedEndpoint = 'start'; wallLengthError = null; invalidWallLength = false; });
 
   // Calculate door distances
@@ -314,7 +315,7 @@
     { name: 'Navy', color: '#1e3a8a' },
   ];
 
-  function updateDetectedRoom(id: string, updates: Partial<{ name: string; floorTexture: string; color: string }>) {
+  function updateDetectedRoom(id: string, updates: Partial<{ name: string; floorTexture: string; color: string; roomType: RoomCategory }>) {
     detectedRoomsStore.update(rooms => rooms.map(r => r.id === id ? { ...r, ...updates } : r));
   }
 
@@ -335,6 +336,14 @@
     updateDetectedRoom(selectedRoom.id, { color });
   }
 
+  function deleteSelectedRoom() {
+    if (!selectedRoom) return;
+    const roomId = selectedRoom.id;
+    removeRoom(roomId);
+    selectedRoomId.set(null);
+    confirmDeleteRoom = false;
+  }
+
   const roomTypes = [
     { id: 'living', label: 'Living Room', icon: 'sofa' },
     { id: 'bedroom', label: 'Bedroom', icon: 'bed-double' },
@@ -353,10 +362,11 @@
     if (!selectedRoom) return;
     const typeId = (e.target as HTMLSelectElement).value;
     const rt = roomTypes.find(t => t.id === typeId);
-    if (rt && rt.id !== 'custom') {
-      updateRoom(selectedRoom.id, { name: rt.label });
-      updateDetectedRoom(selectedRoom.id, { name: rt.label });
-    }
+    if (!rt) return;
+    const name = rt.id === 'custom' ? 'Custom' : rt.label;
+    const roomType: RoomCategory = rt.id === 'garage' ? 'garage' : 'indoor';
+    updateRoom(selectedRoom.id, { name, roomType });
+    updateDetectedRoom(selectedRoom.id, { name, roomType });
   }
 
   let selectedRoomType = $derived(() => {
@@ -395,7 +405,7 @@
 <div data-plan-properties class="{is3D ? 'w-80' : 'w-64'} shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-y-auto p-3 fixed md:static right-0 top-12 bottom-9 z-40 shadow-lg max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:w-full max-md:max-h-[45vh] max-md:border-l-0 max-md:border-t max-md:rounded-t-xl max-md:shadow-2xl" class:hidden={!hasSelection}>
   {#if selectedWall}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      <span class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-xs">▭</span>
+      <span class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center"><AppIcon name="brick-wall" size={15} /></span>
       {$t('wallProperties.heading')}
     </h3>
     <div class="space-y-3">
@@ -436,7 +446,7 @@
             onclick={equalizeWallHeights}
             class="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
           >
-            ↔️ {$t('wallProperties.equalize', { height: displayValue(getWallStartHeight(selectedWall)), unit: unitLabel() })}
+            <AppIcon name="move-horizontal" size={14} /> {$t('wallProperties.equalize', { height: displayValue(getWallStartHeight(selectedWall)), unit: unitLabel() })}
           </button>
         {/if}
         <button
@@ -731,24 +741,24 @@
           onclick={() => { if (selectedFurniture) updateFurniture(selectedFurniture.id, { rotation: selectedFurniture.rotation - 90 }); }}
           class="flex-1 px-2 py-1.5 border border-gray-200 rounded text-sm hover:bg-gray-50 transition-colors"
           title={$t('furnitureProperties.rotateLeft')}
-        >↺ 90°</button>
+        ><AppIcon name="rotate-ccw" size={14} /> 90°</button>
         <button
           onclick={() => { if (selectedFurniture) updateFurniture(selectedFurniture.id, { rotation: selectedFurniture.rotation + 90 }); }}
           class="flex-1 px-2 py-1.5 border border-gray-200 rounded text-sm hover:bg-gray-50 transition-colors"
           title={$t('furnitureProperties.rotateRight')}
-        >↻ 90°</button>
+        ><AppIcon name="rotate-cw" size={14} /> 90°</button>
       </div>
       <div class="flex gap-1">
         <button
           onclick={() => { if (selectedFurniture) { const s = selectedFurniture.scale; updateFurniture(selectedFurniture.id, { scale: { x: s.x * -1, y: s.y, z: s.z } }); } }}
           class="flex-1 px-2 py-1.5 border border-gray-200 rounded text-sm hover:bg-gray-50 transition-colors"
           title={$t('furnitureProperties.flipHorizontal')}
-        >↔ {$t('furnitureProperties.flipH')}</button>
+        ><AppIcon name="flip-horizontal-2" size={14} /> {$t('furnitureProperties.flipH')}</button>
         <button
           onclick={() => { if (selectedFurniture) { const s = selectedFurniture.scale; updateFurniture(selectedFurniture.id, { scale: { x: s.x, y: s.y * -1, z: s.z } }); } }}
           class="flex-1 px-2 py-1.5 border border-gray-200 rounded text-sm hover:bg-gray-50 transition-colors"
           title={$t('furnitureProperties.flipVertical')}
-        >↕ {$t('furnitureProperties.flipV')}</button>
+        ><AppIcon name="flip-vertical-2" size={14} /> {$t('furnitureProperties.flipV')}</button>
       </div>
       
       <!-- Reset button -->
@@ -765,30 +775,44 @@
       <span class="w-6 h-6 bg-green-100 rounded flex items-center justify-center text-xs"><AppIcon name="square" size={16} /></span>
       {$t('roomProperties.heading')}
     </h3>
+    {#if confirmDeleteRoom}
+      <div class="mb-3 space-y-2 rounded-lg border border-red-200 bg-red-50 p-2" role="group" aria-label={$t('roomProperties.deleteRoom')}>
+        <p class="text-[13px] leading-relaxed text-[#e8e6e2]">{$t('roomProperties.deleteConfirm')}</p>
+        <div class="flex gap-2">
+          <button type="button" class="flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm font-semibold text-gray-700 hover:bg-white" onclick={() => confirmDeleteRoom = false}>{$t('roomProperties.cancelDelete')}</button>
+          <button type="button" class="flex-1 rounded bg-red-700 px-2 py-1.5 text-sm font-semibold text-white hover:bg-red-800" onclick={deleteSelectedRoom}>{$t('roomProperties.confirmDelete')}</button>
+        </div>
+      </div>
+    {:else}
+      <button type="button" class="mb-3 w-full rounded border border-gray-400 px-2 py-1.5 text-sm font-semibold text-[#e7e4df] transition-colors hover:text-red-500" onclick={() => confirmDeleteRoom = true}>{$t('roomProperties.deleteRoom')}</button>
+    {/if}
     <div class="space-y-3">
       <label class="block">
-        <span class="text-xs text-gray-500">{$t('roomProperties.type')}</span>
+        <span class="text-[13px] font-semibold text-[#e8e6e2]">{$t('roomProperties.type')}</span>
         <select value={selectedRoomType()} onchange={onRoomType} class="w-full px-2 py-1 border border-gray-200 rounded text-sm">
           {#each roomTypes as rt}
-            <option value={rt.id}>{rt.icon} {$t(roomTypeLabels[rt.id])}</option>
+            <option value={rt.id}>{$t(roomTypeLabels[rt.id])}</option>
           {/each}
         </select>
+        <span class="mt-1 block text-[13px] leading-relaxed text-[#e8e6e2]">{$t('roomProperties.typeHelp')}</span>
       </label>
       <label class="block">
-        <span class="text-xs text-gray-500">{$t('roomProperties.name')}</span>
+        <span class="text-[13px] font-semibold text-[#e8e6e2]">{$t('roomProperties.name')}</span>
         <input type="text" value={selectedRoom.name} oninput={onRoomName} class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
+        <span class="mt-1 block text-[13px] leading-relaxed text-[#e8e6e2]">{$t('roomProperties.nameHelp')}</span>
       </label>
+      <p class="rounded bg-white/10 px-2 py-1.5 text-[13px] text-[#e8e6e2]">{$t('roomProperties.planLabel')}: <strong>{selectedRoom.name}</strong></p>
       <label class="block">
-        <span class="text-xs text-gray-500">{$t('roomProperties.category')}</span>
-        <select value={selectedRoom.roomType ?? 'indoor'} onchange={(e) => { if (selectedRoom) { const v = (e.target as HTMLSelectElement).value as RoomCategory; updateRoom(selectedRoom.id, { roomType: v }); updateDetectedRoom(selectedRoom.id, { roomType: v } as any); } }} class="w-full px-2 py-1 border border-gray-200 rounded text-sm">
-          <option value="indoor"><AppIcon name="house" size={16} /> {$t('areaSummary.indoor')}</option>
-          <option value="outdoor"><AppIcon name="trees" size={16} /> {$t('areaSummary.outdoor')}</option>
-          <option value="garage"><AppIcon name="car" size={16} /> {$t('areaSummary.garage')}</option>
-          <option value="utility"><AppIcon name="wrench" size={16} /> {$t('areaSummary.utility')}</option>
+        <span class="text-[13px] font-semibold text-[#e8e6e2]">{$t('roomProperties.category')}</span>
+        <select value={selectedRoom.roomType ?? 'indoor'} onchange={(e) => { if (selectedRoom) { const v = (e.target as HTMLSelectElement).value as RoomCategory; updateRoom(selectedRoom.id, { roomType: v }); updateDetectedRoom(selectedRoom.id, { roomType: v }); } }} class="w-full px-2 py-1 border border-gray-200 rounded text-sm">
+          <option value="indoor">{$t('areaSummary.indoor')}</option>
+          <option value="outdoor">{$t('areaSummary.outdoor')}</option>
+          <option value="garage">{$t('areaSummary.garage')}</option>
         </select>
+        <span class="mt-1 block text-[13px] leading-relaxed text-[#e8e6e2]">{$t('roomProperties.categoryHelp')}</span>
       </label>
       <div>
-        <span class="text-xs text-gray-500">{$t('roomProperties.area')}</span>
+        <span class="text-[13px] font-semibold text-[#e8e6e2]">{$t('roomProperties.area')}</span>
         <p class="text-sm text-gray-700">{formatArea(selectedRoom.area, settings.units)}</p>
       </div>
       <!-- Room Color -->

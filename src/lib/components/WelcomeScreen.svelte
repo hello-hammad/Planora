@@ -10,6 +10,7 @@
   import { base } from '$app/paths';
   import { createDefaultProject } from '$lib/stores/project';
   import { houseTemplates } from '$lib/utils/houseTemplates';
+  import { projectSettings, formatArea } from '$lib/stores/settings';
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -135,7 +136,7 @@
               <div class="font-semibold text-gray-800">{templateLabels[template.name] ? $t(templateLabels[template.name].name) : template.name}</div>
               <div class="text-xs text-gray-400">{templateLabels[template.name] ? $t(templateLabels[template.name].description) : template.description}</div>
             </div>
-            <span class="text-xs font-medium text-blue-500 bg-blue-50 px-2 py-1 rounded-lg shrink-0">{template.area}</span>
+            <span class="text-xs font-medium text-blue-500 bg-blue-50 px-2 py-1 rounded-lg shrink-0">~{formatArea(template.area, $projectSettings.units)}</span>
           </button>
         {/each}
       </div>
@@ -152,7 +153,7 @@
           onclick={startFromScratch}
           class="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
         >
-          <span class="text-walnut"><AppIcon name="sparkles" size={24} /></span>
+          <span class="text-walnut"><AppIcon name="plus" size={24} /></span>
           <div>
             <div class="font-semibold text-gray-800">{$t('welcome.startFromScratch')}</div>
             <div class="text-xs text-gray-400">{$t('welcome.startFromScratchDesc')}</div>

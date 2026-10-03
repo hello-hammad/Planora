@@ -6,6 +6,7 @@ import AppWindowIcon from '@lucide/svelte/icons/app-window';
 import ArchiveIcon from '@lucide/svelte/icons/archive';
 import ArmchairIcon from '@lucide/svelte/icons/armchair';
 import ArrowDownToLineIcon from '@lucide/svelte/icons/arrow-down-to-line';
+import ArrowUpToLineIcon from '@lucide/svelte/icons/arrow-up-to-line';
 import BathIcon from '@lucide/svelte/icons/bath';
 import BedIcon from '@lucide/svelte/icons/bed';
 import BedDoubleIcon from '@lucide/svelte/icons/bed-double';
@@ -13,6 +14,7 @@ import BedSingleIcon from '@lucide/svelte/icons/bed-single';
 import BellIcon from '@lucide/svelte/icons/bell';
 import BikeIcon from '@lucide/svelte/icons/bike';
 import BirdIcon from '@lucide/svelte/icons/bird';
+import BotIcon from '@lucide/svelte/icons/bot';
 import BoxIcon from '@lucide/svelte/icons/box';
 import BrickWallIcon from '@lucide/svelte/icons/brick-wall';
 import BuildingIcon from '@lucide/svelte/icons/building';
@@ -48,6 +50,8 @@ import FileDownIcon from '@lucide/svelte/icons/file-down';
 import FileUpIcon from '@lucide/svelte/icons/file-up';
 import FlameIcon from '@lucide/svelte/icons/flame';
 import FlashlightIcon from '@lucide/svelte/icons/flashlight';
+import FlipHorizontal2Icon from '@lucide/svelte/icons/flip-horizontal-2';
+import FlipVertical2Icon from '@lucide/svelte/icons/flip-vertical-2';
 import FlowerIcon from '@lucide/svelte/icons/flower';
 import Flower2Icon from '@lucide/svelte/icons/flower-2';
 import FolderOpenIcon from '@lucide/svelte/icons/folder-open';
@@ -100,6 +104,7 @@ import PrinterIcon from '@lucide/svelte/icons/printer';
 import RectangleVerticalIcon from '@lucide/svelte/icons/rectangle-vertical';
 import Redo2Icon from '@lucide/svelte/icons/redo-2';
 import RefrigeratorIcon from '@lucide/svelte/icons/refrigerator';
+import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 import Rows3Icon from '@lucide/svelte/icons/rows-3';
 import RulerIcon from '@lucide/svelte/icons/ruler';
@@ -113,6 +118,7 @@ import ShowerHeadIcon from '@lucide/svelte/icons/shower-head';
 import SignpostIcon from '@lucide/svelte/icons/signpost';
 import SofaIcon from '@lucide/svelte/icons/sofa';
 import SparklesIcon from '@lucide/svelte/icons/sparkles';
+import SplineIcon from '@lucide/svelte/icons/spline';
 import SpeakerIcon from '@lucide/svelte/icons/speaker';
 import SproutIcon from '@lucide/svelte/icons/sprout';
 import SquareIcon from '@lucide/svelte/icons/square';
@@ -154,6 +160,7 @@ export const icons = {
   'archive': ArchiveIcon,
   'armchair': ArmchairIcon,
   'arrow-down-to-line': ArrowDownToLineIcon,
+  'arrow-up-to-line': ArrowUpToLineIcon,
   'bath': BathIcon,
   'bed': BedIcon,
   'bed-double': BedDoubleIcon,
@@ -161,6 +168,7 @@ export const icons = {
   'bell': BellIcon,
   'bike': BikeIcon,
   'bird': BirdIcon,
+  'bot': BotIcon,
   'box': BoxIcon,
   'brick-wall': BrickWallIcon,
   'building': BuildingIcon,
@@ -196,6 +204,8 @@ export const icons = {
   'file-up': FileUpIcon,
   'flame': FlameIcon,
   'flashlight': FlashlightIcon,
+  'flip-horizontal-2': FlipHorizontal2Icon,
+  'flip-vertical-2': FlipVertical2Icon,
   'flower': FlowerIcon,
   'flower-2': Flower2Icon,
   'folder-open': FolderOpenIcon,
@@ -248,6 +258,7 @@ export const icons = {
   'rectangle-vertical': RectangleVerticalIcon,
   'redo-2': Redo2Icon,
   'refrigerator': RefrigeratorIcon,
+  'rotate-ccw': RotateCcwIcon,
   'rotate-cw': RotateCwIcon,
   'rows-3': Rows3Icon,
   'ruler': RulerIcon,
@@ -261,6 +272,7 @@ export const icons = {
   'signpost': SignpostIcon,
   'sofa': SofaIcon,
   'sparkles': SparklesIcon,
+  'spline': SplineIcon,
   'speaker': SpeakerIcon,
   'sprout': SproutIcon,
   'square': SquareIcon,

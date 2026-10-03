@@ -114,11 +114,11 @@
 
 {#snippet addButton(label: string, onclick: () => void, active = false, disabled = false, title = '')}
   <button type="button" {onclick} {disabled} {title} aria-pressed={active}
-    class="flex h-9 items-center justify-center rounded-[10px] border px-2 text-[11.5px] font-semibold transition-colors disabled:opacity-40 {active ? 'border-walnut bg-walnut-tint text-walnut-dark' : 'border-line bg-white text-charcoal hover:bg-hover'}">{label}</button>
+    class="flex h-10 items-center justify-center rounded-[10px] border px-2 ui-control-label transition-colors disabled:opacity-40 {active ? 'border-walnut bg-walnut-tint text-walnut-dark' : 'border-line bg-white text-charcoal hover:bg-hover'}">{label}</button>
 {/snippet}
 
 <div class="space-y-4">
-  {#if status}<p role="status" class="rounded-[10px] bg-sage-tint px-3 py-2 text-xs font-medium text-sage-ink">{status}</p>{/if}
+  {#if status}<p role="status" class="rounded-[10px] bg-sage-tint px-3 py-2 ui-helper-text font-medium text-sage-ink">{status}</p>{/if}
 
   {#if !board}
     <!-- Board list -->
@@ -130,18 +130,18 @@
               {#each b.items.slice(0, 4) as item (item.id)}<span style={preview(item)}></span>{/each}
             </span>
             <span class="min-w-0">
-              <span class="block truncate text-sm font-bold text-charcoal">{b.name}</span>
-              <span class="block truncate text-[11px] text-muted">{[roomName(b.roomId), `${b.items.length} item${b.items.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</span>
+              <span class="block truncate ui-card-title">{b.name}</span>
+              <span class="block truncate ui-card-meta">{[roomName(b.roomId), `${b.items.length} item${b.items.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</span>
             </span>
           </button>
         {/each}
       </div>
     {:else}
-      <p class="rounded-[12px] border border-dashed border-line p-4 text-center text-xs text-muted">Collect finishes, furniture, photos and notes for each room, then apply them or share the board as an image.</p>
+      <p class="rounded-[12px] border border-dashed border-line p-4 text-center ui-helper-text">Collect finishes, furniture, photos and notes for each room, then apply them or share the board as an image.</p>
     {/if}
 
     <form class="space-y-2 rounded-[12px] border border-line bg-white p-3" onsubmit={(e) => { e.preventDefault(); create(); }}>
-      <span class="block text-xs font-bold text-charcoal">New board</span>
+      <span class="block ui-control-label">New board</span>
       <input bind:value={newName} placeholder="Board name, e.g. Living room" aria-label="Board name"
         class="h-9 w-full rounded-[10px] border border-line bg-cream px-3 text-sm text-charcoal outline-none focus:border-walnut" />
       <select bind:value={newRoom} aria-label="Room for this board" class="h-9 w-full rounded-[10px] border border-line bg-cream px-2 text-sm text-charcoal">
@@ -166,13 +166,13 @@
         <option value="">Not linked to a room</option>
         {#each rooms as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
       </select>
-      <button type="button" class="h-9 shrink-0 rounded-[10px] bg-walnut px-3 text-xs font-semibold text-white hover:bg-walnut-dark disabled:opacity-40"
+      <button type="button" class="h-10 shrink-0 rounded-[10px] bg-walnut px-3 text-[13px] font-semibold text-white hover:bg-walnut-dark disabled:opacity-40"
         disabled={!board.roomId} title={board.roomId ? 'Apply this board’s wall finish and floor to the room' : 'Link a room first'} onclick={apply}>Apply to room</button>
     </div>
 
     <!-- Add to board -->
     <div>
-      <span class="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-muted">Add to board</span>
+      <span class="block ui-section-heading">Add to board</span>
       <div class="grid grid-cols-3 gap-1.5">
         {@render addButton('Wall finish', addSelectedWall, picker === 'wall', false, selectedWall ? 'Add the selected wall’s finish' : 'Choose a wall finish')}
         {@render addButton('Floor', addSelectedFloor, picker === 'floor', false, selectedRoom ? 'Add the selected room’s floor' : 'Choose a floor')}
@@ -201,14 +201,14 @@
       {:else if picker === 'color'}
         <div class="mt-2 flex items-center gap-2 rounded-[12px] border border-line bg-white p-2">
           <input type="color" bind:value={chipColor} aria-label="Colour" class="h-8 w-10 cursor-pointer rounded border border-line" />
-          <span class="flex-1 font-mono text-xs text-muted">{chipColor}</span>
-          <button type="button" class="h-8 rounded-lg bg-walnut px-3 text-xs font-semibold text-white" onclick={() => add({ kind: 'color', label: chipColor.toUpperCase(), color: chipColor })}>Add</button>
+          <span class="flex-1 font-mono ui-card-meta">{chipColor}</span>
+          <button type="button" class="h-9 rounded-lg bg-walnut px-3 ui-control-label text-white" onclick={() => add({ kind: 'color', label: chipColor.toUpperCase(), color: chipColor })}>Add</button>
         </div>
       {:else if picker === 'note'}
         <form class="mt-2 space-y-2 rounded-[12px] border border-line bg-white p-2" onsubmit={(e) => { e.preventDefault(); if (noteText.trim()) { add({ kind: 'note', label: 'Note', note: noteText.trim() }); noteText = ''; } }}>
           <textarea bind:value={noteText} rows="3" placeholder="e.g. Keep the lounge bright; linen curtains" aria-label="Note"
-            class="w-full resize-none rounded-lg border border-line bg-cream p-2 text-xs text-charcoal outline-none focus:border-walnut"></textarea>
-          <button type="submit" class="h-8 w-full rounded-lg bg-walnut text-xs font-semibold text-white">Add note</button>
+            class="w-full resize-none rounded-lg border border-line bg-cream p-2 text-[13px] text-charcoal outline-none focus:border-walnut"></textarea>
+          <button type="submit" class="h-9 w-full rounded-lg bg-walnut ui-control-label text-white">Add note</button>
         </form>
       {/if}
     </div>
@@ -229,11 +229,11 @@
               <div class="h-20" style={preview(item)}></div>
             {/if}
             <div class="p-2">
-              <span class="block truncate text-[11.5px] font-bold text-charcoal">{item.label}</span>
+              <span class="block truncate text-[13px] font-bold text-charcoal">{item.label}</span>
               {#if item.kind !== 'note'}
                 <input value={item.note ?? ''} placeholder="Add a caption" aria-label={`Caption for ${item.label}`}
                   onchange={(e) => updateBoardItem(board.id, item.id, { note: (e.target as HTMLInputElement).value || undefined })}
-                  class="mt-0.5 w-full rounded border border-transparent bg-transparent px-0.5 text-[11px] text-muted hover:border-line focus:border-walnut focus:outline-none" />
+                  class="mt-0.5 w-full rounded border border-transparent bg-transparent px-0.5 text-xs text-muted hover:border-line focus:border-walnut focus:outline-none" />
               {/if}
             </div>
             <button type="button" aria-label={`Remove ${item.label}`} onclick={() => removeBoardItem(board.id, item.id)}
@@ -242,16 +242,16 @@
         {/each}
       </div>
     {:else}
-      <p class="rounded-[12px] border border-dashed border-line p-4 text-center text-xs text-muted">This board is empty. Add a wall finish, floor, furniture, a photo or a note.</p>
+      <p class="rounded-[12px] border border-dashed border-line p-4 text-center ui-helper-text">This board is empty. Add a wall finish, floor, furniture, a photo or a note.</p>
     {/if}
 
     <div class="grid grid-cols-2 gap-2">
-      <button type="button" class="h-9 rounded-[10px] border border-line bg-white text-xs font-semibold text-charcoal hover:bg-hover disabled:opacity-40"
+      <button type="button" class="h-10 rounded-[10px] border border-line bg-white text-[13px] font-semibold text-charcoal hover:bg-hover disabled:opacity-40"
         disabled={busy || !board.items.length} onclick={exportImage}>Export image</button>
       {#if confirmDelete}
-        <button type="button" class="h-9 rounded-[10px] bg-danger text-xs font-semibold text-white" onclick={() => { deleteBoard(board.id); openId = null; confirmDelete = false; }}>Confirm delete</button>
+        <button type="button" class="h-10 rounded-[10px] bg-danger text-[13px] font-semibold text-white" onclick={() => { deleteBoard(board.id); openId = null; confirmDelete = false; }}>Confirm delete</button>
       {:else}
-        <button type="button" class="h-9 rounded-[10px] border border-line bg-white text-xs font-semibold text-danger hover:bg-hover" onclick={() => confirmDelete = true}>Delete board</button>
+        <button type="button" class="h-10 rounded-[10px] border border-line bg-white text-[13px] font-semibold text-danger hover:bg-hover" onclick={() => confirmDelete = true}>Delete board</button>
       {/if}
     </div>
   {/if}

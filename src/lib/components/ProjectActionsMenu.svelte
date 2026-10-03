@@ -63,16 +63,16 @@
   }}
   aria-label={$t('library.actions', { name: name || $t('library.untitled') })}
   aria-haspopup="menu" aria-expanded={open} aria-controls={open ? id : undefined}
-  class="absolute top-3 right-3 w-8 h-8 bg-cream/90 backdrop-blur rounded-lg shadow-sm border border-line flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-gray-50 disabled:opacity-40">
-  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-muted"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+  class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#71808a] bg-[#3d4a4e] shadow-sm backdrop-blur transition-opacity hover:bg-[#47565b] focus-visible:opacity-100 disabled:opacity-40 md:opacity-0 md:group-hover:opacity-100">
+  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-[#f3eee7]"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
 </button>
 {#if open}
   <div bind:this={menu} {id} role="menu" tabindex="-1" aria-label={$t('library.actions', { name: name || $t('library.untitled') })}
-    onkeydown={keydown} class="absolute top-12 right-3 bg-cream rounded-[12px] shadow-[0_12px_40px_rgba(50,40,30,0.14)] border border-line py-1 w-40 z-50">
+    onkeydown={keydown} class="absolute top-12 right-3 z-50 w-40 rounded-[12px] border border-[#69757a] bg-[#2f383a] py-1 shadow-[0_12px_40px_rgba(11,14,16,0.32)]">
     {#each actions as action}
       <button type="button" role="menuitem" tabindex="-1"
         onclick={() => { close(true); onaction(action); }}
-        class="w-full px-3 py-2 text-sm text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500 {action === 'delete' ? 'text-red-500 hover:bg-red-50 focus:bg-red-50' : 'text-gray-700 hover:bg-gray-50 focus:bg-gray-50'}">
+        class="w-full px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none {action === 'delete' ? 'text-[#f39a8a] hover:bg-[#4b2f2b] focus:bg-[#4b2f2b]' : 'text-[#f3eee7] hover:bg-[#46555c] focus:bg-[#46555c]'}">
         {$t(`library.${action}`)}
       </button>
     {/each}

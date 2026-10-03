@@ -32,7 +32,8 @@ export function renderPrintPage(canvas: HTMLCanvasElement, project: Project, opt
   ctx.fillText(floor.name, 12, 22, pageWidth - 70);
   ctx.textAlign = 'right';
   ctx.fillText(translate(language, 'print.sheetScale', { value: options.scale === 'fit' ? translate(language, 'print.fit') : layout.scaleLabel }), pageWidth - 12, 16);
-  ctx.fillText(new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en'), pageWidth - 12, 22);
+  const dateLocale = language === 'pt' ? 'pt-BR' : language === 'ur' ? 'ur-PK' : 'en';
+  ctx.fillText(new Date().toLocaleDateString(dateLocale), pageWidth - 12, 22);
   ctx.strokeStyle = '#cbd5e1';
   ctx.lineWidth = 0.25;
   ctx.strokeRect(area.x, area.y, area.width, area.height);

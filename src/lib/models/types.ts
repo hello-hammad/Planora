@@ -108,6 +108,7 @@ export interface FurnitureItem {
   details?: ItemDetails;
   id: string;
   catalogId: string;
+  label?: string;
   /** Original unsupported import category, used only by the imported_object preview. */
   sourceCategory?: string;
   position: Point;
@@ -133,11 +134,12 @@ export interface Stair {
   id: string;
   position: Point;
   rotation: number;
-  width: number;   // default 100cm
-  depth: number;   // default 300cm
+  width: number;   // default 50cm
+  depth: number;   // default 120cm
   riserCount: number; // default 14
   direction: 'up' | 'down';
   stairType: StairType; // default 'straight'
+  locked?: boolean;
 }
 
 export interface Column {
@@ -148,6 +150,7 @@ export interface Column {
   diameter: number;  // cm (for round) or side length (for square)
   height: number;    // cm
   color: string;
+  locked?: boolean;
 }
 
 export interface Measurement {

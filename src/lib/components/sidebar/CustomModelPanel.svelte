@@ -4,6 +4,7 @@
   import { t, locale } from '$lib/i18n';
   import { customModelError } from '$lib/i18n/customModelMessages';
   import { currentProject, commitItemDetails, canvasCamX, canvasCamY, selectedElementId, selectedElementIds, selectedTool } from '$lib/stores/project';
+  import { projectSettings, formatLength } from '$lib/stores/settings';
   import { getSnapshots } from '$lib/stores/versionHistory';
   import { modalDialog } from '$lib/utils/modalDialog';
   import type { PreparedCustomModel } from '$lib/services/customModelImport';
@@ -91,7 +92,7 @@
   {#each $currentProject?.customModels ?? [] as model (model.id)}
     <div class="rounded border border-gray-200 p-2 text-xs">
       <strong class="break-words">{model.name}</strong>
-      <p>{model.width.toFixed(1)} × {model.depth.toFixed(1)} × {model.height.toFixed(1)} cm</p>
+      <p>{formatLength(model.width, $projectSettings.units)} × {formatLength(model.depth, $projectSettings.units)} × {formatLength(model.height, $projectSettings.units)}</p>
       {#if model.attribution}<p class="break-words">{model.attribution}</p>{/if}
       {#if model.license}<p class="break-words">{model.license}</p>{/if}
       {#if model.sourceUrl}<a class="text-blue-700 underline" href={model.sourceUrl} target="_blank" rel="noopener noreferrer">{$t('customModel.source')}</a>{/if}
@@ -110,7 +111,7 @@
     {#if busy}<p role="status" class="my-4">{$t('customModel.loading')}</p>{/if}
     {#if prepared}
       {#if Preview}<Preview model={prepared} />{/if}
-      <p class="my-2 text-xs text-gray-600">{$t('customModel.dimensions', { width: (prepared.dimensions.width * 100).toFixed(1), depth: (prepared.dimensions.depth * 100).toFixed(1), height: (prepared.dimensions.height * 100).toFixed(1) })}</p>
+      <p class="my-2 text-xs text-gray-600">{$t('customModel.dimensions', { width: formatLength(prepared.dimensions.width * 100, $projectSettings.units), depth: formatLength(prepared.dimensions.depth * 100, $projectSettings.units), height: formatLength(prepared.dimensions.height * 100, $projectSettings.units) })}</p>
       <form onsubmit={event => { event.preventDefault(); void admit(); }} class="space-y-2">
         <label class="block text-sm">{$t('customModel.name')}<input required maxlength="256" bind:value={name} class="block w-full rounded border p-2" /></label>
         <label class="block text-sm">{$t('customModel.attribution')}<textarea maxlength="2048" bind:value={attribution} class="block w-full rounded border p-2"></textarea></label>

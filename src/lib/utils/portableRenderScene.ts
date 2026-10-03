@@ -1,4 +1,5 @@
-import { BoxGeometry, Matrix4, Mesh, Object3D, Vector3 } from 'three';
+import { BoxGeometry, Matrix4, Mesh, Vector3 } from 'three';
+import type { Object3D } from 'three';
 
 type Material = 'wall' | 'floor' | 'proxy';
 export interface PortableRenderMesh { name: string; material: Material; vertices: number[][]; faces: number[][] }

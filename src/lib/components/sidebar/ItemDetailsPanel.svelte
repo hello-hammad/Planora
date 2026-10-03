@@ -105,6 +105,7 @@
     <label class="block text-xs text-gray-600">{$t('itemDetails.notes')}
       <textarea value={details.note ?? ''} rows="3" maxlength="20000" oninput={e => save({ note: e.currentTarget.value || null })} class="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm"></textarea>
     </label>
+    <p class="-mt-2 text-[13px] leading-relaxed text-[#e8e6e2]">{$t('itemDetails.notesHelp')}</p>
   {/if}
   {#if supportsCost}
     <label class="block text-xs text-gray-600">{$t('itemDetails.cost')}
@@ -129,14 +130,15 @@
         {#each ROOM_TYPES as value}<option {value}>{$t(itemDetailLabels[value])}</option>{/each}
       </select>
     </label>
+    <p class="-mt-2 text-[13px] leading-relaxed text-[#e8e6e2]">{$t('itemDetails.useHelp')}</p>
     <label class="block text-xs text-gray-600">{$t('itemDetails.ceiling')} ({imperial ? 'in' : 'cm'})
       <input type="number" min="0" step="any" placeholder={$t('itemDetails.default')} value={details.ceilingHeight == null ? '' : details.ceilingHeight / (imperial ? 2.54 : 1)} oninput={e => optionalNumber(e, 'ceilingHeight')} onblur={e => optionalNumber(e, 'ceilingHeight')} class="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm" />
     </label>
-    <p class="text-xs text-gray-500">{$t('itemDetails.ceilingHelp')}</p>
+    <p class="text-[13px] leading-relaxed text-[#e8e6e2]">{$t('itemDetails.ceilingHelp')}</p>
   {/if}
   {#if supportsPhotos}
     <div class="space-y-2">
-      <h4 class="text-xs font-medium text-gray-600">{$t('itemPhotos.heading', { count: photos.length })}</h4>
+      <h4 class="text-[13px] font-semibold text-[#e8e6e2]">{$t('itemPhotos.heading', { count: photos.length })}</h4>
       {#each photos as name, index (name)}
         {@const data = assets[`assets/${name}`]}
         {@const preview = photoPreview(data)}
@@ -152,13 +154,13 @@
       {/each}
       <input bind:this={input} type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" aria-label={$t('itemPhotos.choose')} onchange={addPhoto} class="hidden" />
       <button disabled={busy} onclick={() => input?.click()} class="rounded border border-blue-300 px-3 py-2 text-sm text-blue-700 disabled:opacity-50">{busy ? $t('itemPhotos.preparing') : $t('itemPhotos.add')}</button>
-      <p class="text-xs text-gray-500">{$t('itemPhotos.help')}</p>
-      <p class="text-xs text-gray-500">{$t('itemPhotos.retentionHelp')}</p>
+      <p class="text-[13px] leading-relaxed text-[#e8e6e2]">{$t('itemPhotos.help')}</p>
+      <p class="text-[13px] leading-relaxed text-[#e8e6e2]">{$t('itemPhotos.retentionHelp')}</p>
       {#if retained.length}
         <details ontoggle={e => retainedOpen = e.currentTarget.open} class="rounded border border-gray-200 p-2">
-          <summary class="cursor-pointer text-xs font-medium text-gray-600">{$t('retainedFiles.summary', { count: retained.length, size: attachmentMiB })}</summary>
+          <summary class="cursor-pointer text-[13px] font-semibold text-[#e8e6e2]">{$t('retainedFiles.summary', { count: retained.length, size: attachmentMiB })}</summary>
           {#if retainedOpen}
-            <p class="mt-2 text-xs text-gray-500">{$t('retainedFiles.budget')}</p>
+            <p class="mt-2 text-[13px] leading-relaxed text-[#e8e6e2]">{$t('retainedFiles.budget')}</p>
             {#each retained as name (name)}
               {@const preview = photoPreview(assets[`assets/${name}`])}
               <div class="mt-3 border-t border-gray-100 pt-2">

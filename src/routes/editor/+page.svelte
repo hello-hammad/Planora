@@ -43,10 +43,14 @@
     if (panelSection) railActive = action;
     if (action === 'project') window.location.href = `${base}/`;
     if (panelSection) {
+      showLayers = false;
       buildPanelTab = action === 'build' ? 'draw' : action === 'styleboards' ? 'boards' : action;
-      buildPanelOpen = !(action === 'build' && wasActive && buildPanelOpen);
+      buildPanelOpen = !(wasActive && buildPanelOpen);
     }
-    if (action === 'info') showLayers = !showLayers;
+    if (action === 'info') {
+      showLayers = !showLayers;
+      if (showLayers) buildPanelOpen = false;
+    }
     if (action === 'history') toggleHistory(trigger);
     if (action === 'help') showHelp = !showHelp;
     if (action === 'exports') commandPaletteOpen = true;
@@ -80,10 +84,9 @@
     showUndoHistory = !showUndoHistory;
   }
 
-  // Desktop (md+): BuildPanel is docked beside the rail and starts open.
-  // Mobile (< md): it becomes an off-canvas drawer toggled by the rail or the Tools FAB.
+  // The panel is closed initially and can be opened from the rail or Tools FAB.
   const isCompact = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
-  let buildPanelOpen = $state(typeof window !== 'undefined' && !isCompact());
+  let buildPanelOpen = $state(false);
   // On mobile, close the drawer once the user has picked a tool / item so the canvas is usable
   selectedTool.subscribe((tool) => {
     if (buildPanelOpen && isCompact()) buildPanelOpen = false;
@@ -243,7 +246,10 @@
     }
     if (e.key === '?' && !mod && !e.altKey && !typing) { showHelp = !showHelp; e.preventDefault(); }
     if (e.key === 'Escape' && showHelp) showHelp = false;
-    if (e.key === 'l' && !mod && !e.altKey && !typing) showLayers = !showLayers;
+    if (e.key === 'l' && !mod && !e.altKey && !typing) {
+      showLayers = !showLayers;
+      if (showLayers) buildPanelOpen = false;
+    }
   }
 </script>
 
@@ -251,7 +257,7 @@
 
 {#if ready}
   <div class="relative h-screen flex flex-col overflow-hidden bg-ivory">
-    <TopBar onToggleLayers={() => showLayers = !showLayers} layersOpen={showLayers} onToggleHistory={toggleHistory} historyOpen={showUndoHistory} />
+    <TopBar onToggleLayers={() => { showLayers = !showLayers; if (showLayers) buildPanelOpen = false; }} layersOpen={showLayers} onToggleHistory={toggleHistory} historyOpen={showUndoHistory} />
     <!-- Keep canvas/viewer controls beneath toolbar menus and project dialogs. -->
     <div class="relative flex flex-1 overflow-hidden isolate">
       <EditorSideRail active={railActive} panelOpen={buildPanelOpen} layersOpen={showLayers} historyOpen={showUndoHistory} onAction={handleRailAction} />

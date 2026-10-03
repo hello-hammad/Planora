@@ -1,4 +1,5 @@
-import { Box3, PerspectiveCamera, Vector3 } from 'three';
+import { Box3, Vector3 } from 'three';
+import type { PerspectiveCamera } from 'three';
 
 /** Fit every corner using the camera's horizontal and vertical field of view. */
 export function frameScene(camera: PerspectiveCamera, bounds: Box3, target: Vector3,

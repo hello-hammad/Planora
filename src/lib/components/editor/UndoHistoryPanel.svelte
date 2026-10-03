@@ -34,7 +34,8 @@
 
   function formatTime(ts: number, language: Locale) {
     const d = new Date(ts);
-    return d.toLocaleTimeString(language === 'pt' ? 'pt-BR' : 'en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dateLocale = language === 'pt' ? 'pt-BR' : language === 'ur' ? 'ur-PK' : 'en';
+    return d.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
   async function handleClick(index: number) {
@@ -100,7 +101,7 @@
             class:text-blue-700={history.currentIndex === history.entries.length}
             class:text-gray-700={history.currentIndex !== history.entries.length}
           >
-            <span class="w-5 text-[10px] text-gray-600 text-right shrink-0">●</span>
+            <span class="w-5 flex justify-end text-gray-600 shrink-0"><AppIcon name="circle" size={8} /></span>
             <span class="truncate flex-1 font-medium">{$t('undoHistory.currentState')}</span>
           </div>
         </div>

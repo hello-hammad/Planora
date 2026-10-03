@@ -108,14 +108,14 @@
         <span class="ctx-icon"><AppIcon name="rotate-cw" size={16} /></span> {$t('contextMenu.rotate90')}
       </button>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('flip-horizontal')}>
-        <span class="ctx-icon">↔️</span> {$t('contextMenu.flipHorizontal')}
+        <span class="ctx-icon"><AppIcon name="flip-horizontal-2" size={16} /></span> {$t('contextMenu.flipHorizontal')}
       </button>
       <div class="ctx-sep"></div>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('bring-to-front')}>
-        <span class="ctx-icon">⬆️</span> {$t('contextMenu.bringToFront')}
+        <span class="ctx-icon"><AppIcon name="arrow-up-to-line" size={16} /></span> {$t('contextMenu.bringToFront')}
       </button>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('send-to-back')}>
-        <span class="ctx-icon">⬇️</span> {$t('contextMenu.sendToBack')}
+        <span class="ctx-icon"><AppIcon name="arrow-down-to-line" size={16} /></span> {$t('contextMenu.sendToBack')}
       </button>
       <div class="ctx-sep"></div>
       <div class="ctx-sep"></div>
@@ -135,7 +135,7 @@
         <span class="ctx-icon"><AppIcon name="scissors" size={16} /></span> {$t('contextMenu.splitWall')}
       </button>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('toggle-curve')}>
-        <span class="ctx-icon">〰️</span> {$t(targetWall?.curvePoint ? 'contextMenu.curveOff' : 'contextMenu.curveOn')}
+        <span class="ctx-icon"><AppIcon name="spline" size={16} /></span> {$t(targetWall?.curvePoint ? 'contextMenu.curveOff' : 'contextMenu.curveOn')}
       </button>
       <div class="ctx-sep"></div>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('properties')}>
@@ -157,7 +157,7 @@
 
     {:else if targetType === 'room'}
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('reset-room-label')}>
-        <span class="ctx-icon">↺</span> {$t('contextMenu.resetLabel')}
+        <span class="ctx-icon"><AppIcon name="rotate-ccw" size={16} /></span> {$t('contextMenu.resetLabel')}
       </button>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('rename-room')}>
         <span class="ctx-icon"><AppIcon name="pencil" size={16} /></span> {$t('contextMenu.renameRoom')}

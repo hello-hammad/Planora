@@ -12,6 +12,9 @@ import { getWallStartHeight, getWallEndHeight, getWallHeightAt, validWallHeight 
 import type { DetailTarget, ItemDetails } from '$lib/models/types';
 import { detailItem, itemDetails, validateItemDetails } from '$lib/utils/itemDetails';
 import { readProject } from '$lib/utils/projectValidation';
+import { getRoomPolygon } from '$lib/utils/roomDetection';
+import { roomHoles } from '$lib/utils/roomNesting';
+import { pointInPolygon } from '$lib/utils/wallJoins';
 
 
 function uid(): string {
@@ -425,7 +428,7 @@ export function addStair(position: Point): string {
   const id = uid();
   mutate((f) => {
     if (!f.stairs) f.stairs = [];
-    f.stairs.push({ id, position, rotation: 0, width: 100, depth: 300, riserCount: 14, direction: 'up', stairType: 'straight' });
+    f.stairs.push({ id, position, rotation: 0, width: 50, depth: 120, riserCount: 14, direction: 'up', stairType: 'straight' });
   }, 'Added stair');
   return id;
 }
@@ -582,12 +585,28 @@ export const calibrationPoints = writable<Point[]>([]);
 export function removeRoom(id: string) {
   const floor = get(activeFloor);
   if (!floor) return;
-  const rooms = [...floor.rooms, ...get(detectedRoomsStore)];
+  const rooms = [...new Map([...floor.rooms, ...get(detectedRoomsStore)].map(room => [room.id, room])).values()];
   const room = rooms.find(room => room.id === id);
   if (!room) return;
   const retainedWalls = new Set(rooms.filter(room => room.id !== id).flatMap(room => room.walls));
+  const polygons = rooms.map(candidate => getRoomPolygon(candidate, floor.walls));
+  const roomIndex = rooms.findIndex(candidate => candidate.id === id);
+  const polygon = polygons[roomIndex];
+  const holes = roomHoles(polygons)[roomIndex] ?? [];
+  const contains = (point: Point) => polygon.length >= 3 && pointInPolygon(point, polygon) && !holes.some(hole => pointInPolygon(point, hole));
+  const lineCenter = (line: { x1: number; y1: number; x2: number; y2: number }) => ({ x: (line.x1 + line.x2) / 2, y: (line.y1 + line.y2) / 2 });
+  const contents = [
+    ...floor.furniture.filter(item => contains(item.position)),
+    ...(floor.stairs ?? []).filter(item => contains(item.position)),
+    ...(floor.columns ?? []).filter(item => contains(item.position)),
+    ...(floor.entourage ?? []).filter(item => contains(item.position)),
+    ...(floor.textAnnotations ?? []).filter(item => contains({ x: item.x, y: item.y })),
+    ...(floor.measurements ?? []).filter(item => contains(lineCenter(item))),
+    ...(floor.annotations ?? []).filter(item => contains(lineCenter(item))),
+  ].map(item => item.id);
   beginUndoGroup();
   try {
+    for (const itemId of contents) removeElement(itemId);
     for (const wallId of room.walls) {
       if (!retainedWalls.has(wallId)) removeElement(wallId);
     }
@@ -961,6 +980,14 @@ export function loadProject(project: Project) {
   _nextDescription = '';
   resetCoalescing();
   clearFloorContext();
+  for (const floor of project.floors) {
+    for (const stair of floor.stairs ?? []) {
+      if ((stair.width === 100 && stair.depth === 300 || stair.width === 80 && stair.depth === 220 || stair.width === 70 && stair.depth === 180) && stair.riserCount === 14) {
+        stair.width = 50;
+        stair.depth = 120;
+      }
+    }
+  }
   currentProject.set(project);
   syncHistoryStore();
 }
@@ -1306,11 +1333,11 @@ export const layerVisibility = writable<{ walls: boolean; doors: boolean; window
 export function toggleSelectionLock(ids: ReadonlySet<string>) {
   const floor = get(activeFloor);
   if (!floor) return;
-  const items = [...floor.furniture, ...floor.entourage ?? []].filter(item => ids.has(item.id));
+  const items = [...floor.furniture, ...floor.entourage ?? [], ...floor.stairs ?? [], ...floor.columns ?? []].filter(item => ids.has(item.id));
   if (!items.length) return;
   const locked = items.some(item => !item.locked);
   mutate(f => {
-    for (const item of [...f.furniture, ...f.entourage ?? []]) {
+    for (const item of [...f.furniture, ...f.entourage ?? [], ...f.stairs ?? [], ...f.columns ?? []]) {
       if (ids.has(item.id)) item.locked = locked;
     }
   }, locked ? 'Locked selection' : 'Unlocked selection');

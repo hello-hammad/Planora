@@ -17,6 +17,7 @@ import { drawFurnitureIcon } from '$lib/utils/furnitureIcons';
 import { getRoomPolygon, roomCentroid, roomLabelPosition } from '$lib/utils/roomDetection';
 import { getWallTextureCanvas, getFloorTextureCanvas } from '$lib/utils/textureGenerator';
 import { getEntourageDef } from '$lib/utils/entourageCatalog';
+import { pointInPolygon } from '$lib/utils/wallJoins';
 import type { EntourageItem, CustomEntourageDef } from '$lib/models/types';
 
 // ── Wall geometry helpers ────────────────────────────────────────────
@@ -155,6 +156,7 @@ export function drawWall(
   showDimensions: boolean,
   dimSettings: ProjectSettings,
   allWalls?: Wall[],
+  roomPolygons?: Point[][],
 ): void {
   const { ctx, zoom, width, height } = cs;
   const s = wts(cs, w.start.x, w.start.y);
@@ -318,16 +320,29 @@ export function drawWall(
   const nnx = (-dy / len);
   const nny = (dx / len);
 
-  let dimSide = 1;
-  const testX = mx + nnx * offsetDist;
-  const testY = my + nny * offsetDist;
-  if (testX < 10 || testX > width - 10 || testY < 10 || testY > height - 10) dimSide = -1;
+  let dimSide: number | null = null;
+  if (roomPolygons?.length) {
+    const midWorld = wallPointAt(w, 0.5);
+    const tangentWorld = wallTangentAt(w, 0.5);
+    const probe = 8;
+    const plus = { x: midWorld.x - tangentWorld.y * probe, y: midWorld.y + tangentWorld.x * probe };
+    const minus = { x: midWorld.x + tangentWorld.y * probe, y: midWorld.y - tangentWorld.x * probe };
+    const plusInside = roomPolygons.some(poly => pointInPolygon(plus, poly));
+    const minusInside = roomPolygons.some(poly => pointInPolygon(minus, poly));
+    if (plusInside !== minusInside) dimSide = plusInside ? -1 : 1;
+  }
+  if (dimSide === null) {
+    dimSide = 1;
+    const testX = mx + nnx * offsetDist;
+    const testY = my + nny * offsetDist;
+    if (testX < 10 || testX > width - 10 || testY < 10 || testY > height - 10) dimSide = -1;
+  }
 
   const dOffX = nnx * offsetDist * dimSide;
   const dOffY = nny * offsetDist * dimSide;
 
   if (dimSettings.showExtensionLines) {
-    const extLen = offsetDist + 4;
+    const extLen = Math.min(offsetDist + 4, 28);
     ctx.strokeStyle = dimSettings.dimensionLineColor + '80';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
@@ -362,7 +377,7 @@ export function drawWall(
   ctx.lineTo(de.x, de.y);
   ctx.stroke();
 
-  const tickSize = Math.max(4, 5 * zoom);
+  const tickSize = Math.min(7, Math.max(4, 5 * zoom));
   ctx.strokeStyle = dimSettings.dimensionLineColor;
   ctx.lineWidth = 1;
   for (const pt of [ds, de]) {
@@ -907,7 +922,7 @@ export function drawWindowDistanceDimensions(cs: CanvasState, wall: Wall, window
 
 // ── Furniture drawing ────────────────────────────────────────────────
 
-export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected: boolean, caption?: string): void {
+export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected: boolean, caption?: string, overlapping = false): void {
   const { ctx, zoom } = cs;
   const cat = getCatalogItem(item.catalogId);
   const s = wts(cs, item.position.x, item.position.y);
@@ -928,23 +943,26 @@ export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected
   ctx.lineWidth = selected ? 2 : 1;
   drawFurnitureIcon(ctx, item.catalogId, w, d, itemColor, strokeColor);
 
-  const fontSize = Math.max(8, Math.min(12, Math.min(w, d) * 0.2));
+  const fontSize = Math.max(10, Math.min(13, Math.min(w, d) * 0.24));
   if (Math.min(w, d) > 20) {
     ctx.save();
     // Mirror the symbol, while keeping its caption readable.
     ctx.scale(Math.sign(sx) || 1, Math.sign(sy) || 1);
-    ctx.fillStyle = '#374151';
-    ctx.font = `${fontSize * 0.7}px sans-serif`;
+    ctx.font = `${item.label ? 400 : 600} ${fontSize}px "Plus Jakarta Sans", Inter, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(caption ?? cat?.name ?? 'Unknown furniture', 0, d / 2 + fontSize * 0.8);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255, 253, 249, 0.92)';
+    ctx.strokeText(item.label ?? caption ?? cat?.name ?? 'Unknown furniture', 0, d / 2 + fontSize * 0.8);
+    ctx.fillStyle = '#252321';
+    ctx.fillText(item.label ?? caption ?? cat?.name ?? 'Unknown furniture', 0, d / 2 + fontSize * 0.8);
     ctx.restore();
   }
 
   if (selected) {
-    ctx.strokeStyle = '#3b82f6';
+    ctx.strokeStyle = overlapping ? '#dc2626' : '#3b82f6';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 3]);
+    ctx.setLineDash(overlapping ? [5, 4] : [4, 3]);
     ctx.strokeRect(-w / 2 - 2, -d / 2 - 2, w + 4, d + 4);
     ctx.setLineDash([]);
 
@@ -1401,6 +1419,17 @@ export function getRoomFill(room: Room, index: number): string {
   return ROOM_FILLS_BY_TYPE[room.name] ?? ROOM_FILLS_DEFAULT[index % ROOM_FILLS_DEFAULT.length];
 }
 
+function roomLabelColors(room: Room): { fill: string; outline: string } {
+  const color = room.floorTexture === 'none' ? room.color : undefined;
+  if (color && /^#[\da-f]{6}$/i.test(color)) {
+    const [red, green, blue] = [1, 3, 5].map(index => parseInt(color.slice(index, index + 2), 16) / 255);
+    const linear = (channel: number) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    const luminance = linear(red) * 0.2126 + linear(green) * 0.7152 + linear(blue) * 0.0722;
+    if (luminance < 0.38) return { fill: '#fffdf9', outline: '#252321' };
+  }
+  return { fill: '#252321', outline: '#fffdf9' };
+}
+
 type FloorPatternType = 'wood' | 'tile' | 'stone' | 'none';
 const ROOM_FLOOR_PATTERN: Record<string, FloorPatternType> = {
   'Living Room': 'wood', 'Bedroom': 'wood', 'Office': 'wood', 'Dining Room': 'wood', 'Hallway': 'wood',
@@ -1513,12 +1542,18 @@ export function drawRooms(
     const sc = wts(cs, centroid.x, centroid.y);
     const fontSize = Math.max(11, 13 * zoom);
     if (showRoomLabels) {
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = `${fontSize}px sans-serif`;
+      const colors = roomLabelColors(room);
+      const text = `${room.name} (${formatArea(room.area, dimSettings.units)})`;
+      ctx.font = `600 ${fontSize}px "Plus Jakarta Sans", Inter, system-ui, sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const anchor = roomLabelPosition(room, poly, holes[ri]);
       const label = wts(cs, anchor.x, anchor.y);
-      ctx.fillText(`${room.name} (${formatArea(room.area, dimSettings.units)})`, label.x, label.y);
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = colors.outline;
+      ctx.strokeText(text, label.x, label.y);
+      ctx.fillStyle = colors.fill;
+      ctx.fillText(text, label.x, label.y);
     }
 
     if (showDimensions && dimSettings.showInternalDimensions && poly.length >= 3) {
@@ -1528,9 +1563,19 @@ export function drawRooms(
       const roomD = (maxY - minY) / 100;
       if (roomW > 0.1 && roomD > 0.1) {
         const dimFontSize = Math.max(9, 10 * zoom);
-        ctx.fillStyle = '#b0b8c4'; ctx.font = `${dimFontSize}px sans-serif`;
+        ctx.fillStyle = dimSettings.dimensionLineColor;
+        ctx.font = `${dimFontSize}px sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(`${formatLength(roomW * 100, dimSettings.units)} × ${formatLength(roomD * 100, dimSettings.units)}`, sc.x, sc.y + fontSize + 2);
+        const outside = wts(cs, (minX + maxX) / 2, maxY + 22);
+        const dimensionY = outside.y + dimFontSize / 2 < cs.height - 8
+          ? outside.y
+          : wts(cs, (minX + maxX) / 2, minY - 22).y;
+        const label = `${formatLength(roomW * 100, dimSettings.units)} × ${formatLength(roomD * 100, dimSettings.units)}`;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#fffdf9';
+        ctx.lineJoin = 'round';
+        ctx.strokeText(label, outside.x, dimensionY);
+        ctx.fillText(label, outside.x, dimensionY);
       }
     }
   }

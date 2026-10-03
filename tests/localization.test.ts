@@ -3,6 +3,7 @@ import { get } from 'svelte/store';
 import { initializeLocale, locale, t, translate, type Locale } from '../src/lib/i18n';
 import { en } from '../src/lib/i18n/locales/en';
 import { pt } from '../src/lib/i18n/locales/pt';
+import { ur } from '../src/lib/i18n/locales/ur';
 
 afterEach(() => { vi.unstubAllGlobals(); locale.set('en'); });
 
@@ -19,6 +20,15 @@ describe('locale preferences', () => {
       expect(pt[key].match(/\{\w+\}/g) ?? []).toEqual(en[key].match(/\{\w+\}/g) ?? []);
     }
   });
+  it('provides Urdu with complete fallback keys and matching placeholders', () => {
+    expect(Object.keys(ur).sort()).toEqual(Object.keys(en).sort());
+    for (const key of Object.keys(en) as (keyof typeof en)[]) {
+      expect(ur[key].trim()).not.toBe('');
+      expect(ur[key].match(/\{\w+\}/g) ?? []).toEqual(en[key].match(/\{\w+\}/g) ?? []);
+    }
+    expect(translate('ur', 'settings.title')).toBe('ترتیبات');
+    expect(translate('ur', 'settings.geminiApiKey')).toBe(en['settings.geminiApiKey']);
+  });
   it('updates subscribed text, persists the choice and sets document language', () => {
     const setItem = vi.fn();
     vi.stubGlobal('localStorage', { setItem });
@@ -30,6 +40,13 @@ describe('locale preferences', () => {
     expect(values).toEqual(['Settings', 'Configurações']);
     expect(setItem).toHaveBeenCalledWith('o3d_locale', 'pt');
     expect(document.documentElement.lang).toBe('pt');
+  });
+  it('sets right-to-left direction for Urdu', () => {
+    vi.stubGlobal('localStorage', { setItem: vi.fn() });
+    vi.stubGlobal('document', { documentElement: { lang: 'en', dir: 'ltr' } });
+    locale.set('ur');
+    expect(document.documentElement.lang).toBe('ur');
+    expect(document.documentElement.dir).toBe('rtl');
   });
   it('restores valid preferences and ignores unknown persisted locales', () => {
     const getItem = vi.fn().mockReturnValue('pt');

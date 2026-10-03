@@ -8,7 +8,7 @@ export interface HouseTemplate {
   name: string;
   description: string;
   icon: string;
-  area: string;
+  area: number;
   tags: string[];
   create: () => Project;
 }
@@ -339,7 +339,7 @@ export const houseTemplates: HouseTemplate[] = [
     name: 'Studio Apartment',
     description: 'Open plan living/kitchen, bathroom, closet',
     icon: 'building',
-    area: '~30m²',
+    area: 30,
     tags: ['apartment', 'small', 'open-plan'],
     create: createStudioApartment,
   },
@@ -347,7 +347,7 @@ export const houseTemplates: HouseTemplate[] = [
     name: '1-Bedroom Apartment',
     description: 'Bedroom, living room, kitchen, bathroom',
     icon: 'house',
-    area: '~50m²',
+    area: 50,
     tags: ['apartment', 'medium'],
     create: createOneBedroom,
   },
@@ -355,7 +355,7 @@ export const houseTemplates: HouseTemplate[] = [
     name: '2-Bedroom House',
     description: '2 bedrooms, living room, kitchen, bathroom, hallway',
     icon: 'house',
-    area: '~80m²',
+    area: 80,
     tags: ['house', 'family'],
     create: createTwoBedroom,
   },
@@ -363,7 +363,7 @@ export const houseTemplates: HouseTemplate[] = [
     name: 'Open Concept Home',
     description: 'Large open living/kitchen/dining, 2 bedrooms, 2 bathrooms',
     icon: 'sparkles',
-    area: '~100m²',
+    area: 100,
     tags: ['house', 'modern', 'open-plan'],
     create: createOpenConcept,
   },
@@ -371,7 +371,7 @@ export const houseTemplates: HouseTemplate[] = [
     name: 'L-Shaped House',
     description: 'L-shaped layout with garage, 3 bedrooms, 2 bathrooms',
     icon: 'house-plus',
-    area: '~120m²',
+    area: 120,
     tags: ['house', 'large', 'garage'],
     create: createLShaped,
   },

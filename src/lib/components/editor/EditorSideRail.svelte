@@ -20,10 +20,10 @@
     onAction?: (action: RailAction, trigger: HTMLButtonElement) => void;
   } = $props();
 
-  type Item = { id: RailAction; label: string; aria?: string; path: string; soon?: boolean };
+  type Item = { id: RailAction; label: string; aria?: string; path?: string; icon?: boolean; soon?: boolean };
 
   const primary: Item[] = $derived([
-    { id: 'assistant', label: 'AI', aria: 'AI design assistant', path: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 17l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z' },
+    { id: 'assistant', label: 'AI', aria: 'AI design assistant', icon: false },
     { id: 'build', label: $t('buildTools.build'), path: 'M3 21h18M5 21V9l7-5 7 5v12M10 21v-6h4v6' },
     { id: 'rooms', label: $t('buildTools.rooms'), path: 'M3 3h18v18H3zM12 3v10M3 13h18' },
     { id: 'objects', label: $t('buildTools.objects'), path: 'M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M3 11h18v6H3zM5 17v2M19 17v2' },
@@ -49,7 +49,7 @@
   {@const on = isActive(item.id)}
   <button
     type="button"
-    class="group relative flex w-[60px] max-md:w-[52px] flex-col items-center justify-center gap-1 rounded-xl py-2 text-center transition-colors duration-150 {on ? 'bg-walnut-tint text-walnut-dark font-bold' : 'text-muted font-medium hover:bg-hover hover:text-charcoal'}"
+    class="group relative flex w-[64px] max-md:w-[56px] flex-col items-center justify-center gap-1.5 rounded-xl py-2.5 text-center transition-colors duration-150 {on ? 'bg-walnut-tint text-walnut-dark font-bold' : 'text-muted font-semibold hover:bg-hover hover:text-charcoal'}"
     aria-pressed={item.id === 'assistant' || item.id === 'build' || item.id === 'rooms' || item.id === 'objects' || item.id === 'finishes' || item.id === 'styleboards' ? on : undefined}
     aria-expanded={item.id === 'info' || item.id === 'history' ? on : undefined}
     aria-label={item.aria ?? item.label}
@@ -60,10 +60,12 @@
       <!-- Active marker: a short wall segment on the rail edge -->
       <span class="absolute -left-2 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r bg-walnut" aria-hidden="true"></span>
     {/if}
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="transition-transform duration-150 group-hover:-translate-y-px">
-      <path d={item.path} />
-    </svg>
-    <span class="max-w-full truncate px-0.5 text-[10.5px] leading-none tracking-tight">{item.label}</span>
+    {#if item.icon !== false && item.path}
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="transition-transform duration-150 group-hover:-translate-y-px">
+        <path d={item.path} />
+      </svg>
+    {/if}
+    <span class="max-w-full truncate px-0.5 text-[12px] font-semibold leading-tight">{item.label}</span>
     {#if item.soon}
       <span class="absolute right-1 top-1 rounded bg-ivory px-1 text-[8px] font-bold uppercase leading-[12px] tracking-wide text-muted" aria-hidden="true">Soon</span>
     {/if}
@@ -71,17 +73,6 @@
 {/snippet}
 
 <nav aria-label="Editor sections" class="z-30 flex h-full w-[76px] max-md:w-[64px] shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-line bg-cream py-3">
-  <button
-    type="button"
-    class="mb-1 flex h-10 w-10 items-center justify-center rounded-xl text-muted transition-colors hover:bg-hover hover:text-charcoal"
-    aria-label="Project"
-    title="All projects"
-    onclick={(e) => onAction('project', e.currentTarget)}
-  >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" /></svg>
-  </button>
-  <div class="mb-1 h-px w-8 bg-line" aria-hidden="true"></div>
-
   {#each primary as item (item.id)}
     {@render railButton(item)}
   {/each}

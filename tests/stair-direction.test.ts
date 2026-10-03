@@ -1,6 +1,8 @@
 import { expect, it } from 'vitest';
 import { drawStair } from '$lib/utils/canvasRenderer';
 import type { Stair } from '$lib/models/types';
+import { get } from 'svelte/store';
+import { activeFloor, addStair, createDefaultProject, currentProject, loadProject } from '$lib/stores/project';
 function render(type: Stair['stairType'], direction: Stair['direction']) {
   let path: number[][] = [];
   const triangles: number[][][] = [], arcs: number[][] = [], labels: string[] = [];
@@ -38,4 +40,23 @@ it('spiral reverses its arc and points the head in the travel direction', () => 
     expect(head[0][0]).toBeCloseTo(arc[2]*Math.cos(arc[4]));
     expect(head[0][1]).toBeCloseTo(arc[2]*Math.sin(arc[4]));
   }
+});
+
+it('places a compact stair by default', () => {
+  currentProject.set(createDefaultProject());
+  const id = addStair({ x: 200, y: 150 });
+  const stair = get(activeFloor)?.stairs.find(item => item.id === id);
+  expect(stair).toMatchObject({ width: 50, depth: 120, riserCount: 14 });
+});
+
+it('compacts untouched legacy defaults but preserves custom stair dimensions', () => {
+  const project = createDefaultProject();
+  project.floors[0].stairs = [
+    { id: 'legacy', position: { x: 0, y: 0 }, rotation: 0, width: 100, depth: 300, riserCount: 14, direction: 'up', stairType: 'straight' },
+    { id: 'previous-default', position: { x: 0, y: 0 }, rotation: 0, width: 80, depth: 220, riserCount: 14, direction: 'up', stairType: 'straight' },
+    { id: 'latest-default', position: { x: 0, y: 0 }, rotation: 0, width: 70, depth: 180, riserCount: 14, direction: 'up', stairType: 'straight' },
+    { id: 'custom', position: { x: 0, y: 0 }, rotation: 0, width: 100, depth: 300, riserCount: 16, direction: 'up', stairType: 'straight' },
+  ];
+  loadProject(project);
+  expect(get(activeFloor)?.stairs.map(stair => [stair.width, stair.depth])).toEqual([[50, 120], [50, 120], [50, 120], [100, 300]]);
 });
