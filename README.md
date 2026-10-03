@@ -1,4 +1,4 @@
-# openplan3d
+# Planora
 
 **Free Open Source 2D/3D Floor Plan Editor**
 
