@@ -110,13 +110,13 @@
   <!-- Full-screen start: one prompt box, like a chat-first builder -->
   <div class="relative flex min-h-screen flex-col bg-ivory text-charcoal" out:fade={{ duration: 200 }}>
     <header class="flex h-16 items-center justify-between px-6">
-      <a href={`${base}/`} class="flex items-center gap-2.5 text-charcoal no-underline">
+      <a href={`${base}/dashboard`} class="flex items-center gap-2.5 text-charcoal no-underline">
         <span class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-walnut" aria-hidden="true">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V5h7a4.5 4.5 0 0 1 0 9H7" /><circle cx="17.5" cy="19" r="1.6" fill="#E7A37F" stroke="none" /></svg>
         </span>
         <span class="text-lg font-bold tracking-tight">Planora</span>
       </a>
-      <a href={`${base}/`} class="text-sm font-semibold text-muted hover:text-charcoal">Design manually instead</a>
+      <a href={`${base}/dashboard`} class="text-sm font-semibold text-muted hover:text-charcoal">Design manually instead</a>
     </header>
 
     <main class="plan-paper flex flex-1 flex-col items-center justify-center px-6 pb-20">

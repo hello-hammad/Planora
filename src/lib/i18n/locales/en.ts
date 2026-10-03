@@ -133,7 +133,7 @@ export const en = {
   "templates.open.description": "Large open living/kitchen/dining, 2 bedrooms, 2 bathrooms",
   "templates.l.name": "L-Shaped House",
   "templates.l.description": "L-shaped layout with garage, 3 bedrooms, 2 bathrooms",
-  "library.title": "Floor Plan Editor",
+  "library.title": "Your projects",
   "library.loading": "Loading projects…",
   "library.countOne": "{count} project",
   "library.countMany": "{count} projects",

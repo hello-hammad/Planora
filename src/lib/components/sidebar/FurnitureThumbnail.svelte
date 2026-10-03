@@ -1,9 +1,12 @@
 <script lang="ts">
   import { getModelFile } from '$lib/utils/furnitureModelFiles';
+  import { furnitureCatalog } from '$lib/utils/furnitureCatalog';
+  import AppIcon from '../AppIcon.svelte';
 
   let { catalogId, name, color }: { catalogId: string; name: string; color: string } = $props();
   let element: HTMLDivElement;
   let src = $state<string | null>(null);
+  const icon = $derived(furnitureCatalog.find(f => f.id === catalogId)?.icon ?? 'box');
 
   $effect(() => {
     const file = getModelFile(catalogId);
@@ -36,10 +39,10 @@
 
 <div bind:this={element} class="flex h-full w-full items-center justify-center">
   {#if src}
-    <img {src} alt={name} class="max-h-full max-w-full object-contain" />
+    <img {src} alt={name} class="max-h-full max-w-full object-contain drop-shadow-[0_3px_4px_rgba(40,40,30,0.18)]" />
   {:else}
-    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style:background-color={`${color}20`}>
-      <div class="w-4 h-4 rounded-sm opacity-70" style:background-color={color}></div>
+    <div class="flex h-10 w-10 items-center justify-center rounded-xl" style:background-color={`${color}1f`} style:color={color}>
+      <AppIcon name={icon} size={20} strokeWidth={1.7} class="brightness-75" />
     </div>
   {/if}
 </div>

@@ -1,7 +1,7 @@
 import { en } from './en';
 
 // English remains the fallback for keys not yet translated into Urdu.
-export const ur: typeof en = {
+export const ur: Record<keyof typeof en, string> = {
   ...en,
   'settings.title': 'ترتیبات',
   'settings.close': 'ترتیبات بند کریں',

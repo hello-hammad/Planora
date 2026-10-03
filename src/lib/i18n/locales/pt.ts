@@ -133,7 +133,7 @@ export const pt = {
   "templates.open.description": "Sala, cozinha e área de jantar integradas, 2 quartos e 2 banheiros",
   "templates.l.name": "Casa em L",
   "templates.l.description": "Planta em L com garagem, 3 quartos e 2 banheiros",
-  "library.title": "Editor de plantas",
+  "library.title": "Seus projetos",
   "library.loading": "Carregando projetos…",
   "library.countOne": "{count} projeto",
   "library.countMany": "{count} projetos",

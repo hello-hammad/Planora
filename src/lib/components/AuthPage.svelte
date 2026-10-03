@@ -2,8 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
-  import { firebaseConfigured, getPlanoraAuth, usingFirebaseAuthEmulator } from '$lib/firebase';
+  import { invalidateAll } from '$app/navigation';
 
   let { mode }: { mode: 'login' | 'signup' } = $props();
   let name = $state('');
@@ -29,45 +28,26 @@
     return `${requested.pathname}${requested.search}${requested.hash}`;
   }
 
-  function readableError(reason: unknown) {
-    const code = typeof reason === 'object' && reason && 'code' in reason ? String(reason.code) : '';
-    if (code === 'auth/email-already-in-use') return 'An account already exists for this email.';
-    if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') return 'Email or password is incorrect.';
-    if (code === 'auth/weak-password') return 'Choose a password with at least 8 characters.';
-    if (code === 'auth/invalid-email') return 'Enter a valid email address.';
-    if (code === 'auth/operation-not-allowed') return 'Enable email and password sign-in in the Firebase Console.';
-    return 'Account access failed. Check your connection and try again.';
-  }
-
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     error = '';
-    if (mode === 'signup' && password !== confirmPassword) {
-      error = 'The passwords do not match.';
-      return;
-    }
-    if (mode === 'signup' && password.length < 8) {
-      error = 'Choose a password with at least 8 characters.';
-      return;
-    }
-    if (!firebaseConfigured) {
-      error = 'Account access is not configured. Add the Planora Firebase settings to the environment first.';
-      return;
-    }
-
+    if (mode === 'signup' && password !== confirmPassword) { error = 'The passwords do not match.'; return; }
+    if (mode === 'signup' && password.length < 8) { error = 'Choose a password with at least 8 characters.'; return; }
     busy = true;
     try {
-      const auth = getPlanoraAuth();
-      if (!auth) throw new Error('Firebase Authentication is unavailable.');
-      if (mode === 'signup') {
-        const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        await updateProfile(credential.user, { displayName: name.trim() });
-      } else {
-        await signInWithEmailAndPassword(auth, email.trim(), password);
+      const res = await fetch(`/api/auth/${mode}`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        error = body?.message ?? 'Account access failed. Check your connection and try again.';
+        return;
       }
+      await invalidateAll();
       await goto(safeReturnPath());
-    } catch (reason) {
-      error = readableError(reason);
+    } catch {
+      error = 'Account access failed. Check your connection and try again.';
     } finally {
       busy = false;
     }
@@ -87,12 +67,6 @@
     <p class="auth-eyebrow">YOUR SPACE, IN GOOD HANDS</p>
     <h1 id="auth-title">{mode === 'login' ? 'Welcome back' : 'Make room for your ideas'}</h1>
     <p class="auth-intro">{mode === 'login' ? 'Log in to continue planning.' : 'Create an account to get started with Planora.'}</p>
-
-    {#if usingFirebaseAuthEmulator}
-      <p class="auth-notice" role="status">Local development account. This account exists only in the Firebase Emulator.</p>
-    {:else if !firebaseConfigured}
-      <p class="auth-notice" role="status">Account access is not configured for this installation yet.</p>
-    {/if}
     {#if error}<p class="auth-error" role="alert">{error}</p>{/if}
 
     <form method="post" onsubmit={submit}>
@@ -108,7 +82,7 @@
         <label for="auth-confirm">Confirm password</label>
         <input id="auth-confirm" name="confirm-password" type="password" autocomplete="new-password" bind:value={confirmPassword} required minlength="8" />
       {/if}
-      <button type="submit" disabled={!ready || busy || !firebaseConfigured}>{busy ? 'Please wait...' : mode === 'login' ? 'Log in' : 'Create account'}</button>
+      <button type="submit" disabled={!ready || busy}>{busy ? 'Please wait...' : mode === 'login' ? 'Log in' : 'Create account'}</button>
     </form>
 
     <p class="auth-switch">
@@ -134,8 +108,7 @@
   input:focus { outline: 2px solid #9b6849; outline-offset: 1px; }
   button { min-height: 46px; margin-top: 12px; border: 0; border-radius: 7px; background: #4a3026; color: white; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
   button:disabled { cursor: not-allowed; opacity: .55; }
-  .auth-notice, .auth-error { padding: 11px 12px; border-radius: 7px; font-size: 13px; line-height: 1.5; }
-  .auth-notice { border: 1px solid #e8cf9a; background: #fff8e8; color: #6b4e1b; }
+  .auth-error { padding: 11px 12px; border-radius: 7px; font-size: 13px; line-height: 1.5; }
   .auth-error { border: 1px solid #e9c2b9; background: #fff1ed; color: #813d2d; }
   .auth-switch { margin: 22px 0 0; color: #6e6a63; text-align: center; font-size: 13px; }
   .auth-switch a { margin-left: 4px; }

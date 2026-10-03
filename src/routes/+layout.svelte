@@ -1,15 +1,13 @@
 <script>
   import '../app.css';
   import { initializeLocale } from '$lib/i18n';
-  onMount(initializeLocale);
-  import { browser } from '$app/environment';
   import { onMount } from 'svelte';
-  import { env } from '$env/dynamic/public';
-  import { themePreference } from '$lib/stores/theme';
+  import { account } from '$lib/stores/account';
   import DeploymentNotice from '$lib/components/DeploymentNotice.svelte';
-  // Self-hosted instances and browser tests can run without sending analytics.
-  onMount(() => { if (window.location.pathname !== '/render-lab' && env.PUBLIC_ENABLE_ANALYTICS !== 'false') void import('$lib/firebase'); });
-  let { children } = $props();
+  onMount(initializeLocale);
+  let { children, data } = $props();
+  // Set before children render so project storage already targets the right account.
+  $effect.pre(() => { account.set(data.user ?? null); });
 </script>
 
 {@render children()}

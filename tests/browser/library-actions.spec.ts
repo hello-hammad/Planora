@@ -16,7 +16,7 @@ async function seed(page: Page) {
     }
     localStorage.setItem('hasSeenWelcome', 'true');
   }, [project, second]);
-  await page.goto('/');
+  await page.goto('/dashboard');
   await expect(page.getByRole('link', { name: project.name, exact: true })).toBeVisible();
   return project;
 }
@@ -68,7 +68,7 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('menuitem', { name: 'Delete', exact: true })).toBeFocused();
     await page.keyboard.press('Tab'); await expect(menu).toHaveCount(0);
     await button.press('Enter'); await page.keyboard.press('Shift+Tab'); await expect(menu).toHaveCount(0);
-    await button.click(); await page.getByRole('heading', { name: 'Floor Plan Editor', exact: true }).click();
+    await button.click(); await page.getByRole('heading', { name: /^Your projects/ }).click();
     await expect(menu).toHaveCount(0);
     // Moving to another project's trigger must dismiss the old menu without stealing focus.
     await button.press('Enter'); await trigger(page, 'Second project').focus();

@@ -87,7 +87,7 @@
 <section class="space-y-2 rounded-lg border border-gray-200 p-2" aria-label={$t('customModel.heading')}>
   <h3 class="text-sm font-semibold">{$t('customModel.heading')}</h3>
   <input bind:this={input} type="file" accept=".glb,model/gltf-binary" class="hidden" onchange={choose} />
-  <button class="rounded border border-blue-600 px-3 py-1.5 text-sm text-blue-700" onclick={(event) => { event.currentTarget.focus({ preventScroll: true }); input.click(); }} disabled={!$currentProject}>{$t('customModel.import')}</button>
+  <button class="flex h-9 w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-walnut/50 bg-walnut-tint text-sm font-semibold text-walnut-dark transition-colors hover:border-walnut" onclick={(event) => { event.currentTarget.focus({ preventScroll: true }); input.click(); }} disabled={!$currentProject}>{$t('customModel.import')}</button>
   <p class="text-xs text-gray-500">{$t('customModel.help')}</p>
   {#each $currentProject?.customModels ?? [] as model (model.id)}
     <div class="rounded border border-gray-200 p-2 text-xs">
@@ -95,9 +95,9 @@
       <p>{formatLength(model.width, $projectSettings.units)} × {formatLength(model.depth, $projectSettings.units)} × {formatLength(model.height, $projectSettings.units)}</p>
       {#if model.attribution}<p class="break-words">{model.attribution}</p>{/if}
       {#if model.license}<p class="break-words">{model.license}</p>{/if}
-      {#if model.sourceUrl}<a class="text-blue-700 underline" href={model.sourceUrl} target="_blank" rel="noopener noreferrer">{$t('customModel.source')}</a>{/if}
+      {#if model.sourceUrl}<a class="font-semibold text-walnut underline" href={model.sourceUrl} target="_blank" rel="noopener noreferrer">{$t('customModel.source')}</a>{/if}
       <div class="mt-1 flex flex-wrap gap-2">
-        <button class="text-blue-700 underline" onclick={() => place(model.id)}>{$t('customModel.place')}</button>
+        <button class="font-semibold text-walnut underline" onclick={() => place(model.id)}>{$t('customModel.place')}</button>
         <button class="text-red-700 underline" onclick={() => { error = ''; removal = model.id; }}>{$t('customModel.remove')}</button>
       </div>
     </div>
@@ -117,7 +117,7 @@
         <label class="block text-sm">{$t('customModel.attribution')}<textarea maxlength="2048" bind:value={attribution} class="block w-full rounded border p-2"></textarea></label>
         <label class="block text-sm">{$t('customModel.license')}<input maxlength="256" bind:value={license} class="block w-full rounded border p-2" /></label>
         <label class="block text-sm">{$t('customModel.source')}<input type="url" maxlength="2048" bind:value={sourceUrl} class="block w-full rounded border p-2" /></label>
-        <button disabled={saving} class="rounded bg-blue-700 px-3 py-2 text-sm text-white">{$t(saving ? 'customModel.saving' : 'customModel.add')}</button>
+        <button disabled={saving} class="rounded-[10px] bg-walnut px-3 py-2 text-sm font-semibold text-white hover:bg-walnut-dark">{$t(saving ? 'customModel.saving' : 'customModel.add')}</button>
       </form>
     {/if}
     {#if error}<p role="alert" class="my-2 text-sm text-red-700">{customModelError(error, $locale)}</p>{/if}

@@ -194,10 +194,10 @@
         </button>
       </div>
       {#if onRestoreLibrary}
-        <button onclick={onRestoreLibrary} class="mt-5 text-sm font-semibold text-blue-600 underline">{$t('welcome.restore')}</button>
+        <button onclick={onRestoreLibrary} class="mt-5 text-sm font-semibold text-walnut underline">{$t('welcome.restore')}</button>
       {/if}
       {#if onImportPackage}
-        <button onclick={onImportPackage} class="mt-3 block w-full text-sm font-semibold text-blue-600 underline">{$t('welcome.package')}</button>
+        <button onclick={onImportPackage} class="mt-3 block w-full text-sm font-semibold text-walnut underline">{$t('welcome.package')}</button>
       {/if}
     </div>
   {/if}

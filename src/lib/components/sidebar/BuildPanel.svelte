@@ -18,6 +18,7 @@
   import { furnitureCatalog, furnitureCategories } from '$lib/utils/furnitureCatalog';
   import type { FurnitureDef } from '$lib/utils/furnitureCatalog';
   import FurnitureThumbnail from './FurnitureThumbnail.svelte';
+  import CatalogPreview from './CatalogPreview.svelte';
   import CustomModelPanel from './CustomModelPanel.svelte';
   import FinishesPanel from './FinishesPanel.svelte';
   import BoardsPanel from './BoardsPanel.svelte';
@@ -633,7 +634,7 @@
 
   {#snippet roomTemplateIllustration(name: string)}
     <svg viewBox="0 0 120 78" class="h-[76px] w-full" fill="none" aria-hidden="true">
-      <rect x="3" y="3" width="114" height="72" rx="8" fill="#DCD6CC" />
+      
       <rect x="9" y="9" width="102" height="60" rx="3" fill="#F7F3ED" stroke="#58695F" stroke-width="3" />
       {#if name === 'Living Room'}
         <rect x="34" y="13" width="52" height="18" rx="5" fill="#D6C4B1" stroke="#776657" stroke-width="1.5" />
@@ -754,53 +755,55 @@
             aria-expanded={constructionOpen}
             onclick={() => constructionOpen = !constructionOpen}
           >
-            <h3 class="text-[13px] font-extrabold uppercase tracking-[0.08em] text-[#f2eee8]">{$t('layers.doors')}</h3>
+            <h3 class="ui-section-heading !mb-0">{$t('layers.doors')}</h3>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted transition-transform {constructionOpen ? '' : '-rotate-90'}" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
           </button>
 
           {#if constructionOpen}
-            <div class="mb-3 flex rounded-xl border border-[#9f9286] bg-[#c8beb3] p-1">
-              <button type="button" class="flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors {doorPreviewMode === '2d' ? 'bg-[#6b5140] text-white shadow-sm' : 'text-[#44372e] hover:bg-[#b9ada1]'}" onclick={() => doorPreviewMode = '2d'}>2D</button>
-              <button type="button" class="flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors {doorPreviewMode === '3d' ? 'bg-[#6b5140] text-white shadow-sm' : 'text-[#44372e] hover:bg-[#b9ada1]'}" onclick={() => doorPreviewMode = '3d'}>3D</button>
+            <div class="seg mb-3">
+              <button type="button" class="seg-btn {doorPreviewMode === '2d' ? 'is-on' : ''}" onclick={() => doorPreviewMode = '2d'}>2D</button>
+              <button type="button" class="seg-btn {doorPreviewMode === '3d' ? 'is-on' : ''}" onclick={() => doorPreviewMode = '3d'}>3D</button>
             </div>
             <div class="mb-4 grid grid-cols-2 gap-2.5">
               {#each doorCatalog as dc}
                 {@const on = currentTool === 'door' && selectedDoorType === dc.type}
                 <button
-                  class="flex flex-col items-center gap-1.5 rounded-[12px] border p-2.5 text-center transition-all duration-150 cursor-grab active:cursor-grabbing {on ? 'border-[#8d644b] bg-[#ddc7b5] shadow-[inset_0_0_0_1px_#8d644b]' : 'border-[#a99e93] bg-[#c7beb4] hover:border-[#8d644b] hover:bg-[#beb3a8]'}"
+                  class="cat-tile cursor-grab active:cursor-grabbing {on ? 'is-on' : ''}" aria-pressed={on}
                   onclick={() => setDoorType(dc.type)}
                   draggable="true"
                   ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'door'); e.dataTransfer?.setData('application/o3d-id', dc.type); }}
                 >
-                  <div class="door-preview-art flex h-[86px] w-full items-center justify-center rounded-[10px] border border-[#a99e93] bg-[#d0c7bd] text-[#4d413b]">
-                    {@render doorIllustration(dc.type, doorPreviewMode)}
+                  <div class="cat-art door-preview-art h-[92px] text-[#4d4740]">
+                    {#snippet doorFallback()}{@render doorIllustration(dc.type, doorPreviewMode)}{/snippet}
+                    <CatalogPreview kind="door" type={dc.type} mode={doorPreviewMode} label={dc.name} fallback={doorFallback} />
                   </div>
-                  <span class="text-[14px] font-bold leading-tight text-[#171717]">{dc.name}</span>
-                  <span class="text-xs font-semibold leading-tight text-[#282828]">{dc.desc}</span>
+                  <span class="cat-name">{dc.name}</span>
+                  <span class="cat-meta">{dc.desc}</span>
                 </button>
               {/each}
             </div>
 
-            <div class="mt-4 border-t border-[#a99e93] pt-3">
-              <h3 class="mb-2 text-[13px] font-extrabold uppercase tracking-[0.08em] text-[#f2eee8]">{$t('layers.windows')}</h3>
-              <div class="mb-3 flex rounded-xl border border-[#9f9286] bg-[#c8beb3] p-1">
-                <button type="button" class="flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors {windowPreviewMode === '2d' ? 'bg-[#6b5140] text-white shadow-sm' : 'text-[#44372e] hover:bg-[#b9ada1]'}" onclick={() => windowPreviewMode = '2d'}>2D</button>
-                <button type="button" class="flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors {windowPreviewMode === '3d' ? 'bg-[#6b5140] text-white shadow-sm' : 'text-[#44372e] hover:bg-[#b9ada1]'}" onclick={() => windowPreviewMode = '3d'}>3D</button>
+            <div class="mt-4 border-t border-line pt-4">
+              <h3 class="ui-section-heading">{$t('layers.windows')}</h3>
+              <div class="seg mb-3">
+                <button type="button" class="seg-btn {windowPreviewMode === '2d' ? 'is-on' : ''}" onclick={() => windowPreviewMode = '2d'}>2D</button>
+                <button type="button" class="seg-btn {windowPreviewMode === '3d' ? 'is-on' : ''}" onclick={() => windowPreviewMode = '3d'}>3D</button>
               </div>
               <div class="mb-4 grid grid-cols-2 gap-2.5">
               {#each windowCatalog as wc}
                 {@const on = currentTool === 'window' && selectedWindowType === wc.type}
                 <button
-                  class="flex flex-col items-center gap-1.5 rounded-[12px] border p-2.5 text-center transition-all duration-150 cursor-grab active:cursor-grabbing {on ? 'border-[#8d644b] bg-[#ddc7b5] shadow-[inset_0_0_0_1px_#8d644b]' : 'border-[#a99e93] bg-[#c7beb4] hover:border-[#8d644b] hover:bg-[#beb3a8]'}"
+                  class="cat-tile cursor-grab active:cursor-grabbing {on ? 'is-on' : ''}" aria-pressed={on}
                   onclick={() => setWindowType(wc.type)}
                   draggable="true"
                   ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'window'); e.dataTransfer?.setData('application/o3d-id', wc.type); }}
                 >
-                  <div class="door-preview-art flex h-[86px] w-full items-center justify-center rounded-[10px] border border-[#a99e93] bg-[#d0c7bd] text-[#4d413b]">
-                    {@render windowIllustration(wc.type, windowPreviewMode)}
+                  <div class="cat-art door-preview-art h-[92px] text-[#4d4740]">
+                    {#snippet windowFallback()}{@render windowIllustration(wc.type, windowPreviewMode)}{/snippet}
+                    <CatalogPreview kind="window" type={wc.type} mode={windowPreviewMode} label={wc.name} fallback={windowFallback} />
                   </div>
-                  <span class="text-[14px] font-bold leading-tight text-[#171717]">{wc.name}</span>
-                  <span class="text-xs font-semibold leading-tight text-[#282828]">{wc.desc}</span>
+                  <span class="cat-name">{wc.name}</span>
+                  <span class="cat-meta">{wc.desc}</span>
                 </button>
               {/each}
             </div>
@@ -832,13 +835,12 @@
         <div class="grid grid-cols-2 gap-2">
           {#each roomPresets as preset}
             <button
-              class="flex flex-col items-center gap-1.5 rounded-[10px] border border-line bg-white p-3 transition-colors hover:border-walnut hover:bg-walnut-tint cursor-grab active:cursor-grabbing"
+              class="cat-tile cursor-grab active:cursor-grabbing"
               onclick={() => onPresetClick(preset.id)}
               draggable="true"
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room'); e.dataTransfer?.setData('application/o3d-id', preset.id); }}
             >
-              <svg class="h-[72px] w-full max-w-[108px] shrink-0" viewBox="0 0 112 76" fill="none" aria-hidden="true">
-                <rect x="2" y="2" width="108" height="72" rx="7" fill="#E8E5DC" stroke="#D0D6CE" />
+              <div class="cat-art h-[76px]"><svg class="h-[64px] w-full max-w-[100px] shrink-0" viewBox="0 0 112 76" fill="none" aria-hidden="true">
                 <path
                   d={preset.id === 'rectangle' ? 'M18 12H94V64H18Z' : preset.id === 'l-shape' ? 'M18 12H94V38H56V64H18Z' : preset.id === 't-shape' ? 'M18 12H94V38H75V64H37V38H18Z' : 'M18 12H38V38H74V12H94V64H18Z'}
                   fill="#485A4F"
@@ -853,8 +855,8 @@
                   stroke-width="0.8"
                   stroke-linejoin="round"
                 />
-              </svg>
-              <span class="ui-card-title">{roomPresetLabels[preset.id] ? $t(roomPresetLabels[preset.id]) : preset.name}</span>
+              </svg></div>
+              <span class="cat-name">{roomPresetLabels[preset.id] ? $t(roomPresetLabels[preset.id]) : preset.name}</span>
             </button>
           {/each}
         </div>
@@ -866,16 +868,17 @@
         <div class="grid grid-cols-2 gap-2">
           {#each roomTemplates as tmpl}
             <button
-              class="flex flex-col items-center gap-1.5 rounded-[10px] border border-line bg-white p-3 transition-colors hover:border-sage hover:bg-sage-tint cursor-grab active:cursor-grabbing"
+              class="cat-tile cursor-grab active:cursor-grabbing"
               onclick={() => onPresetClick(tmpl.presetId, tmpl.name)}
               draggable="true"
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room-template'); e.dataTransfer?.setData('application/o3d-id', tmpl.name); }}
             >
-              <div class="flex w-full items-center justify-center overflow-hidden rounded-lg border border-[#bdb7ab] bg-[#d8d1c7] px-1.5 py-1">
-                {@render roomTemplateIllustration(tmpl.name)}
+              <div class="cat-art h-[92px]">
+                {#snippet roomFallback()}{@render roomTemplateIllustration(tmpl.name)}{/snippet}
+                <CatalogPreview kind="room" type={tmpl.name} label={tmpl.name} fallback={roomFallback} />
               </div>
-              <span class="ui-card-title">{roomTemplateLabels[tmpl.name] ? $t(roomTemplateLabels[tmpl.name]) : tmpl.name}</span>
-              <span class="ui-control-label">{$t(tmpl.furniture.length === 1 ? 'roomChoices.item' : 'roomChoices.items', { count: tmpl.furniture.length })}</span>
+              <span class="cat-name">{roomTemplateLabels[tmpl.name] ? $t(roomTemplateLabels[tmpl.name]) : tmpl.name}</span>
+              <span class="cat-meta">{$t(tmpl.furniture.length === 1 ? 'roomChoices.item' : 'roomChoices.items', { count: tmpl.furniture.length })}</span>
             </button>
           {/each}
         </div>
@@ -938,7 +941,7 @@
               {#each recentItems as item}
                 <div class="relative">
                   <button
-                    class="flex h-full w-full flex-col items-center gap-1 rounded-[10px] border p-2.5 transition-colors cursor-grab active:cursor-grabbing {currentPlacing === item.id ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
+                    class="cat-tile h-full cursor-grab active:cursor-grabbing {currentPlacing === item.id ? 'is-on' : ''}"
                     onclick={() => onFurnitureClick(item)}
                     draggable="true"
                     ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'furniture'); e.dataTransfer?.setData('application/o3d-id', item.id); }}
@@ -946,11 +949,11 @@
                     onmousemove={onItemMouseMove}
                     onmouseleave={onItemMouseLeave}
                   >
-                    <div class="h-10 w-10"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
-                    <span class="text-center text-xs font-semibold leading-tight text-charcoal">{furnitureName(item.id, $locale)}</span>
+                    <div class="cat-art h-[64px] p-1.5"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
+                    <span class="cat-name">{furnitureName(item.id, $locale)}</span>
                   </button>
                   <button
-                    class="absolute right-1.5 top-1 cursor-pointer text-[13px] leading-none {favoriteIds.includes(item.id) ? 'text-terracotta-ink' : 'text-line hover:text-terracotta'}"
+                    class="fav-btn {favoriteIds.includes(item.id) ? 'is-fav' : ''}"
                     onclick={() => toggleFavorite(item.id)}
                     aria-label={$t(favoriteIds.includes(item.id) ? 'objectControls.remove' : 'objectControls.add', { name: furnitureName(item.id, $locale) })}
                     aria-pressed={favoriteIds.includes(item.id)}
@@ -969,7 +972,7 @@
             {@const s = search.toLowerCase()}
             <div class="relative">
               <button
-                class="flex h-full w-full flex-col items-center gap-1 rounded-[10px] border p-3 transition-colors cursor-grab active:cursor-grabbing {currentPlacing === item.id ? 'border-walnut bg-walnut-tint shadow-[inset_0_0_0_1px_var(--color-walnut)]' : 'border-line bg-white hover:border-[#B89A86] hover:bg-hover'}"
+                class="cat-tile h-full cursor-grab active:cursor-grabbing {currentPlacing === item.id ? 'is-on' : ''}"
                 onclick={() => onFurnitureClick(item)}
                 draggable="true"
                 ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'furniture'); e.dataTransfer?.setData('application/o3d-id', item.id); }}
@@ -977,17 +980,17 @@
                 onmousemove={onItemMouseMove}
                 onmouseleave={onItemMouseLeave}
               >
-                <div class="h-12 w-12"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
+                <div class="cat-art h-[76px] p-1.5"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
                 {#if s && furnitureName(item.id, $locale).toLowerCase().includes(s)}
                   {@const idx = furnitureName(item.id, $locale).toLowerCase().indexOf(s)}
-                  <span class="text-[13px] font-semibold text-charcoal">{furnitureName(item.id, $locale).slice(0, idx)}<mark class="rounded-sm bg-wood px-0.5 text-charcoal">{furnitureName(item.id, $locale).slice(idx, idx + s.length)}</mark>{furnitureName(item.id, $locale).slice(idx + s.length)}</span>
+                  <span class="cat-name">{furnitureName(item.id, $locale).slice(0, idx)}<mark class="rounded-sm bg-wood px-0.5 text-charcoal">{furnitureName(item.id, $locale).slice(idx, idx + s.length)}</mark>{furnitureName(item.id, $locale).slice(idx + s.length)}</span>
                 {:else}
-                  <span class="text-[13px] font-semibold text-charcoal">{furnitureName(item.id, $locale)}</span>
+                  <span class="cat-name">{furnitureName(item.id, $locale)}</span>
                 {/if}
-                <span class="text-[11px] text-muted">{formatLength(item.width, $projectSettings.units)} × {formatLength(item.depth, $projectSettings.units)}</span>
+                <span class="cat-meta">{formatLength(item.width, $projectSettings.units)} × {formatLength(item.depth, $projectSettings.units)}</span>
               </button>
               <button
-                class="absolute right-1.5 top-1 cursor-pointer text-[13px] leading-none {favoriteIds.includes(item.id) ? 'text-terracotta-ink' : 'text-line hover:text-terracotta'}"
+                class="fav-btn {favoriteIds.includes(item.id) ? 'is-fav' : ''}"
                 onclick={() => toggleFavorite(item.id)}
                 aria-label={$t(favoriteIds.includes(item.id) ? 'objectControls.remove' : 'objectControls.add', { name: furnitureName(item.id, $locale) })}
                 aria-pressed={favoriteIds.includes(item.id)}
@@ -1079,6 +1082,21 @@
 {/if}
 
 <style>
+  .cat-tile { display: flex; width: 100%; flex-direction: column; align-items: stretch; gap: 3px; padding: 6px 6px 9px; border: 1px solid var(--color-line); border-radius: 14px; background: #fff; text-align: center; transition: transform .16s, box-shadow .16s, border-color .16s; }
+  .cat-tile:hover { transform: translateY(-2px); border-color: #C6D3C8; box-shadow: 0 8px 20px rgba(40, 60, 45, 0.10); }
+  .cat-tile.is-on { border-color: var(--color-walnut); box-shadow: 0 0 0 2px rgba(82, 118, 91, 0.22); }
+  .cat-tile.is-on .cat-art { background: var(--color-walnut-tint); }
+  .cat-art { display: flex; width: 100%; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 4px; border-radius: 10px;
+    background: linear-gradient(rgba(82,118,91,.06) 1px, transparent 1px) 0 0 / 12px 12px, linear-gradient(90deg, rgba(82,118,91,.06) 1px, transparent 1px) 0 0 / 12px 12px, #F6F8F4; transition: background-color .16s; }
+  .cat-name { padding: 0 2px; font-size: 12.5px; font-weight: 700; line-height: 1.2; color: var(--color-charcoal); }
+  .cat-meta { padding: 0 2px; font-size: 11px; font-weight: 500; line-height: 1.2; color: var(--color-muted); }
+  .seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--color-line); border-radius: 10px; background: var(--color-paper); }
+  .seg-btn { flex: 1; border-radius: 7px; padding: 5px 8px; font-size: 11px; font-weight: 700; color: var(--color-muted); transition: background-color .15s, color .15s; }
+  .seg-btn:hover { color: var(--color-charcoal); }
+  .seg-btn.is-on { background: #fff; color: var(--color-walnut-dark); box-shadow: 0 1px 3px rgba(40, 50, 40, 0.14); }
+  .fav-btn { position: absolute; right: 10px; top: 10px; display: flex; height: 24px; width: 24px; align-items: center; justify-content: center; border-radius: 999px; background: rgba(255,255,255,.92); color: #B9B2A9; box-shadow: 0 1px 3px rgba(0,0,0,.10); opacity: 0; transition: opacity .15s, color .15s; }
+  .relative:hover > .fav-btn, .fav-btn:focus-visible, .fav-btn.is-fav { opacity: 1; }
+  .fav-btn:hover { color: var(--color-terracotta); } .fav-btn.is-fav { color: var(--color-terracotta-ink); }
   :global(.door-preview-art rect),
   :global(.door-preview-art path),
   :global(.door-preview-art polygon) {

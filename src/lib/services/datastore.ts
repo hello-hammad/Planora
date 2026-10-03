@@ -1,5 +1,7 @@
 import { readProject } from '$lib/utils/projectValidation';
 import type { Project } from '$lib/models/types';
+import { get } from 'svelte/store';
+import { account } from '$lib/stores/account';
 import { withDatabase, transaction, request, records, readRecord, libraryBackup, notifyLibraryChange } from './localDatabase';
 export { PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from './localDatabase';
 
@@ -180,4 +182,57 @@ export function createLocalStore(): DataStore {
   };
 }
 
-export const localStore = createLocalStore();
+/** Projects of the signed-in account, stored in the Planora database through /api/projects. */
+export function createAccountStore(): DataStore {
+  const call = async (path: string, init?: RequestInit) => {
+    const res = await fetch(`/api/projects${path}`, init);
+    if (!res.ok && res.status !== 404) throw new Error(res.status === 401 ? 'Your session ended. Log in again to save.' : `Saving to your account failed (${res.status}).`);
+    return res;
+  };
+  const put = (project: Project) => call(`/${encodeURIComponent(project.id)}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(project) });
+  const store: DataStore = {
+    async has(id) { return (await call(`/${encodeURIComponent(id)}`)).ok; },
+    async assertCurrent() { /* one writer per account session; last save wins */ },
+    async save(project) { await put(project); notifyLibraryChange(project.id); },
+    async saveCopy(project, suffix = 'Recovered copy') {
+      const copy = readProject(structuredClone(project));
+      copy.id = globalThis.crypto?.randomUUID?.() ?? `project-${Date.now().toString(36)}`;
+      copy.name = `${copy.name || 'Untitled Project'} (${suffix})`;
+      copy.createdAt = copy.updatedAt = new Date();
+      await put(copy);
+      return copy;
+    },
+    async load(id) {
+      const res = await call(`/${encodeURIComponent(id)}`);
+      return res.ok ? readProject(await res.json()) : null;
+    },
+    async list() { return (await call('')).json(); },
+    async delete(id) { await call(`/${encodeURIComponent(id)}`, { method: 'DELETE' }); notifyLibraryChange(id); },
+    async duplicate(id) {
+      const project = await store.load(id);
+      return project ? store.saveCopy(project, 'Copy') : null;
+    },
+    async saveThumbnail(id, dataUrl) {
+      await call(`/${encodeURIComponent(id)}?thumbnail=1`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, dataUrl }) });
+    },
+    async getThumbnail(id) { return (await store.getThumbnails())[id] ?? null; },
+    async getThumbnails() {
+      try { return await (await call('?thumbnails=1')).json(); } catch { return {}; }
+    },
+  };
+  return store;
+}
+
+const browserStore = createLocalStore();
+const accountStore = createAccountStore();
+
+/**
+ * The project library used across the app: the signed-in account's projects
+ * (database) when logged in, otherwise this browser's storage.
+ */
+export const localStore: DataStore = new Proxy(browserStore, {
+  get(target, key) {
+    const active = get(account) ? accountStore : target;
+    return Reflect.get(active, key, active);
+  },
+});

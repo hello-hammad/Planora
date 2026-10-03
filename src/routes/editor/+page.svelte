@@ -7,7 +7,7 @@
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { base } from '$app/paths';
-  import { replaceState } from '$app/navigation';
+  import { goto, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { reportLoadingFailure } from '$lib/services/deployment';
   import { currentProject, viewMode, selectedElementId, selectedRoomId, createDefaultProject, loadProject, selectedTool, placingFurnitureId, elevationWallId, elevationPickMode } from '$lib/stores/project';
@@ -41,7 +41,7 @@
     // Momentary actions (layers, history, help…) must not steal the panel's section.
     const panelSection = action === 'assistant' || action === 'build' || action === 'rooms' || action === 'objects' || action === 'finishes' || action === 'styleboards';
     if (panelSection) railActive = action;
-    if (action === 'project') window.location.href = `${base}/`;
+    if (action === 'project') void goto(`${base}/dashboard`);
     if (panelSection) {
       showLayers = false;
       buildPanelTab = action === 'build' ? 'draw' : action === 'styleboards' ? 'boards' : action;
@@ -500,7 +500,7 @@
       <p role="alert" class="max-w-lg px-6 text-center text-red-700">{projectServiceMessage(loadError, $locale)}</p>
       <button class="text-blue-700 underline" onclick={initializeEditor}>{$t('library.retry')}</button>
       <button class="text-blue-700 underline" onclick={backupLibrary}>{$t('library.backup')}</button>
-      <a class="text-blue-700 underline" href={`${base}/`}>{$t('editorRecovery.back')}</a>
+      <a class="text-blue-700 underline" href={`${base}/dashboard`}>{$t('editorRecovery.back')}</a>
     {/if}
   </div>
 {/if}

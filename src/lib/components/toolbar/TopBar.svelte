@@ -315,7 +315,7 @@
 
     <!-- Back to Projects -->
     <a
-      href={base || '/'}
+      href={`${base}/dashboard`}
       class="flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 text-[13px] font-medium text-muted transition-colors hover:bg-hover hover:text-charcoal"
       title={$t('projectToolbar.back')}
     >
