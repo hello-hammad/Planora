@@ -401,7 +401,7 @@ Native `43fd94f` explicitly names Undo/Redo and contextual properties, left/righ
 15-degree rotation, duplication, mirroring and deletion, with desktop tooltips.
 Tool buttons expose selected state. Catalyst build `33064` passed, log
 `/tmp/openplan3d-editor-action-labels-build.log`. The isolated signed copy
-`/tmp/OpenPlan3D-Action-Labels-Sept12-QA.app` exposed every new label in its
+`/tmp/Planora-Action-Labels-Sept12-QA.app` exposed every new label in its
 accessibility tree; changing Select to Wall updated selected traits. Adding a
 chair exposed the contextual actions. Labeled rotation/properties/Undo/Redo/Done
 were exercised, and the saved plan confirms a 15-degree rotation and 24-inch width.
@@ -615,7 +615,7 @@ The corrected Catalyst run passed all 14 selected fit/package tests (session
 `41154`, terminal exit 0; `/tmp/native-underlay-fit-catalyst-fixed.log`).
 
 Visual verification of `5838f4b` also passed using the same saved synthetic plan
-in `/tmp/OpenPlan3D-Underlay-Fit-QA.app`. The running executable path was verified.
+in `/tmp/Planora-Underlay-Fit-QA.app`. The running executable path was verified.
 This new QA binary reused only the prior isolated rotated-underlay sandbox; the
 installed development app was not used. On opening the editor, the full tall
 image and all walls are visible, with the image's bottom edge above the toolbar.
@@ -4055,7 +4055,7 @@ remaining NEXT requirements stay open.
 Preserving original sandbox entitlements fixed the isolated QA setup; its
 synthetic import completed. Fresh UI checks confirmed adaptive context-toolbar
 fitting, a completed label drag and undo restoration. See `openplan3d-ios/docs/native-sandbox-qa-validation.md`.
-Use OpenPlan3D-Sandbox-QA.app for new checks. Actual cancellation, pinch/device
+Use Planora-Sandbox-QA.app for new checks. Actual cancellation, pinch/device
 interaction and remaining NEXT requirements stay open.
 
 ### Native iOS adaptive editor integration — 2026-09-10

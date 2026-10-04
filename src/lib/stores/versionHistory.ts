@@ -40,7 +40,7 @@ export async function downloadSnapshotBackup(projectId: string) {
   if (raw === null) throw new Error('No saved version history was found.');
   const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
   const link = document.createElement('a');
-  link.href = url; link.download = 'openplan3d-version-history-backup.json'; link.click();
+  link.href = url; link.download = 'planora-version-history-backup.json'; link.click();
   URL.revokeObjectURL(url);
 }
 

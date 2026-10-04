@@ -4,7 +4,7 @@ You are the primary AI lead engineer building "Planora", an AI-assisted architec
 - Product Name: Planora
 - Core Philosophy: "AI proposes and explains. The user decides and controls. The system continuously checks."
 - Fundamental Rule: Never treat architectural floor plans as flat images. The single source of truth is a structured JSON state containing land dimensions, rooms (x, y, width, height, label), walls, doors, windows, locking states, and validation errors.
-- Base Engine: Built on openPlan3D (SvelteKit + Three.js + Tailwind CSS). Preserve openPlan3D's core rendering engine while building modular wrapper components.
+- Base Engine: Planora is built with SvelteKit, Three.js, and Tailwind CSS and adapts the open-source Planora engine. Preserve the established rendering behavior while building modular Planora components.
 
 === VISUAL IDENTITY & DESIGN SYSTEM ===
 - Background (Warm Ivory): bg-[#F7F3ED]
@@ -29,7 +29,7 @@ You are the primary AI lead engineer building "Planora", an AI-assisted architec
 
 === CODE ARCHITECTURE RULES ===
 1. Keep code modular. Place reusable components inside `src/lib/components/`.
-2. Do not rewrite openPlan3D's low-level canvas/geometry logic directly unless adding custom JSON state bindings.
+2. Do not rewrite the inherited low-level canvas/geometry logic directly unless adding custom JSON state bindings.
 3. Use SvelteKit standard routing (`src/routes/<route_name>/+page.svelte`).
 4. Ensure every state change (adding room, moving wall, locking element, AI modification) updates the shared JSON plan state.
 

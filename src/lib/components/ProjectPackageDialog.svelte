@@ -40,7 +40,7 @@
   function original() {
     if (!preview) return;
     const url = URL.createObjectURL(new Blob([preview.bytes as Uint8Array<ArrayBuffer>], { type: 'application/zip' }));
-    const link = document.createElement('a'); link.href = url; link.download = 'openplan3d-original.zip'; link.click(); URL.revokeObjectURL(url);
+    const link = document.createElement('a'); link.href = url; link.download = 'planora-original.zip'; link.click(); URL.revokeObjectURL(url);
   }
 </script>
 <dialog use:modalDialog aria-labelledby="package-title" aria-describedby="package-description"

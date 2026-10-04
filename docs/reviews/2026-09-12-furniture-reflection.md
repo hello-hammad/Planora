@@ -43,7 +43,7 @@ physical-device checks remain open. No release or full-browser pass is claimed.
 ## Live Catalyst verification
 
 Build `11694` passed. A copied, independently signed app at
-`/tmp/OpenPlan3D-Reflection-Sept12-QA.app` uses bundle identifier
+`/tmp/Planora-Reflection-Sept12-QA.app` uses bundle identifier
 `com.laan.labs.floorplan.reflectionsept12qa`; the Development app was not used.
 In a fresh drawn plan, a refrigerator was added and rotated right 15 degrees.
 Live screenshots before/after Mirror showed the handle moving from right to left

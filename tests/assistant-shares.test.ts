@@ -30,7 +30,7 @@ it('strips photo references and files when photos are excluded, keeping the trac
 it('rejects non-packages, foreign entries, missing attachments and oversize shares', () => {
   expect(() => prepareShare(new Uint8Array([1, 2, 3]))).toThrow(/not a valid/);
   const base = readPackageZip(fixture('native-project-package'));
-  expect(() => prepareShare(writePackageZip({ ...base, 'manifest.json': jsonBytes({ format: 'other', version: 1 }) }))).toThrow(/not an OpenPlan3D/);
+  expect(() => prepareShare(writePackageZip({ ...base, 'manifest.json': jsonBytes({ format: 'other', version: 1 }) }))).toThrow(/not a Planora/);
   expect(() => prepareShare(writePackageZip({ ...base, 'notes.txt': new Uint8Array([1]) }))).toThrow(/Unrecognized package file/);
   const missing = { ...base }; delete missing['assets/chair.png'];
   expect(() => prepareShare(writePackageZip(missing))).toThrow(/Missing attachment/);

@@ -1,7 +1,7 @@
 # Rotated underlay: native UI and browser return verification
 
 Verified native source `a22c24c` in a fresh sandboxed Catalyst QA copy:
-`/tmp/OpenPlan3D-Rotated-Underlay-QA.app`, bundle identifier
+`/tmp/Planora-Rotated-Underlay-QA.app`, bundle identifier
 `com.laan.labs.floorplan.rotatedunderlayqa`. The installed development app was
 not used. The QA app was closed after export.
 

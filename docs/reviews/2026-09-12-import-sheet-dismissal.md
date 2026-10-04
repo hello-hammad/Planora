@@ -13,7 +13,7 @@ Back to Library default keyboard shortcut remain in place.
 
 ## Live Catalyst comparison
 
-Built `/tmp/OpenPlan3D-Import-Local-Dismiss-QA.app`, isolated bundle
+Built `/tmp/Planora-Import-Local-Dismiss-QA.app`, isolated bundle
 `com.laan.labs.floorplan.underlayfloorqa`. On the existing synthetic library:
 
 1. Initial Cancel returned to the library without Escape.

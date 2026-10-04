@@ -22,7 +22,7 @@ workflow; it does not establish a fix for editor or import-sheet dismissal.
 
 ## Live verification
 
-Built and launched `/tmp/OpenPlan3D-Export-Local-Dismiss-QA.app`, using the isolated
+Built and launched `/tmp/Planora-Export-Local-Dismiss-QA.app`, using the isolated
 bundle `com.laan.labs.floorplan.underlayfloorqa` and its existing synthetic project.
 The installed Development app was not touched. Without debugger attachment or
 Escape between actions:

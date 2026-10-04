@@ -1,4 +1,4 @@
-/** OpenPlan3D package ZIP profile: stored UTF-8 files, one disk, no descriptors or ZIP64.
+/** Planora package ZIP profile: stored UTF-8 files, one disk, no descriptors or ZIP64.
  * Based on https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT.
  * Bounded before allocation/extraction; paths and both directories must agree.
  */
@@ -34,7 +34,7 @@ export function readPackageZip(bytes: Uint8Array): Record<string, Uint8Array> {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const u16 = (p: number) => view.getUint16(p, true), u32 = (p: number) => view.getUint32(p, true);
   const end = bytes.length - 22;
-  if (u32(end) !== 0x06054b50 || u16(end + 4) || u16(end + 6) || u16(end + 20)) packageError('Unsupported ZIP layout. Export a new project package from OpenPlan3D.');
+  if (u32(end) !== 0x06054b50 || u16(end + 4) || u16(end + 6) || u16(end + 20)) packageError('Unsupported ZIP layout. Export a new project package from Planora.');
   const count = u16(end + 10), offset = u32(end + 16), size = u32(end + 12);
   if (!count || count > PACKAGE_ENTRIES || u16(end + 8) !== count || offset + size !== end) packageError('Invalid ZIP directory or too many files.');
   const entries: Record<string, Uint8Array> = Object.create(null), names = new Set<string>();

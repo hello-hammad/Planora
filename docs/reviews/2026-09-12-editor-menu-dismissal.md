@@ -1,6 +1,6 @@
 # Editor dismissal after a menu edit — September 12, 2026
 
-Source baseline `aaafdbe`, app `/tmp/OpenPlan3D-Scan-Local-Dismiss-QA.app`, isolated
+Source baseline `aaafdbe`, app `/tmp/Planora-Scan-Local-Dismiss-QA.app`, isolated
 bundle `com.laan.labs.floorplan.underlayfloorqa`. This is a fresh reproduction,
 not a claim that the separate editor dismissal issue is fixed.
 
@@ -51,7 +51,7 @@ in `/tmp/native-editor-local-dismiss-build.log`.
 ## Button-local candidate validation
 
 Runtime `8ed0b20`, isolated app
-`/tmp/OpenPlan3D-Editor-Local-Dismiss-Sept12-QA.app`, same synthetic session.
+`/tmp/Planora-Editor-Local-Dismiss-Sept12-QA.app`, same synthetic session.
 The installed Development app was not used.
 
 - Added a sofa through the menu, rotated right, and pressed Done. Review appeared

@@ -7,7 +7,7 @@ test('Portuguese print controls preserve paper, scale validation and PDF export'
     (window as any).printedLabels = [];
     const fillText = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
-      if (text.startsWith('Escala:') || text.startsWith('OpenPlan3D')) (window as any).printedLabels.push(text);
+      if (text.startsWith('Escala:') || text.startsWith('Planora')) (window as any).printedLabels.push(text);
       if (maxWidth === undefined) fillText.call(this, text, x, y);
       else fillText.call(this, text, x, y, maxWidth);
     };

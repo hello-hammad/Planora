@@ -73,7 +73,7 @@ describe('project service diagnostics', () => {
   });
   it.each([
     [() => readPackageZip(new Uint8Array()), 'O arquivo deve ser um pacote ZIP com menos de 64 MiB.'],
-    [() => readPackageZip(new Uint8Array(22)), 'Estrutura ZIP incompatível. Exporte um novo pacote de projeto do OpenPlan3D.'],
+    [() => readPackageZip(new Uint8Array(22)), 'Estrutura ZIP incompatível. Exporte um novo pacote de projeto da Planora.'],
     [() => packageJSON(undefined), 'Documento JSON ausente ou grande demais.'],
     [() => packageJSON(new TextEncoder().encode('{')), 'Um documento JSON está ilegível.'],
     [() => packageJSON(new TextEncoder().encode('{"a":1,"a":2}')), 'Um documento JSON contém chaves duplicadas.'],

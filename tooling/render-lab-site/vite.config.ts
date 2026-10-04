@@ -8,5 +8,5 @@ export default defineConfig({
     '$lib': fileURLToPath(new URL('../../src/lib', import.meta.url)),
     '$app/environment': fileURLToPath(new URL('./environment.ts', import.meta.url))
   } },
-  build: { outDir: process.env.RENDER_LAB_OUTPUT || '/tmp/openplan3d-render-site', emptyOutDir: true }
+  build: { outDir: process.env.RENDER_LAB_OUTPUT || '/tmp/planora-render-site', emptyOutDir: true }
 });

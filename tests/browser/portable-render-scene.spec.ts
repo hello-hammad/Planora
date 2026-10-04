@@ -20,7 +20,7 @@ for (const locale of ['en', 'pt']) for (const width of [1440, 390]) test(`${loca
     const pending = page.waitForEvent('download');
     await page.getByRole('button', { name: locale === 'pt' ? 'Exportar cena para Blender' : 'Export Blender Scene', exact: true }).click();
     const file = await pending;
-    expect(file.suggestedFilename()).toBe('openplan3d-render-scene.json');
+    expect(file.suggestedFilename()).toBe('planora-render-scene.json');
     return readFile((await file.path())!, 'utf8');
   };
   const first = await download(), scene = JSON.parse(first);

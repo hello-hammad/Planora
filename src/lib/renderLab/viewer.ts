@@ -146,7 +146,7 @@ export async function createViewer(host: HTMLElement, report: (status: LabStatus
     setQuality(value: boolean) { quality = value; paused = false; tracer?.reset(); dirty = true; notify(); },
     setPaused(value: boolean) { paused = value; dirty = false; notify(); },
     setExposure(value: number) { renderer.toneMappingExposure = value; tracer?.reset(); dirty = true; },
-    exportPNG() { const a = document.createElement('a'); a.href = renderer.domElement.toDataURL('image/png'); a.download = 'openplan3d-web-render.png'; a.click(); },
+    exportPNG() { const a = document.createElement('a'); a.href = renderer.domElement.toDataURL('image/png'); a.download = 'planora-web-render.png'; a.click(); },
     dispose() { disposed = true; cancelAnimationFrame(frame); observer.disconnect(); controls.dispose(); tracer?.dispose(); denoiseQuad.dispose(); denoise.dispose(); release(scene); environment.dispose(); renderer.dispose(); renderer.domElement.remove(); }
   };
 }

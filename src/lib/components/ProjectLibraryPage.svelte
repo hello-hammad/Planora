@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PlanoraLogo from '$lib/components/PlanoraLogo.svelte';
   import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale, translate, type Locale } from '$lib/i18n';
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
@@ -200,10 +201,7 @@
   <header class="sticky top-0 z-30 border-b border-line bg-cream/90 backdrop-blur-md">
     <div class="mx-auto flex h-16 max-w-7xl items-center gap-4 px-6 max-sm:px-4">
       <a href={`${base}/dashboard`} class="flex items-center gap-2.5 text-charcoal no-underline">
-        <span class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-walnut" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V5h7a4.5 4.5 0 0 1 0 9H7" /><circle cx="17.5" cy="19" r="1.6" fill="#E7A37F" stroke="none" /></svg>
-        </span>
-        <span class="text-lg font-bold tracking-tight">Planora</span>
+        <PlanoraLogo />
       </a>
       <nav class="ml-4 hidden items-center gap-1 md:flex" aria-label="Main">
         <span class="rounded-lg bg-walnut-tint px-3 py-1.5 text-sm font-semibold text-walnut-dark">Projects</span>

@@ -41,7 +41,7 @@ export async function readShareUpload(request: Request): Promise<Uint8Array> {
   const type = request.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
   if ((type !== 'application/zip' && type !== 'application/octet-stream') ||
     (request.headers.has('content-encoding') && request.headers.get('content-encoding') !== 'identity')) {
-    throw new HandoffError(415, 'Assistant sharing accepts an OpenPlan3D project package (ZIP).');
+    throw new HandoffError(415, 'Assistant sharing accepts a Planora project package (ZIP).');
   }
   if (Number(request.headers.get('content-length')) > SHARE_LIMITS.maxBytes) throw new HandoffError(413, MESSAGES.tooLarge);
   if (!request.body) throw new HandoffError(400, 'The package is empty.');
@@ -78,10 +78,10 @@ export interface PreparedShare { bytes: Uint8Array; title: string; producer: str
 export function prepareShare(bytes: Uint8Array, includePhotos = true): PreparedShare {
   let files: Record<string, Uint8Array>;
   try { files = readPackageZip(bytes); }
-  catch { throw new HandoffError(422, 'This file is not a valid OpenPlan3D project package.'); }
+  catch { throw new HandoffError(422, 'This file is not a valid Planora project package.'); }
   const manifest = safeJSON(files['manifest.json']);
   if (manifest?.format !== 'openplan3d-project' || manifest.version !== 1 || !['web', 'ios'].includes(manifest.producer) || typeof manifest.title !== 'string' || manifest.title.length > 1000) {
-    throw new HandoffError(422, 'This file is not an OpenPlan3D project package.');
+    throw new HandoffError(422, 'This file is not a Planora project package.');
   }
   for (const name of Object.keys(files)) {
     if (!['manifest.json', 'plan.json', 'web.json', 'baseline.json', 'mapping.json'].includes(name) && !name.startsWith('assets/')) throw new HandoffError(422, `Unrecognized package file: ${name}.`);

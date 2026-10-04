@@ -1,4 +1,4 @@
-# OpenPlan3D session archive handoff — September 9, 2026
+# Planora session archive handoff — September 9, 2026
 
 Read this first when resuming the archived scan/render/video conversation. This
 records completed work, deployment state and local artifacts; it is not a claim
@@ -61,8 +61,8 @@ fine details are approximate. Never call this an exact or measured reconstructio
 
 Authoritative latest local study files:
 
-- Blender: `/Users/thelodgem1/Downloads/OpenPlan3D-Renders/floorplan-full-walls-v4.blend`
-- GLB: `/Users/thelodgem1/Downloads/OpenPlan3D-Renders/floorplan-full-walls-v4.glb`
+- Blender: `/Users/thelodgem1/Downloads/Planora-Renders/floorplan-full-walls-v4.blend`
+- GLB: `/Users/thelodgem1/Downloads/Planora-Renders/floorplan-full-walls-v4.glb`
 - GLB SHA-256: `cf74c27ece38ed61c7969b7367f81adc12bda2fcc51a4e7455f11130762477aa`
 
 Use v4 rather than the older `floorplan-web-test.glb` alias (which contains v3).
@@ -113,10 +113,10 @@ on this computer; recheck them when needed and never copy old authentication cod
 ## Video deliverables and creative decisions
 
 Latest approved export:
-`/Users/thelodgem1/Downloads/OpenPlan3D-Comparison-Video/OpenPlan3D-Moving-Comparisons-30s.mp4`
+`/Users/thelodgem1/Downloads/Planora-Comparison-Video/Planora-Moving-Comparisons-30s.mp4`
 
 Verified output: 30.000 seconds, 1920×1080, 24fps H.264 with AAC audio. It preserves
-the opening “Let’s see what Astra 6 can do with an OpenPlan3D capture…” and uses
+the opening “Let’s see what Astra 6 can do with an Planora capture…” and uses
 understated humor about scan/reconstruction mistakes. User preference: experimental
 and enjoyable, less whimsical, actual moving video rather than presentation cards.
 Comparisons use native 2D/3D screenshots and real capture photos alongside the
@@ -128,7 +128,7 @@ procedurally synthesized electronic ambient score: warm pads, playful plucks and
 restrained 120 BPM groove. This latest cut uses no external track or audio samples.
 
 Editable project:
-`/Users/thelodgem1/Downloads/OpenPlan3D-Comparison-Video/motion-cut/`
+`/Users/thelodgem1/Downloads/Planora-Comparison-Video/motion-cut/`
 
 - `index.html`, `compositions/`, `assets/`: Hyperframes edit and media.
 - `synth_playful_ambient.py`, `.media/audio/bgm/`: score, stems and provenance.
@@ -143,7 +143,7 @@ Editable project:
 - `LINKEDIN-POST.md`: draft post. Nothing was posted to LinkedIn or YouTube.
 
 Standalone Blender footage:
-`/Users/thelodgem1/Downloads/OpenPlan3D-Comparison-Video/Blender-Turntable-Lighting.mp4`
+`/Users/thelodgem1/Downloads/Planora-Comparison-Video/Blender-Turntable-Lighting.mp4`
 (8 seconds; the final cut uses it at 4/3 speed). Overview and bedroom were rendered
 with EEVEE; bathroom used denoised Cycles samples with optical-flow interpolation.
 Animated lighting is illustrative, not captured lighting.
@@ -158,7 +158,7 @@ that tooling limitation. Prior preview URL was
 `http://127.0.0.1:4571/#project/motion-cut`; check/restart the background preview
 before assuming it is still running. Use `HYPERFRAMES_NO_TELEMETRY=1`.
 
-YouTube title drafted: “From OpenPlan3D Scan to Blender Render — An Astra 6 Experiment”.
+YouTube title drafted: “From Planora Scan to Blender Render — An Astra 6 Experiment”.
 The description explains the 30-second experiment, photo references, imperfect
 scan alignment and interpreted details. “Astra 6” is the user's chosen naming in
 the video; this is not an independently verified model product announcement.

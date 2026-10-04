@@ -16,7 +16,7 @@ ProjectPackageTests. These are focused checks, not a new full-suite qualificatio
 
 ## Live Catalyst check
 
-Created `/tmp/OpenPlan3D-Underlay-Floor-QA.app` from the tested Catalyst build,
+Created `/tmp/Planora-Underlay-Floor-QA.app` from the tested Catalyst build,
 with isolated bundle `com.laan.labs.floorplan.underlayfloorqa`. The installed
 Development app was not used. Imported the stored ZIP fixture
 `tests/fixtures/native-floor-owned-underlay.zip` from the web repository through

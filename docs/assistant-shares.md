@@ -8,7 +8,7 @@ A person chooses **Share with Assistant** in the iPhone, iPad or Mac app (or the
 web Export menu). The client uploads the ordinary project package; the server
 keeps only `manifest.json`, `plan.json` and the attachments the plan references,
 stores it for seven days, and returns an eight-character **code** and a 32-hex
-**secret**. In Claude, the OpenPlan3D connector's tools take that pair and run
+**secret**. In Claude, the Planora connector's tools take that pair and run
 the same four skills that exist locally. Nothing is uploaded without that
 explicit action; photos are included unless the client asks for `?photos=0`.
 

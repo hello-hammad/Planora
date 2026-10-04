@@ -11,7 +11,7 @@ import { get } from 'svelte/store';
 import type { Door, Wall, Window as Win } from '$lib/models/types';
 import { drawDoorOnWall, drawWall, drawWindowOnWall } from './canvasRenderer';
 import type { CanvasState } from './canvasInteraction';
-import { projectSettings } from '$lib/stores/settings';
+import { formatLength, projectSettings } from '$lib/stores/settings';
 import { roomTemplates } from './roomTemplates';
 import { getCatalogItem } from './furnitureCatalog';
 import { getModelFile } from './furnitureModelFiles';
@@ -28,32 +28,71 @@ const cache = new Map<string, Promise<string | null>>();
 const DOOR_WIDTH: Record<Door['type'], number> = { single: 90, double: 150, sliding: 180, french: 150, pocket: 90, bifold: 180, opening: 100, garage: 240 };
 const WINDOW_WIDTH: Record<Win['type'], number> = { standard: 120, fixed: 100, casement: 80, sliding: 180, bay: 200 };
 
+// Depth the opening occupies off the wall line (swing radius, fold depth); 0 = in-wall.
+const DOOR_DEPTH: Partial<Record<Door['type'], number>> = { single: 90, double: 75, french: 75, bifold: 45 };
+
+/** Plan symbol on a drafting sheet, with X (width) and Y (depth) dimensions. */
 function planPreview(kind: 'door' | 'window', type: string): string | null {
+  // Small logical size drawn at 3× so the plan renderer's fixed stroke widths read boldly in the tile.
+  const W = 150, H = 108, dpr = 3.2;
   const canvas = document.createElement('canvas');
-  const dpr = 2;
-  canvas.width = PREVIEW_W * dpr; canvas.height = PREVIEW_H * dpr;
+  canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
+  ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, W, H);
+  const units = get(projectSettings).units;
   const opening = kind === 'door' ? DOOR_WIDTH[type as Door['type']] : WINDOW_WIDTH[type as Win['type']];
-  const length = opening + 56;
-  const zoom = Math.min((PREVIEW_W - 20) / length, (PREVIEW_H - 24) / (opening * 0.62));
-  // Doors swing below the wall line, so lift the wall to leave room for the arc.
-  const wallY = kind === 'door' ? (type === 'garage' || type === 'opening' || type === 'sliding' || type === 'pocket' ? 0 : opening * 0.24) : 0;
-  const cs: CanvasState = { ctx, width: PREVIEW_W, height: PREVIEW_H, zoom, camX: 0, camY: 0 };
-  // Faint drafting grid
-  ctx.strokeStyle = '#eceee9'; ctx.lineWidth = 1;
-  const step = 20 * zoom;
-  for (let x = (PREVIEW_W / 2) % step; x < PREVIEW_W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, PREVIEW_H); ctx.stroke(); }
-  for (let y = (PREVIEW_H / 2) % step; y < PREVIEW_H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(PREVIEW_W, y); ctx.stroke(); }
-  const wall: Wall = { id: 'preview', start: { x: -length / 2, y: wallY }, end: { x: length / 2, y: wallY }, thickness: 15, height: 260, color: '#e5e7eb' };
+  const depth = kind === 'door' ? DOOR_DEPTH[type as Door['type']] ?? 0 : 0;
+  const wallT = 15, length = opening + 40;
+  // Reserve margins: left for the Y dimension, bottom for the X dimension.
+  const left = 22, right = 8, top = 10, bottom = 24;
+  const spanY = Math.max(depth, 30) + wallT;
+  const zoom = Math.min((W - left - right) / length, (H - top - bottom) / spanY);
+  const cx = left + (W - left - right) / 2;
+  const wallScreenY = H - bottom - (wallT / 2) * zoom - (depth ? 0 : ((H - top - bottom) - spanY * zoom) / 2);
+  const cs: CanvasState = { ctx, width: W, height: H, zoom, camX: (W / 2 - cx) / zoom, camY: (H / 2 - wallScreenY) / zoom };
+  // Drafting grid (10 cm minor, 50 cm major)
+  for (const [stepCm, colour] of [[10, '#f0f2ee'], [50, '#e2e7df']] as const) {
+    const step = stepCm * zoom;
+    ctx.strokeStyle = colour; ctx.lineWidth = 0.5;
+    for (let x = cx % step; x < W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = wallScreenY % step; y < H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  }
+  const wall: Wall = { id: 'preview', start: { x: -length / 2, y: 0 }, end: { x: length / 2, y: 0 }, thickness: wallT, height: 260, color: '#e5e7eb' };
   drawWall(cs, wall, false, false, get(projectSettings));
   if (kind === 'door') {
     drawDoorOnWall(cs, wall, { id: 'p', wallId: 'preview', position: 0.5, width: opening, height: type === 'garage' ? 220 : 210, type: type as Door['type'], swingDirection: 'left', flipSide: true });
   } else {
     drawWindowOnWall(cs, wall, { id: 'p', wallId: 'preview', position: 0.5, width: opening, height: 120, sillHeight: 90, type: type as Win['type'] });
   }
+  // Dimensions in the accent colour
+  const accent = '#C96F4A';
+  ctx.strokeStyle = accent; ctx.fillStyle = accent; ctx.lineWidth = 0.7;
+  ctx.font = '700 7px "Plus Jakarta Sans", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const tick = (x: number, y: number) => { ctx.beginPath(); ctx.moveTo(x - 1.6, y + 1.6); ctx.lineTo(x + 1.6, y - 1.6); ctx.stroke(); };
+  const label = (text: string, x: number, y: number, rotate = false) => {
+    ctx.save(); ctx.translate(x, y); if (rotate) ctx.rotate(-Math.PI / 2);
+    const w = ctx.measureText(text).width + 5;
+    ctx.fillStyle = '#fafafa'; ctx.fillRect(-w / 2, -4.5, w, 9);
+    ctx.fillStyle = accent; ctx.fillText(text, 0, 0.5); ctx.restore();
+  };
+  // X axis: opening width
+  const x0 = cx - (opening / 2) * zoom, x1 = cx + (opening / 2) * zoom, yDim = wallScreenY + (wallT / 2) * zoom + 9;
+  ctx.setLineDash([1.5, 1.5]);
+  for (const x of [x0, x1]) { ctx.beginPath(); ctx.moveTo(x, wallScreenY + (wallT / 2) * zoom + 1.5); ctx.lineTo(x, yDim + 2.5); ctx.stroke(); }
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x0, yDim); ctx.lineTo(x1, yDim); ctx.stroke(); tick(x0, yDim); tick(x1, yDim);
+  label(formatLength(opening, units), cx, yDim);
+  // Y axis: swing/fold depth for doors, wall thickness otherwise
+  const yLen = depth || wallT;
+  const yTop = depth ? wallScreenY - (wallT / 2) * zoom - depth * zoom : wallScreenY - (wallT / 2) * zoom;
+  const yBot = wallScreenY + (wallT / 2) * zoom, xDim = left - 9;
+  ctx.beginPath(); ctx.moveTo(xDim, yTop); ctx.lineTo(xDim, yBot); ctx.stroke(); tick(xDim, yTop); tick(xDim, yBot);
+  ctx.setLineDash([1.5, 1.5]);
+  for (const y of [yTop, yBot]) { ctx.beginPath(); ctx.moveTo(xDim - 2.5, y); ctx.lineTo(x0 - 3, y); ctx.stroke(); }
+  ctx.setLineDash([]);
+  label(formatLength(yLen + (depth ? wallT : 0), units), xDim, (yTop + yBot) / 2, true);
   return canvas.toDataURL('image/png');
 }
 
@@ -445,7 +484,7 @@ async function roomRender(name: string): Promise<string | null> {
 export type PreviewKind = 'door' | 'window' | 'room';
 
 export function catalogPreview(kind: PreviewKind, type: string, mode: '2d' | '3d'): Promise<string | null> {
-  const key = `${kind}:${type}:${mode}`;
+  const key = `${kind}:${type}:${mode}:${get(projectSettings).units}`;
   let hit = cache.get(key);
   if (!hit) {
     hit = (async () => {

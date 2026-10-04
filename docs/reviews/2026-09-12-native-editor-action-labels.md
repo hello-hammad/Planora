@@ -8,7 +8,7 @@ on system-symbol descriptions to communicate their purpose.
 Catalyst build session `33064` exited 0 (`BUILD SUCCEEDED`), log
 `/tmp/openplan3d-editor-action-labels-build.log`, using derived data
 `/tmp/openplan3d-render-ui-build`. Its output was copied to
-`/tmp/OpenPlan3D-Action-Labels-Sept12-QA.app`, assigned bundle identifier
+`/tmp/Planora-Action-Labels-Sept12-QA.app`, assigned bundle identifier
 `com.laan.labs.floorplan.actionlabelssept12qa`, ad-hoc signed with the existing
 isolated sandbox entitlements and verified with deep/strict codesign validation.
 The Development app was not used.

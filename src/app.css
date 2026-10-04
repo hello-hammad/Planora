@@ -25,9 +25,9 @@
    border-line, bg-walnut, text-terracotta-ink, … */
 @theme {
   --font-sans: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
-  --color-ivory: #FBFCF8;          /* brighter page background */
+  --color-ivory: #F1F6EF;          /* brighter page background */
   --color-cream: #FFFFFF;          /* cards, panels, bars */
-  --color-paper: #F7FAF6;          /* canvas-adjacent surfaces */
+  --color-paper: #EBF2E9;          /* canvas-adjacent surfaces */
   --color-walnut: #52765B;         /* primary sage */
   --color-walnut-dark: #3D5B45;    /* primary hover */
   --color-walnut-tint: #E5F0E6;    /* selected state fill */
@@ -38,17 +38,21 @@
   --color-sage: #8B9A83;
   --color-sage-ink: #4F5C49;
   --color-sage-tint: #EEF1EB;
-  --color-charcoal: #252321;       /* primary text */
-  --color-muted: #746F69;          /* secondary text */
-  --color-line: #DED7CF;           /* borders */
+  --color-charcoal: #1F2A22;       /* primary text */
+  --color-muted: #66726A;          /* secondary text */
+  --color-line: #D6E1D4;           /* borders */
   --color-hover: #EFF6F0;          /* hover fill on cream */
   --color-danger: #B94A48;
+  --color-brown: #6B4636;          /* active state of segmented toggles */
+  --color-brown-dark: #4A3026;
 }
 
 html.dark {
-  --color-ivory: #252B27;
-  --color-cream: #313934;
-  --color-paper: #2B322D;
+  --color-brown: #A8714F;
+  --color-brown-dark: #8A5A3D;
+  --color-ivory: #18221C;
+  --color-cream: #22302A;
+  --color-paper: #1D2922;
   --color-walnut: #8FBC96;
   --color-walnut-dark: #C4E2C8;
   --color-walnut-tint: #405845;
@@ -56,10 +60,10 @@ html.dark {
   --color-terracotta-tint: #3a251c;
   --color-sage-tint: #344139;
   --color-sage-ink: #b5c4ac;
-  --color-charcoal: #f1ece6;
-  --color-muted: #D2C6BC;
-  --color-line: #68766B;
-  --color-hover: #465149;
+  --color-charcoal: #EEF4EE;
+  --color-muted: #AFC0B3;
+  --color-line: #3A4D41;
+  --color-hover: #2C3D33;
   --color-terracotta-ink: #e39a7a;
 }
 

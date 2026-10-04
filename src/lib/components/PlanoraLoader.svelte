@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PlanoraLogo from '$lib/components/PlanoraLogo.svelte';
   /**
    * Planora loading state: a small floor plan draws itself wall by wall, its
    * doors swing in and the rooms fill with warm tints, then the cycle repeats.
@@ -23,10 +24,7 @@
 >
   {#if variant === 'page'}
     <div class="flex items-center gap-2.5" aria-hidden="true">
-      <span class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-walnut">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V5h7a4.5 4.5 0 0 1 0 9H7" /><circle cx="17.5" cy="19" r="1.6" fill="#E7A37F" stroke="none" /></svg>
-      </span>
-      <span class="text-lg font-bold tracking-tight">Planora</span>
+      <PlanoraLogo />
     </div>
   {/if}
 

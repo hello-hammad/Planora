@@ -1,6 +1,6 @@
 # iPhone → web geometry handoff, version 1
 
-The iPhone app's **Export Editable Plan (JSON)** and **Open in OpenPlan3D** use the
+The iPhone app's **Export Editable Plan (JSON)** and **Open in Planora** use the
 same geometry payload. Local JSON exchange needs no Firebase upload. Import it
 using the web toolbar's **Export → Import JSON** or **Build → Import RoomPlan**.
 

@@ -93,9 +93,9 @@
     <span class="text-xs font-semibold text-muted">{$t('settings.metricsUnit')}</span>
     <div class="flex rounded-lg border border-line bg-ivory p-0.5" role="group" aria-label={$t('settings.metricsUnit')}>
       <button type="button" aria-pressed={settings.units === 'metric'} onclick={() => projectSettings.update(current => ({ ...current, units: 'metric' }))}
-        class="rounded-md px-2.5 py-1 text-xs font-semibold transition-colors {settings.units === 'metric' ? 'bg-walnut text-white' : 'text-charcoal hover:bg-hover'}">{$t('settings.metric')}</button>
+        class="rounded-md px-2.5 py-1 text-xs font-semibold transition-colors {settings.units === 'metric' ? 'bg-brown text-white' : 'text-charcoal hover:bg-hover'}">{$t('settings.metric')}</button>
       <button type="button" aria-pressed={settings.units === 'imperial'} onclick={() => projectSettings.update(current => ({ ...current, units: 'imperial' }))}
-        class="rounded-md px-2.5 py-1 text-xs font-semibold transition-colors {settings.units === 'imperial' ? 'bg-walnut text-white' : 'text-charcoal hover:bg-hover'}">{$t('settings.imperial')}</button>
+        class="rounded-md px-2.5 py-1 text-xs font-semibold transition-colors {settings.units === 'imperial' ? 'bg-brown text-white' : 'text-charcoal hover:bg-hover'}">{$t('settings.imperial')}</button>
     </div>
   </div>
   <div class="rounded-lg border border-line bg-ivory p-2 text-xs text-charcoal" data-testid="interior-area-summary">

@@ -1093,7 +1093,7 @@
   .seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--color-line); border-radius: 10px; background: var(--color-paper); }
   .seg-btn { flex: 1; border-radius: 7px; padding: 5px 8px; font-size: 11px; font-weight: 700; color: var(--color-muted); transition: background-color .15s, color .15s; }
   .seg-btn:hover { color: var(--color-charcoal); }
-  .seg-btn.is-on { background: #fff; color: var(--color-walnut-dark); box-shadow: 0 1px 3px rgba(40, 50, 40, 0.14); }
+  .seg-btn.is-on { background: var(--color-brown); color: #fff; box-shadow: 0 2px 6px rgba(74, 48, 38, 0.28); }
   .fav-btn { position: absolute; right: 10px; top: 10px; display: flex; height: 24px; width: 24px; align-items: center; justify-content: center; border-radius: 999px; background: rgba(255,255,255,.92); color: #B9B2A9; box-shadow: 0 1px 3px rgba(0,0,0,.10); opacity: 0; transition: opacity .15s, color .15s; }
   .relative:hover > .fav-btn, .fav-btn:focus-visible, .fav-btn.is-fav { opacity: 1; }
   .fav-btn:hover { color: var(--color-terracotta); } .fav-btn.is-fav { color: var(--color-terracotta-ink); }

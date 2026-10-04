@@ -53,7 +53,7 @@ export async function downloadLibraryBackup() {
   const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'openplan3d-library-backup.json';
+  link.download = 'planora-library-backup.json';
   link.click();
   URL.revokeObjectURL(url);
 }

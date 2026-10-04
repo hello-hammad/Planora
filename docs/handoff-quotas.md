@@ -78,7 +78,7 @@ reject valid 1 MiB captures before the endpoint can enforce its own limit.
 The runtime needs Application Default Credentials with object get/create/update
 access for `inbox/` and the ledger. App Hosting already supplies its service
 identity; do not add service-account key files to the repository or browser.
-The OpenPlan3D backend's existing identity already has these permissions; this
+The Planora backend's existing identity already has these permissions; this
 release does not expand IAM access. Browser CI explicitly disables cloud sharing.
 The token requests `devstorage.full_control`: the Storage JSON API's
 `objects.patch` method requires that scope even for custom metadata updates;

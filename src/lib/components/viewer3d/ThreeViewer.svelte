@@ -2111,7 +2111,7 @@
       const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
       try {
         const link = document.createElement('a');
-        link.href = url; link.download = 'openplan3d-render-scene.json'; link.click();
+        link.href = url; link.download = 'planora-render-scene.json'; link.click();
       } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
       renderExportMessage = 'Exported neutral geometry for the local Blender worker. Textures and photo cameras are omitted.';
     } catch (error) {

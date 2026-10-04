@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PlanoraLogo from '$lib/components/PlanoraLogo.svelte';
   import AppIcon from '$lib/components/AppIcon.svelte';
   import { t, locale } from '$lib/i18n';
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
@@ -309,9 +310,7 @@
 <div class="editor-topbar relative z-40 h-14 shrink-0 border-b border-line bg-cream text-charcoal flex items-center gap-3 px-3 max-2xl:gap-1.5 max-2xl:px-2">
   <!-- ── Left: brand, breadcrumb, project name, save status ── -->
   <div class="flex min-w-0 flex-1 items-center gap-1 max-2xl:gap-0.5">
-    <span class="mr-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-walnut sm:flex" aria-hidden="true" title="Planora">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V5h7a4.5 4.5 0 0 1 0 9H7" /><circle cx="17.5" cy="19" r="1.6" fill="#E7A37F" stroke="none" /></svg>
-    </span>
+    <span class="mr-1 hidden shrink-0 sm:flex" title="Planora"><PlanoraLogo size={32} wordmark={false} /></span>
 
     <!-- Back to Projects -->
     <a
@@ -367,21 +366,21 @@
     <div class="flex gap-0.5 rounded-xl border border-line bg-ivory p-[3px] max-2xl:gap-0 max-2xl:p-0.5">
       <button
         onclick={() => setMode('2d')}
-        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-2xl:px-2 max-2xl:text-xs {mode === '2d' ? 'bg-walnut text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
+        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-2xl:px-2 max-2xl:text-xs {mode === '2d' ? 'bg-brown text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
       >2D</button>
       <button
         onclick={() => setMode('3d')}
-        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-2xl:px-2 max-2xl:text-xs {mode === '3d' ? 'bg-walnut text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
+        class="h-8 rounded-[9px] px-3.5 text-[13px] font-semibold transition-colors max-2xl:px-2 max-2xl:text-xs {mode === '3d' ? 'bg-brown text-white shadow-[0_1px_2px_rgba(50,40,30,0.2)]' : 'text-muted hover:text-charcoal'}"
       >3D</button>
     </div>
 
     <div class="hidden items-center gap-0.5 rounded-xl border border-line bg-ivory p-[3px] md:flex max-2xl:gap-0 max-2xl:p-0.5" role="group" aria-label={$t('settings.metricsUnit')}>
       <button type="button" aria-pressed={$projectSettings.units === 'metric'} title={$t('settings.metric')}
         onclick={() => projectSettings.update(current => ({ ...current, units: 'metric' }))}
-        class="h-8 rounded-[9px] px-2 text-[11px] font-semibold transition-colors max-2xl:px-1.5 max-2xl:text-[10px] {$projectSettings.units === 'metric' ? 'bg-walnut text-white shadow-sm' : 'text-muted hover:text-charcoal'}">{$t('settings.metric')}</button>
+        class="h-8 rounded-[9px] px-2 text-[11px] font-semibold transition-colors max-2xl:px-1.5 max-2xl:text-[10px] {$projectSettings.units === 'metric' ? 'bg-brown text-white shadow-sm' : 'text-muted hover:text-charcoal'}">{$t('settings.metric')}</button>
       <button type="button" aria-pressed={$projectSettings.units === 'imperial'} title={$t('settings.imperial')}
         onclick={() => projectSettings.update(current => ({ ...current, units: 'imperial' }))}
-        class="h-8 rounded-[9px] px-2 text-[11px] font-semibold transition-colors max-2xl:px-1.5 max-2xl:text-[10px] {$projectSettings.units === 'imperial' ? 'bg-walnut text-white shadow-sm' : 'text-muted hover:text-charcoal'}">{$t('settings.imperial')}</button>
+        class="h-8 rounded-[9px] px-2 text-[11px] font-semibold transition-colors max-2xl:px-1.5 max-2xl:text-[10px] {$projectSettings.units === 'imperial' ? 'bg-brown text-white shadow-sm' : 'text-muted hover:text-charcoal'}">{$t('settings.imperial')}</button>
     </div>
 
     <!-- Plan / Elevation sub-switch (2D only); mobile uses the overflow menu instead -->

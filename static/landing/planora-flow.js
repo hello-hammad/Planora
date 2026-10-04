@@ -183,3 +183,66 @@
   const start = () => { mount(); observer.observe(document.body, { childList: true, subtree: true }); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
+
+/* Motion layer: scroll progress, feature strip, card spotlight, heading reveals. */
+(() => {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ICON = {
+    spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/></svg>',
+    plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h9M12 3v18"/></svg>',
+    cube: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8l-9-5-9 5v8l9 5z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>',
+    door: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16M6 21V4h9v17"/><circle cx="12.5" cy="12" r=".8"/></svg>',
+    sofa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M2 13a2 2 0 0 1 4 0v2h12v-2a2 2 0 0 1 4 0v5H2zM5 18v2M19 18v2"/></svg>',
+    ruler: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>',
+    paint: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="15" height="6" rx="1"/><path d="M18 6h3v5h-9v3M10 14h4v7h-4z"/></svg>',
+    file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 15l2 2 4-4"/></svg>',
+  };
+  const FEATURES = [['spark', 'AI floor plans from a sentence'], ['plan', 'Precise 2D drafting'], ['cube', 'Instant 3D walkthrough'], ['door', 'Doors & windows library'],
+    ['sofa', '150+ furniture models'], ['ruler', 'Live area & dimensions'], ['paint', 'Finishes & mood boards'], ['file', 'Export PDF, PNG & DXF']];
+
+  function marquee() {
+    const hero = document.querySelector('.lp-hero');
+    if (!hero || document.querySelector('.pf-marquee')) return;
+    const items = FEATURES.map(([i, t]) => `<span class="pf-marquee-item"><i>${ICON[i]}</i>${t}</span>`).join('');
+    const strip = document.createElement('div');
+    strip.className = 'pf-marquee'; strip.setAttribute('aria-label', 'Planora features');
+    strip.innerHTML = `<div class="pf-marquee-track">${items}${items.replace(/class="pf-marquee-item"/g, 'class="pf-marquee-item" aria-hidden="true"')}</div>`;
+    hero.after(strip);
+  }
+
+  const seen = new WeakSet();
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+    for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+  }, { threshold: 0.2 }) : null;
+  function reveals() {
+    if (reduced || !io) return;
+    document.querySelectorAll('.lp-section-heading, .lp-why-heading, .lp-builder-heading, .lp-transformation-copy, .lp-motion-copy, .pf-marquee').forEach(el => {
+      if (seen.has(el)) return; seen.add(el);
+      el.classList.add('pf-inview'); io.observe(el);
+    });
+  }
+
+  function progress() {
+    if (document.querySelector('.pf-scrollbar')) return;
+    const bar = document.createElement('div'); bar.className = 'pf-scrollbar'; document.body.appendChild(bar);
+    let raf = 0;
+    const update = () => { raf = 0; const max = document.documentElement.scrollHeight - innerHeight; bar.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`; };
+    addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(update); }, { passive: true });
+    update();
+  }
+
+  // Cursor spotlight on cards
+  document.addEventListener('pointermove', e => {
+    const card = e.target instanceof Element && e.target.closest('.lp-benefit, .lp-stat');
+    if (!card) return;
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mx', `${e.clientX - r.left}px`); card.style.setProperty('--my', `${e.clientY - r.top}px`);
+  }, { passive: true });
+
+  const apply = () => { marquee(); reveals(); };
+  const start = () => {
+    progress(); apply();
+    new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();

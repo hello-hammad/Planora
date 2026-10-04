@@ -23,7 +23,7 @@ samples: `/tmp/swiftbuild-fullscan-sample.txt` and
 
 ## Live Catalyst verification
 
-Created `/tmp/OpenPlan3D-Scan-Local-Dismiss-QA.app` after the app build completed,
+Created `/tmp/Planora-Scan-Local-Dismiss-QA.app` after the app build completed,
 while the byte-preservation tests ran in their separate test host. QA bundle:
 `com.laan.labs.floorplan.underlayfloorqa`. No installed Development app was used.
 

@@ -1,4 +1,4 @@
-# OpenPlan3D status
+# Planora status
 
 Last verified: **September 13, 2026, 12:50 EDT**.
 
@@ -40,7 +40,7 @@ website changes does not, by itself, verify a production deployment.
 
 ## Work completed with scoped verification
 
-- **Website:** stronger links to the [OpenPlan3D App Store listing](https://apps.apple.com/us/app/openplan3d/id6759076170).
+- **Website:** stronger links to the [Planora App Store listing](https://apps.apple.com/us/app/openplan3d/id6759076170).
 - **Furniture reflection:** actual local-axis mirroring, unchanged rotation,
   duplication, native glyph/SceneKit rendering, SVG export, neutral-export face
   winding, RoomPlan orientation, and web/native package handling. An actual native

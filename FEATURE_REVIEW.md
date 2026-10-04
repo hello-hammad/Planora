@@ -1,4 +1,4 @@
-# Feature Review: open3dFloorplan
+# Feature Review: Planora
 
 Systematic comparison. Each feature gets: ✅ done, 🔧 needs work, ❌ missing.
 

@@ -106,7 +106,7 @@ export function projectPackageBytes(value: Project): Uint8Array {
 }
 export function readProjectPackage(bytes: Uint8Array): { project: Project; assets: number; warnings: string[] } {
   const files = readPackageZip(bytes), manifest = packageJSON(files['manifest.json']);
-  if (manifest.format !== 'openplan3d-project' || manifest.version !== 1 || !['web', 'ios'].includes(manifest.producer) || typeof manifest.title !== 'string' || manifest.title.length > 1000) packageError('Unsupported manifest. Choose an OpenPlan3D project package, not a capture dataset or library backup.');
+  if (manifest.format !== 'openplan3d-project' || manifest.version !== 1 || !['web', 'ios'].includes(manifest.producer) || typeof manifest.title !== 'string' || manifest.title.length > 1000) packageError('Unsupported manifest. Choose a Planora project package, not a capture dataset or library backup.');
   for (const name of Object.keys(files)) if (!docs.includes(name) && (!name.startsWith('assets/') || reservedAssets.has(name.slice(7).split('/')[0].toLowerCase()))) packageError(`Unrecognized package file: ${name}.`);
   const plan = validatePackagePlan(packageJSON(files['plan.json']));
   const assets = Object.fromEntries(Object.entries(files).filter(([name]) => name.startsWith('assets/')));
@@ -174,5 +174,5 @@ export async function prepareProjectPackage(file: File) {
 export function downloadProjectPackage(project: Project) {
   const bytes = projectPackageBytes(project);
   const url = URL.createObjectURL(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/zip' }));
-  const link = document.createElement('a'); link.href = url; link.download = 'openplan3d-project.zip'; link.click(); URL.revokeObjectURL(url);
+  const link = document.createElement('a'); link.href = url; link.download = 'planora-project.zip'; link.click(); URL.revokeObjectURL(url);
 }

@@ -23,7 +23,7 @@ const indexArray = geometry.index.array;
 const indices = append(Buffer.from(indexArray.buffer, indexArray.byteOffset, indexArray.byteLength));
 const image = append(await readFile('tests/fixtures/item-photo.png'));
 const document = {
-  asset: { version: '2.0', generator: 'OpenPlan3D local model fixture generator' },
+  asset: { version: '2.0', generator: 'Planora local model fixture generator' },
   buffers: [{ byteLength }], bufferViews,
   accessors: [
     { bufferView: positions, componentType: 5126, type: 'VEC3', count: 24, min: [-0.5, -0.25, -0.375], max: [0.5, 0.25, 0.375] },

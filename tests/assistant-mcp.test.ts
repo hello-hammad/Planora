@@ -11,7 +11,7 @@ const rpc = (method: string, params: any = {}, id: number | string = 1) => ({ js
 it('handshakes, lists four read-only tools and ignores notifications', async () => {
   const store = new MemoryShareStore();
   const init = await handleMcpMessage(rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {} }), { store });
-  expect(init).toMatchObject({ id: 1, result: { protocolVersion: '2025-03-26', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'openplan3d-shares' } } });
+  expect(init).toMatchObject({ id: 1, result: { protocolVersion: '2025-03-26', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'planora-shares' } } });
   expect(await handleMcpMessage({ jsonrpc: '2.0', method: 'notifications/initialized' }, { store })).toBeNull();
   const tools = (await handleMcpMessage(rpc('tools/list'), { store }))!.result.tools;
   expect(tools.map((t: any) => t.name)).toEqual(['summarize_share', 'review_share_photos', 'handoff_share', 'list_share_files']);

@@ -21,7 +21,7 @@ test('Portuguese package rejection leaves saved records unchanged and allows ano
   invalidGeometry['plan.json'] = new TextEncoder().encode(JSON.stringify(plan));
   for (const [buffer, message] of [
     [Buffer.from('invalid'), 'O arquivo deve ser um pacote ZIP com menos de 64 MiB.'],
-    [Buffer.alloc(22), 'Estrutura ZIP incompatível. Exporte um novo pacote de projeto do OpenPlan3D.'],
+    [Buffer.alloc(22), 'Estrutura ZIP incompatível. Exporte um novo pacote de projeto do Planora.'],
     [Buffer.from(writePackageZip(missingAttachment)), 'Anexo ausente: chair.png.'],
     [Buffer.from(writePackageZip(invalidGeometry)), 'A planta editada no iPhone contém geometria ou referências inválidas.'],
   ] as const) {

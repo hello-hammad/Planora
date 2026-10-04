@@ -56,7 +56,7 @@
     if (source === null) return;
     const url = URL.createObjectURL(new Blob([source], { type: 'application/json' }));
     const link = document.createElement('a');
-    link.href = url; link.download = 'openplan3d-restore-source.json'; link.click(); URL.revokeObjectURL(url);
+    link.href = url; link.download = 'planora-restore-source.json'; link.click(); URL.revokeObjectURL(url);
   }
 </script>
 

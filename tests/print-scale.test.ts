@@ -82,7 +82,7 @@ it('localizes the printed sheet and schedule without changing scale or room data
   expect(portuguese).toEqual(english);
   expect(fillText.mock.calls.some(call => call[0] === 'Escala: 1:50')).toBe(true);
   expect(fillText.mock.calls.some(call => call[0] === project.name)).toBe(true);
-  const footer = fillText.mock.calls.find(call => String(call[0]).startsWith('OpenPlan3D'))!;
+  const footer = fillText.mock.calls.find(call => String(call[0]).startsWith('Planora'))!;
   expect(footer[0]).toContain('Imprima em 100%');
   expect(footer[3]).toBe(portuguese.pageWidth - 24);
   const pdf = createPrintPDF(canvas, project, options, 'pt');

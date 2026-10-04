@@ -25,7 +25,7 @@ async function openDatabase(): Promise<IDBDatabase> {
     };
     req.onblocked = () => {
       blocked = true;
-      reject(new Error('Close other OpenPlan3D tabs, then retry loading to update browser storage. Your saved projects have not been removed.'));
+      reject(new Error('Close other Planora tabs, then retry loading to update browser storage. Your saved projects have not been removed.'));
     };
     req.onerror = () => reject(req.error);
     req.onsuccess = () => {

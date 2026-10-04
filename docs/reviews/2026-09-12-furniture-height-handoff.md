@@ -6,7 +6,7 @@ The web package service generated `/tmp/web-height-return-package.zip` from the
 height-edit regression: physical native height 3.125 m, web height 125 cm and
 Z scale 2.5, X scale -2, Y scale 1.5, rotation 37.5 degrees.
 
-The isolated Catalyst app `/tmp/OpenPlan3D-Height-Sept12-QA.app`, bundle
+The isolated Catalyst app `/tmp/Planora-Height-Sept12-QA.app`, bundle
 `com.laan.labs.floorplan.heightsept12qa`, was copied from the current `8fdd1bf`
 build and separately signed. The development app was not used. Through native
 UI, Choose Project Package → Import as Copy created session

@@ -812,7 +812,7 @@ to `/tmp/openplan-custom-model-firefox-timeout-trace.zip` and
 `/tmp/web-custom-model-opener-focus-build.log`; rerun both failed workflows after it
 finishes, then assess further regression scope.
 
-The existing isolated `/tmp/OpenPlan3D-Scan-Counts-Sept12-QA.app`
+The existing isolated `/tmp/Planora-Scan-Counts-Sept12-QA.app`
 (`com.laan.labs.floorplan.underlayfloorqa`) imported the original model package
 through Choose Project Package → preview → Import as Copy. The new library copy
 opened in native review and the plan editor showed its simplified footprint. No
@@ -839,7 +839,7 @@ cancel/invalid/focus workflows are now being rerun across Chromium, Firefox and
 WebKit on that output (`/tmp/web-custom-model-focus-and-import-rerun.log`).
 
 Catalyst build `64966` completed with `BUILD SUCCEEDED`. Its output was copied to
-`/tmp/OpenPlan3D-Package-Counts-Sept12-QA.app`, assigned the isolated bundle ID
+`/tmp/Planora-Package-Counts-Sept12-QA.app`, assigned the isolated bundle ID
 `com.laan.labs.floorplan.packagecountssept12qa`, ad-hoc signed with the existing QA
 sandbox entitlements and signature-verified. The fresh app opened the original
 model fixture and its visible preview read “2 floors · 4 walls · 1 attachment file”.

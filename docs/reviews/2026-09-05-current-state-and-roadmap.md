@@ -1,4 +1,4 @@
-# OpenPlan3D: current state and improvement roadmap
+# Planora: current state and improvement roadmap
 
 **Current handoff:** [NEXT.md](../../NEXT.md) records the remaining work as of
 September 7, 2026. The initial findings and older “next” sections below are
@@ -104,9 +104,9 @@ Closed contribution context:
 
 ## Planner 5D comparison
 
-This is a comparison against official advertised features, not a hands-on audit of its paid tiers. Its homepage lists 8,000+ objects while its pricing page lists 10,000+; the relevant gap is a catalog of thousands versus OpenPlan3D's hundreds, rather than a precise parity percentage. [Planner 5D homepage](https://planner5d.com/), [pricing/features](https://planner5d.com/pricing).
+This is a comparison against official advertised features, not a hands-on audit of its paid tiers. Its homepage lists 8,000+ objects while its pricing page lists 10,000+; the relevant gap is a catalog of thousands versus Planora's hundreds, rather than a precise parity percentage. [Planner 5D homepage](https://planner5d.com/), [pricing/features](https://planner5d.com/pricing).
 
-| Workflow | OpenPlan3D web | OpenPlan3D iOS | Improvement needed |
+| Workflow | Planora web | Planora iOS | Improvement needed |
 | --- | --- | --- | --- |
 | Draw and dimension a floor plan | Broad functionality; current reliability defects | Useful native drawing and correction tools | Accurate joins, stable rooms, consistent dimensions, predictable gestures |
 | Furnish and decorate | 176 object entries plus symbols, GLB/procedural models, materials | 16 generic manual categories, box-based edited previews | Shared catalog IDs, better assets/thumbnails, material controls, equivalent placement semantics |

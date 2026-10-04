@@ -1,4 +1,4 @@
-# QA Report v2 — open3dFloorplan
+# QA Report v2 — Planora
 **Date:** 2026-02-14  
 **URL:** http://10.168.168.114:5173/  
 **Tester:** Automated QA (Claude via OpenClaw browser)  

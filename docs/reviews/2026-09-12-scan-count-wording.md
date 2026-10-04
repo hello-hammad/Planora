@@ -9,7 +9,7 @@ preview, including agreement of calibration verbs. Catalyst build session
 
 Use `tooling/create-sandbox-qa.sh` after build completion with source
 `/tmp/openplan3d-autolabel-qa/Build/Products/Debug-maccatalyst/FloorPlan.app`,
-a new destination `/tmp/OpenPlan3D-Scan-Counts-Sept12-QA.app`, and isolated bundle
+a new destination `/tmp/Planora-Scan-Counts-Sept12-QA.app`, and isolated bundle
 `com.laan.labs.floorplan.underlayfloorqa`. Prior QA app was quit.
 
 Fixtures under `/tmp/openplan3d-ui-qa`:

@@ -1,4 +1,4 @@
-# Historical feature comparison — open3dFloorplan
+# Historical feature comparison — Planora
 
 > Archived comparison: the statuses below are historical planning notes, not a
 > current capability or release checklist. Use [FEATURES.md](FEATURES.md) for
@@ -15,7 +15,7 @@
 
 ## 1. CORE DRAWING & EDITING
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Draw walls (click-to-click) | ✓ | ✓ | ✅ |
 | Wall thickness control | ✓ | ✓ | ✅ |
@@ -36,7 +36,7 @@
 
 ## 2. DOORS & WINDOWS
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Door types (single, double, sliding, french, pocket, bifold) | ✓ | ✓ | ✅ |
 | Window types (standard, fixed, casement, sliding, bay) | ✓ | ✓ | ✅ |
@@ -50,7 +50,7 @@
 
 ## 3. CONSTRUCTION ELEMENTS
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Stairs (straight) | ✓ | ✓ | ✅ |
 | Stairs (L, spiral, U shapes) | ✓ | ✗ | ❌ |
@@ -64,7 +64,7 @@
 
 ## 4. FURNITURE & OBJECTS
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Furniture catalog | ✓ (1000+ items) | ✓ (~43 items, 8 categories) | 🟡 |
 | Room-based browsing (living room, kitchen, etc.) | ✓ | ✓ (8 categories) | ✅ |
@@ -83,7 +83,7 @@
 
 ## 5. OUTDOOR / LANDSCAPE
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Trees and plants | ✓ | ✗ | ❌ |
 | Paths and lawns | ✓ | ✗ | ❌ |
@@ -94,7 +94,7 @@
 
 ## 6. MATERIALS & TEXTURES
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Wall paint colors | ✓ (extensive) | ✓ (15 colors) | ✅ |
 | Wall textures (brick, stone, wood panel) | ✓ | ✓ (6 textures: brick, stone, wood panel, concrete, subway tile) | ✅ |
@@ -108,7 +108,7 @@
 
 ## 7. 2D VIEW
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Grid background | ✓ | ✓ | ✅ |
 | Room labels with area | ✓ | ✓ | ✅ |
@@ -129,7 +129,7 @@
 
 ## 8. 3D VIEW
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Orbit camera | ✓ | ✓ | ✅ |
 | First-person walkthrough | ✓ | ✓ (WASD look, arrows move, sprint, eye height slider) | ✅ |
@@ -151,7 +151,7 @@
 
 ## 9. MULTI-FLOOR
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Multiple floors | ✓ | ✓ | ✅ |
 | Add/remove floors | ✓ | ✓ | ✅ |
@@ -161,7 +161,7 @@
 
 ## 10. EXPORT & SHARING
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | PNG export | ✓ | ✓ | ✅ |
 | SVG export | ✗ | ✓ | ✅ (we're ahead!) |
@@ -174,7 +174,7 @@
 
 ## 11. PROJECT MANAGEMENT
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Auto-save (local) | ✓ | ✓ | ✅ |
 | Cloud save | ✓ | ✗ | ❌ |
@@ -185,7 +185,7 @@
 
 ## 12. UI/UX
 
-| Feature | Target | open3dFloorplan | Status |
+| Feature | Target | Planora | Status |
 |---------|-----------|-----------------|--------|
 | Keyboard shortcuts | ✓ | ✓ | ✅ |
 | Tooltips / onboarding | ✓ (tutorial popups) | ✗ | ❌ |
